@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/authStore'
+import { useThemeStore } from '@/store/themeStore'
 import { PageLoader } from '@/components/ui/Spinner'
 
 import Login            from '@/pages/auth/Login'
@@ -44,18 +45,28 @@ function AuthInitializer() {
   return null
 }
 
+function ThemeInitializer() {
+  const theme = useThemeStore((state) => state.theme)
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark')
+  }, [theme])
+
+  return null
+}
+
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { profile, loading, error } = useAuthStore()
   if (loading) return <PageLoader />
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6" style={{ backgroundColor: '#F4F3EF' }}>
-        <div className="bg-white rounded-xl shadow-lg p-8 max-w-sm w-full text-center">
+      <div className="min-h-screen flex items-center justify-center p-6 bg-[#F4F3EF] dark:bg-surface-dark">
+        <div className="bg-white dark:bg-surface-dark-2 rounded-xl shadow-lg p-8 max-w-sm w-full text-center">
           <div className="text-3xl mb-3">⚠️</div>
-          <h2 className="font-bold text-lg mb-2">Kan niet laden</h2>
-          <p className="text-sm text-gray-500 mb-5">{error}</p>
+          <h2 className="font-bold text-lg mb-2 text-gray-900 dark:text-white">Kan niet laden</h2>
+          <p className="text-sm text-gray-500 dark:text-white/60 mb-5">{error}</p>
           <button onClick={() => window.location.reload()} className="bg-brand-yellow text-gray-900 font-semibold px-4 py-2.5 rounded-lg w-full mb-2">Opnieuw proberen</button>
-          <button onClick={() => supabase.auth.signOut().then(() => (window.location.href = '/login'))} className="text-sm text-gray-400 underline">Uitloggen</button>
+          <button onClick={() => supabase.auth.signOut().then(() => (window.location.href = '/login'))} className="text-sm text-gray-400 dark:text-white/40 underline">Uitloggen</button>
         </div>
       </div>
     )
@@ -83,6 +94,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthInitializer />
+      <ThemeInitializer />
       <Routes>
         <Route path="/login"      element={<Login />} />
         <Route path="/registreer" element={<Registreer />} />

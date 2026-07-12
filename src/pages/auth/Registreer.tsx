@@ -42,32 +42,32 @@ export default function Registreer() {
 
   if (tokenGeldig === false) return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-6">
-      <div className="bg-white rounded-lg p-8 max-w-sm w-full text-center">
+      <div className="bg-white dark:bg-surface-dark-2 rounded-lg p-8 max-w-sm w-full text-center">
         <div className="text-4xl mb-4">🔒</div>
-        <h2 className="text-lg font-bold mb-2">Ongeldige uitnodigingslink</h2>
-        <p className="text-sm text-gray-500">Neem contact op met de beheerder.</p>
+        <h2 className="text-lg font-bold mb-2 text-gray-900 dark:text-white">Ongeldige uitnodigingslink</h2>
+        <p className="text-sm text-gray-500 dark:text-white/60">Neem contact op met de beheerder.</p>
       </div>
     </div>
   )
 
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-6">
-      <div className="bg-white rounded-lg w-full max-w-sm p-8">
+      <div className="bg-white dark:bg-surface-dark-2 rounded-lg w-full max-w-sm p-8">
         <div className="flex items-center gap-2.5 mb-6">
           <div className="w-9 h-9 rounded-sm bg-brand-yellow flex items-center justify-center">
             <IconClipboardCheck className="w-5 h-5 text-gray-900" />
           </div>
-          <span className="text-xs font-bold text-gray-400 tracking-widest uppercase">NMZ GO</span>
+          <span className="text-xs font-bold text-gray-400 dark:text-white/40 tracking-widest uppercase">NMZ GO</span>
         </div>
-        <h2 className="text-xl font-extrabold tracking-tight mb-1">Account aanmaken</h2>
-        <p className="text-sm text-gray-500 mb-6">Je bent uitgenodigd voor NMZ GO</p>
+        <h2 className="text-xl font-extrabold tracking-tight mb-1 text-gray-900 dark:text-white">Account aanmaken</h2>
+        <p className="text-sm text-gray-500 dark:text-white/60 mb-6">Je bent uitgenodigd voor NMZ GO</p>
         <form onSubmit={handleRegistreer} className="space-y-4">
           <Input label="Volledige naam" placeholder="Jan de Vries" value={naam} onChange={(e) => setNaam(e.target.value)} required />
           <Input label="E-mailadres" type="email" placeholder="jan@nmz.nl" value={email} onChange={(e) => setEmail(e.target.value)} required />
           <Input label="Wachtwoord" type="password" placeholder="Min. 6 tekens" value={password} onChange={(e) => setPassword(e.target.value)} required />
           <Input label="Herhaal wachtwoord" type="password" placeholder="Herhaal" value={password2} onChange={(e) => setPassword2(e.target.value)} required />
           {error && (
-            <div className="flex items-center gap-2 text-sm text-brand-red bg-brand-red-light border border-brand-red rounded-sm p-3">
+            <div className="flex items-center gap-2 text-sm text-brand-red dark:text-red-400 bg-brand-red-light dark:bg-brand-red/10 border border-brand-red rounded-sm p-3">
               <IconAlertCircle className="w-4 h-4 flex-shrink-0" />{error}
             </div>
           )}

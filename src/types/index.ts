@@ -1,3 +1,4 @@
+export type Theme = 'light' | 'dark'
 export type Rol = 'beheerder' | 'medewerker'
 export type WerkbonStatus = 'open' | 'bezig' | 'voltooid'
 export type ProjectStatus = 'actief' | 'niet_gestart' | 'op_schema' | 'vertraging' | 'afgerond'

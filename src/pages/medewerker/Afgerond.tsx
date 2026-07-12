@@ -12,7 +12,7 @@ export default function Afgerond() {
       {loading ? (
         <div className="flex justify-center py-20"><Spinner className="w-8 h-8" /></div>
       ) : voltooid.length === 0 ? (
-        <div className="text-center py-20 text-gray-400">
+        <div className="text-center py-20 text-gray-400 dark:text-white/40">
           <div className="text-5xl mb-4">📋</div>
           <div className="font-semibold">Nog geen afgeronde werkbonnen</div>
         </div>

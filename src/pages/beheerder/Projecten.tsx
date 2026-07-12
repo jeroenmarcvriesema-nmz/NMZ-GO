@@ -50,16 +50,16 @@ export default function Projecten() {
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1 max-w-sm">
-          <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-white/40" />
           <input
             type="text"
             placeholder="Zoek project, adres of opdrachtgever..."
             value={zoek}
             onChange={(e) => setZoek(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-sm outline-none focus:border-brand-yellow focus:ring-2 focus:ring-brand-yellow/20"
+            className="w-full pl-9 pr-4 py-2.5 text-sm text-gray-900 dark:text-white bg-white dark:bg-surface-dark-2 border border-gray-200 dark:border-white/10 rounded-sm outline-none placeholder:text-gray-400 dark:placeholder:text-white/30 focus:border-brand-yellow focus:ring-2 focus:ring-brand-yellow/20"
           />
         </div>
-        <div className="flex gap-1 bg-surface-2 p-1 rounded-sm flex-wrap">
+        <div className="flex gap-1 bg-surface-2 dark:bg-white/5 p-1 rounded-sm flex-wrap">
           {STATUS_FILTERS.map((f) => (
             <button
               key={f.value}
@@ -67,8 +67,8 @@ export default function Projecten() {
               className={cn(
                 'px-3 py-1.5 rounded text-xs font-semibold transition-all whitespace-nowrap',
                 statusFilter === f.value
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'bg-white dark:bg-surface-dark-2 text-gray-900 dark:text-white shadow-sm'
+                  : 'text-gray-500 dark:text-white/50 hover:text-gray-700 dark:hover:text-white/80'
               )}
             >
               {f.label}
@@ -83,11 +83,11 @@ export default function Projecten() {
         </div>
       ) : gefilterd.length === 0 ? (
         <div className="flex flex-col items-center text-center py-20">
-          <div className="w-14 h-14 rounded-full bg-surface-2 flex items-center justify-center mb-4">
-            <IconFolderOpen className="w-6 h-6 text-gray-400" />
+          <div className="w-14 h-14 rounded-full bg-surface-2 dark:bg-white/5 flex items-center justify-center mb-4">
+            <IconFolderOpen className="w-6 h-6 text-gray-400 dark:text-white/40" />
           </div>
-          <div className="font-semibold text-gray-600">Geen projecten gevonden</div>
-          <p className="text-sm text-gray-400 mt-1 max-w-xs">
+          <div className="font-semibold text-gray-600 dark:text-white/70">Geen projecten gevonden</div>
+          <p className="text-sm text-gray-400 dark:text-white/40 mt-1 max-w-xs">
             {statusFilter !== 'alle' || zoek
               ? 'Er zijn geen projecten die aan je filters voldoen.'
               : 'Er zijn nog geen projecten aangemaakt.'}
@@ -109,15 +109,15 @@ export default function Projecten() {
             <div
               key={project.id}
               onClick={() => navigate(`/projecten/${project.id}`)}
-              className="bg-white border border-gray-100 rounded-xl shadow-sm p-5 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group"
+              className="bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-xl shadow-sm p-5 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group"
             >
               {/* Header */}
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-gray-900 text-base leading-snug group-hover:text-brand-yellow-dark transition-colors">
+                  <h3 className="font-bold text-gray-900 dark:text-white text-base leading-snug group-hover:text-brand-yellow-dark dark:group-hover:text-brand-yellow transition-colors">
                     {project.naam}
                   </h3>
-                  <p className="text-sm text-gray-500 mt-0.5">{project.opdrachtgever}</p>
+                  <p className="text-sm text-gray-500 dark:text-white/60 mt-0.5">{project.opdrachtgever}</p>
                 </div>
                 <span className={cn('inline-flex items-center text-[11px] font-bold px-2.5 py-1 rounded-lg border flex-shrink-0', statusKleur(project.status))}>
                   {statusLabel(project.status)}
@@ -125,7 +125,7 @@ export default function Projecten() {
               </div>
 
               {/* Meta */}
-              <div className="flex flex-wrap gap-3 text-xs text-gray-400 mb-4">
+              <div className="flex flex-wrap gap-3 text-xs text-gray-400 dark:text-white/40 mb-4">
                 <span className="flex items-center gap-1">
                   <IconMapPin className="w-3.5 h-3.5" />
                   {project.adres}
@@ -138,9 +138,9 @@ export default function Projecten() {
 
               {/* Voortgang */}
               <div className="mb-4">
-                <div className="flex justify-between text-xs text-gray-400 mb-1.5">
+                <div className="flex justify-between text-xs text-gray-400 dark:text-white/40 mb-1.5">
                   <span>Voortgang</span>
-                  <span className="font-semibold text-gray-700">{project.voortgang}%</span>
+                  <span className="font-semibold text-gray-700 dark:text-white/70">{project.voortgang}%</span>
                 </div>
                 <ProgressBar
                   value={project.voortgang}
@@ -156,7 +156,7 @@ export default function Projecten() {
 
               {/* Stats + Medewerkers */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4 text-xs text-gray-400">
+                <div className="flex items-center gap-4 text-xs text-gray-400 dark:text-white/40">
                   <span className="flex items-center gap-1">
                     <IconListCheck className="w-3.5 h-3.5" />
                     {project.aantalTakenKlaar}/{project.aantalTaken}
@@ -172,12 +172,12 @@ export default function Projecten() {
                 </div>
                 <div className="flex items-center gap-1">
                   {project.medewerkers.slice(0, 3).map((m) => (
-                    <Avatar key={m.id} naam={m.naam} size="sm" className="w-6 h-6 text-[10px] -ml-1 first:ml-0 border-2 border-white" />
+                    <Avatar key={m.id} naam={m.naam} size="sm" className="w-6 h-6 text-[10px] -ml-1 first:ml-0 border-2 border-white dark:border-surface-dark-2" />
                   ))}
                   {project.medewerkers.length > 3 && (
-                    <span className="text-[11px] text-gray-400 ml-1">+{project.medewerkers.length - 3}</span>
+                    <span className="text-[11px] text-gray-400 dark:text-white/40 ml-1">+{project.medewerkers.length - 3}</span>
                   )}
-                  <IconChevronRight className="w-4 h-4 text-gray-300 ml-2 group-hover:text-brand-yellow transition-colors" />
+                  <IconChevronRight className="w-4 h-4 text-gray-300 dark:text-white/30 ml-2 group-hover:text-brand-yellow transition-colors" />
                 </div>
               </div>
             </div>

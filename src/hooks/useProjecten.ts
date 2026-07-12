@@ -199,11 +199,11 @@ export function statusLabel(s: ProjectStatus): string {
 
 export function statusKleur(s: ProjectStatus): string {
   const map: Record<ProjectStatus, string> = {
-    actief: 'bg-blue-50 text-blue-700 border-blue-200',
-    niet_gestart: 'bg-gray-100 text-gray-600 border-gray-200',
-    op_schema: 'bg-green-50 text-green-700 border-green-200',
-    vertraging: 'bg-red-50 text-red-600 border-red-200',
-    afgerond: 'bg-green-100 text-green-800 border-green-300',
+    actief: 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-500/30',
+    niet_gestart: 'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-white/50 border-gray-200 dark:border-white/10',
+    op_schema: 'bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 border-green-200 dark:border-green-500/30',
+    vertraging: 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/30',
+    afgerond: 'bg-green-100 dark:bg-green-500/15 text-green-800 dark:text-green-400 border-green-300 dark:border-green-500/30',
   }
   return map[s]
 }

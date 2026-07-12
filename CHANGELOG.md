@@ -1,5 +1,21 @@
 # NMZ GO — Changelog
 
+## Sprint 3.1 — Premium UI Redesign (dark mode)
+
+### Nieuw
+- **[FEATURE]** Volledig dark-mode-systeem toegevoegd: Tailwind class-based dark mode, nieuwe `surface-dark`-tokenschaal (`tailwind.config.ts`), een `themeStore.ts` (Zustand + `persist`) die de voorkeur opslaat in `localStorage`, en een inline FOUC-preventiescript in `index.html` dat vóór React-mount de juiste class zet (respecteert `prefers-color-scheme` zonder opgeslagen voorkeur).
+- **[FEATURE]** Thema-toggle (zon/maan-icoon) toegevoegd aan `Sidebar` (desktop) en `MobileTopbar` (mobiel).
+- **[FEATURE]** Vaste, kleine uitlog-knop linksonder toegevoegd aan `PageWrapper` (zichtbaar op mobiel, vult het gat dat `MobileNav` geen uitlog-actie had) en aan `MijnWerkbonnen.tsx` (die geen `PageWrapper` gebruikt).
+
+### Verbeteringen
+- **[UI]** `dark:`-variants consistent toegepast over alle `components/ui/`, `components/dashboard/`, `components/werkbon/`, `components/taak/`-bestanden en alle 14 pagina's, volgens een vaste kleurmapping (zie `.ai/DESIGN_SYSTEM.md`).
+- **[UI]** Hardcoded inline `style={{backgroundColor:...}}`-achtergronden (`PageWrapper`, `MijnWerkbonnen`, `PageLoader`, `AuthGuard`-foutscherm) vervangen door Tailwind-classes met een dark-pendant.
+- **[CLEANUP]** Losse hardcoded hex-kleuren voor voortgangspercentages (`MijnWerkbonnen.tsx`, `WerkbonUitvoeren.tsx`) vervangen door theme-aware Tailwind-classes.
+
+### Bekende beperkingen (bewust uitgesteld)
+- Nieuwe UI-primitives (`Select`, `Dialog`, `Toast`, `EmptyState`, `ErrorState`, generieke `Table`) en skeleton loaders blijven een aparte, latere taak (zie `.ai/FEATURE_BACKLOG.md`).
+- Ingelogde schermen zijn gecontroleerd via code-review en build-verificatie; een volledige interactieve doorloop met een echt account is nog niet uitgevoerd.
+
 ## Sprint 3 — Projecten & Planning (mock-data)
 
 ### Kritieke fix

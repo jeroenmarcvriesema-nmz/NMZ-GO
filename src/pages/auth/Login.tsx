@@ -58,16 +58,16 @@ export default function Login() {
         </div>
       </div>
 
-      <div className="w-full lg:w-[420px] bg-white flex items-center justify-center p-8 shadow-[-20px_0_60px_rgba(0,0,0,0.2)]">
+      <div className="w-full lg:w-[420px] bg-white dark:bg-surface-dark-2 flex items-center justify-center p-8 shadow-[-20px_0_60px_rgba(0,0,0,0.2)]">
         <div className="w-full max-w-sm">
           <div className="flex items-center gap-2.5 mb-8">
             <div className="w-9 h-9 rounded-sm bg-brand-yellow flex items-center justify-center">
               <IconClipboardCheck className="w-5 h-5 text-gray-900" />
             </div>
-            <span className="text-xs font-bold text-gray-400 tracking-widest uppercase">NMZ GO</span>
+            <span className="text-xs font-bold text-gray-400 dark:text-white/40 tracking-widest uppercase">NMZ GO</span>
           </div>
-          <h2 className="text-2xl font-extrabold tracking-tight mb-1">Inloggen</h2>
-          <p className="text-sm text-gray-500 mb-7">Vul je e-mailadres en wachtwoord in</p>
+          <h2 className="text-2xl font-extrabold tracking-tight mb-1 text-gray-900 dark:text-white">Inloggen</h2>
+          <p className="text-sm text-gray-500 dark:text-white/60 mb-7">Vul je e-mailadres en wachtwoord in</p>
 
           <form onSubmit={handleLogin} className="space-y-4">
             <Input
@@ -90,7 +90,7 @@ export default function Login() {
             />
 
             {error && (
-              <div className="flex items-center gap-2 text-sm text-brand-red bg-brand-red-light border border-brand-red rounded-sm p-3">
+              <div className="flex items-center gap-2 text-sm text-brand-red dark:text-red-400 bg-brand-red-light dark:bg-brand-red/10 border border-brand-red rounded-sm p-3">
                 <IconAlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span>{error}</span>
               </div>

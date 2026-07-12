@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
 import { useAuth } from '@/hooks/useAuth'
+import { useThemeStore } from '@/store/themeStore'
 import {
   IconLayoutDashboard,
   IconFolderOpen,
@@ -14,6 +15,8 @@ import {
   IconCircleCheck,
   IconClipboardCheck,
   IconLogout,
+  IconSun,
+  IconMoon,
 } from '@tabler/icons-react'
 
 const NAV_BG = '#0d1117'
@@ -52,6 +55,7 @@ function NavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label
 
 export function Sidebar() {
   const { profile, signOut, isBeheerder } = useAuth()
+  const { theme, toggleTheme } = useThemeStore()
   const navigate = useNavigate()
   const handleSignOut = async () => { await signOut(); navigate('/login') }
 
@@ -108,6 +112,13 @@ export function Sidebar() {
               {isBeheerder ? 'Beheerder' : 'Monteur'}
             </div>
           </div>
+          <button
+            onClick={toggleTheme}
+            className="text-white/40 hover:text-white transition-colors"
+            title={theme === 'dark' ? 'Licht thema' : 'Donker thema'}
+          >
+            {theme === 'dark' ? <IconSun className="w-4 h-4" /> : <IconMoon className="w-4 h-4" />}
+          </button>
           <button onClick={handleSignOut} className="text-white/40 hover:text-white transition-colors" title="Uitloggen">
             <IconLogout className="w-4 h-4" />
           </button>

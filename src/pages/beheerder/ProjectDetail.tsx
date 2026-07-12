@@ -45,7 +45,7 @@ export default function ProjectDetail() {
   if (!project) {
     return (
       <PageWrapper title="Project">
-        <div className="text-center py-16 text-gray-400">Project niet gevonden.</div>
+        <div className="text-center py-16 text-gray-400 dark:text-white/40">Project niet gevonden.</div>
       </PageWrapper>
     )
   }
@@ -74,31 +74,31 @@ export default function ProjectDetail() {
       }
     >
       {/* Header kaart */}
-      <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6 mb-6">
+      <div className="bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-xl shadow-sm p-6 mb-6">
         <div className="flex flex-col lg:flex-row lg:items-start gap-6">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">{project.naam}</h1>
+              <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">{project.naam}</h1>
               <span className={cn('inline-flex items-center text-xs font-bold px-2.5 py-1 rounded-lg border', statusKleur(project.status))}>
                 {statusLabel(project.status)}
               </span>
             </div>
-            <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-4">
+            <div className="flex flex-wrap gap-4 text-sm text-gray-500 dark:text-white/60 mb-4">
               <span className="flex items-center gap-1.5">
-                <IconMapPin className="w-4 h-4 text-gray-400" /> {project.adres}
+                <IconMapPin className="w-4 h-4 text-gray-400 dark:text-white/40" /> {project.adres}
               </span>
               <span className="flex items-center gap-1.5">
-                <IconBuilding className="w-4 h-4 text-gray-400" /> {project.opdrachtgever}
+                <IconBuilding className="w-4 h-4 text-gray-400 dark:text-white/40" /> {project.opdrachtgever}
               </span>
               <span className="flex items-center gap-1.5">
-                <IconCalendar className="w-4 h-4 text-gray-400" />
+                <IconCalendar className="w-4 h-4 text-gray-400 dark:text-white/40" />
                 {formatDatum(project.startdatum)} &ndash; {formatDatum(project.einddatum)}
               </span>
             </div>
             <div className="mt-2">
               <div className="flex justify-between text-sm mb-1.5">
-                <span className="text-gray-500 font-medium">Voortgang</span>
-                <span className="font-bold text-gray-900">{project.voortgang}%</span>
+                <span className="text-gray-500 dark:text-white/60 font-medium">Voortgang</span>
+                <span className="font-bold text-gray-900 dark:text-white">{project.voortgang}%</span>
               </div>
               <ProgressBar
                 value={project.voortgang}
@@ -115,23 +115,23 @@ export default function ProjectDetail() {
           {/* KPI blokken */}
           <div className="grid grid-cols-3 gap-3 lg:gap-4 lg:min-w-[280px]">
             <div className="text-center">
-              <div className="text-2xl font-extrabold text-gray-900">{project.aantalTakenKlaar}</div>
-              <div className="text-xs text-gray-400 mt-0.5">van {project.aantalTaken} taken</div>
+              <div className="text-2xl font-extrabold text-gray-900 dark:text-white">{project.aantalTakenKlaar}</div>
+              <div className="text-xs text-gray-400 dark:text-white/40 mt-0.5">van {project.aantalTaken} taken</div>
             </div>
-            <div className="text-center border-x border-gray-100">
-              <div className="text-2xl font-extrabold text-gray-900">{project.aantalFotos}</div>
-              <div className="text-xs text-gray-400 mt-0.5">foto&apos;s</div>
+            <div className="text-center border-x border-gray-100 dark:border-white/10">
+              <div className="text-2xl font-extrabold text-gray-900 dark:text-white">{project.aantalFotos}</div>
+              <div className="text-xs text-gray-400 dark:text-white/40 mt-0.5">foto&apos;s</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-extrabold text-gray-900">{project.medewerkers.length}</div>
-              <div className="text-xs text-gray-400 mt-0.5">medewerkers</div>
+              <div className="text-2xl font-extrabold text-gray-900 dark:text-white">{project.medewerkers.length}</div>
+              <div className="text-xs text-gray-400 dark:text-white/40 mt-0.5">medewerkers</div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-lg mb-6 overflow-x-auto">
+      <div className="flex gap-1 bg-gray-100 dark:bg-white/5 p-1 rounded-lg mb-6 overflow-x-auto">
         {TABS.map((tab) => (
           <button
             key={tab.id}
@@ -139,8 +139,8 @@ export default function ProjectDetail() {
             className={cn(
               'flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-semibold whitespace-nowrap transition-all flex-shrink-0',
               actieveTab === tab.id
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'bg-white dark:bg-surface-dark-2 text-gray-900 dark:text-white shadow-sm'
+                : 'text-gray-500 dark:text-white/50 hover:text-gray-700 dark:hover:text-white/80'
             )}
           >
             {tab.icon}
@@ -150,10 +150,10 @@ export default function ProjectDetail() {
       </div>
 
       {/* Tab inhoud */}
-      <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
+      <div className="bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-xl shadow-sm p-6">
         {actieveTab === 'overzicht' && (
           <div className="space-y-4">
-            <h2 className="text-sm font-bold text-gray-900 mb-4">Algemene gegevens</h2>
+            <h2 className="text-sm font-bold text-gray-900 dark:text-white mb-4">Algemene gegevens</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
                 { label: 'Projectnaam',    value: project.naam },
@@ -166,8 +166,8 @@ export default function ProjectDetail() {
                 { label: 'Voortgang',      value: `${project.voortgang}%` },
               ].map(({ label, value }) => (
                 <div key={label} className="flex flex-col gap-1">
-                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{label}</span>
-                  <span className="text-sm font-medium text-gray-900">{value}</span>
+                  <span className="text-xs font-semibold text-gray-400 dark:text-white/40 uppercase tracking-wide">{label}</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{value}</span>
                 </div>
               ))}
             </div>
@@ -177,7 +177,7 @@ export default function ProjectDetail() {
         {actieveTab === 'medewerkers' && (
           <div>
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-sm font-bold text-gray-900">
+              <h2 className="text-sm font-bold text-gray-900 dark:text-white">
                 Gekoppelde medewerkers ({project.medewerkers.length})
               </h2>
               <Button variant="primary" size="sm" onClick={() => { setGeselecteerd([]); setKoppelModal(true) }}>
@@ -185,17 +185,17 @@ export default function ProjectDetail() {
               </Button>
             </div>
             {project.medewerkers.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-8">Nog geen medewerkers gekoppeld.</p>
+              <p className="text-sm text-gray-400 dark:text-white/40 text-center py-8">Nog geen medewerkers gekoppeld.</p>
             ) : (
               <div className="space-y-3">
                 {project.medewerkers.map((m) => (
-                  <div key={m.id} className="flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0">
+                  <div key={m.id} className="flex items-center gap-3 py-2.5 border-b border-gray-50 dark:border-white/5 last:border-0">
                     <Avatar naam={m.naam} size="md" />
                     <div className="flex-1">
-                      <div className="text-sm font-semibold text-gray-900">{m.naam}</div>
-                      <div className="text-xs text-gray-400">{m.rol}</div>
+                      <div className="text-sm font-semibold text-gray-900 dark:text-white">{m.naam}</div>
+                      <div className="text-xs text-gray-400 dark:text-white/40">{m.rol}</div>
                     </div>
-                    <span className="text-xs text-green-600 bg-green-50 border border-green-200 px-2 py-0.5 rounded-md font-medium">
+                    <span className="text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 px-2 py-0.5 rounded-md font-medium">
                       Actief
                     </span>
                   </div>
@@ -208,20 +208,20 @@ export default function ProjectDetail() {
         {actieveTab === 'planning' && (
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-bold text-gray-900">Ingeplande dagen</h2>
+              <h2 className="text-sm font-bold text-gray-900 dark:text-white">Ingeplande dagen</h2>
               <Button variant="ghost" size="sm" onClick={() => navigate('/planning')}>
                 <IconCalendar className="w-4 h-4" /> Weekplanning
               </Button>
             </div>
             {projectPlanning.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-8">Nog geen dagen ingepland voor dit project.</p>
+              <p className="text-sm text-gray-400 dark:text-white/40 text-center py-8">Nog geen dagen ingepland voor dit project.</p>
             ) : (
               <div className="space-y-3">
                 {projectPlanning.map((item) => (
-                  <div key={item.id} className="flex items-center gap-4 py-3 border-b border-gray-50 last:border-0">
-                    <div className="w-28 text-sm font-semibold text-gray-900">{formatDatum(item.datum)}</div>
-                    <div className="flex-1 flex items-center gap-1.5 text-sm text-gray-500">
-                      <IconUsers className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                  <div key={item.id} className="flex items-center gap-4 py-3 border-b border-gray-50 dark:border-white/5 last:border-0">
+                    <div className="w-28 text-sm font-semibold text-gray-900 dark:text-white">{formatDatum(item.datum)}</div>
+                    <div className="flex-1 flex items-center gap-1.5 text-sm text-gray-500 dark:text-white/60">
+                      <IconUsers className="w-3.5 h-3.5 text-gray-400 dark:text-white/40 flex-shrink-0" />
                       {item.medewerkers.join(', ')}
                     </div>
                   </div>
@@ -233,24 +233,24 @@ export default function ProjectDetail() {
 
         {actieveTab === 'fotos' && (
           <div>
-            <h2 className="text-sm font-bold text-gray-900 mb-4">
+            <h2 className="text-sm font-bold text-gray-900 dark:text-white mb-4">
               Foto&apos;s ({project.aantalFotos})
             </h2>
             {project.aantalFotos === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-8">Nog geen foto&apos;s toegevoegd.</p>
+              <p className="text-sm text-gray-400 dark:text-white/40 text-center py-8">Nog geen foto&apos;s toegevoegd.</p>
             ) : (
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
                 {Array.from({ length: Math.min(project.aantalFotos, 12) }).map((_, i) => (
                   <div
                     key={i}
-                    className="aspect-square rounded-lg bg-gradient-to-br from-brand-yellow-light to-brand-yellow border border-brand-yellow/30 flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+                    className="aspect-square rounded-lg bg-gradient-to-br from-brand-yellow-light dark:from-brand-yellow/20 to-brand-yellow border border-brand-yellow/30 flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
                   >
-                    <IconPhoto className="w-6 h-6 text-brand-yellow-dark" />
+                    <IconPhoto className="w-6 h-6 text-brand-yellow-dark dark:text-brand-yellow" />
                   </div>
                 ))}
                 {project.aantalFotos > 12 && (
-                  <div className="aspect-square rounded-lg bg-gray-100 flex items-center justify-center">
-                    <span className="text-sm font-bold text-gray-500">+{project.aantalFotos - 12}</span>
+                  <div className="aspect-square rounded-lg bg-gray-100 dark:bg-white/10 flex items-center justify-center">
+                    <span className="text-sm font-bold text-gray-500 dark:text-white/60">+{project.aantalFotos - 12}</span>
                   </div>
                 )}
               </div>
@@ -260,13 +260,13 @@ export default function ProjectDetail() {
 
         {actieveTab === 'opmerkingen' && (
           <div>
-            <h2 className="text-sm font-bold text-gray-900 mb-4">Opmerkingen</h2>
+            <h2 className="text-sm font-bold text-gray-900 dark:text-white mb-4">Opmerkingen</h2>
             {project.opmerkingen ? (
-              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+              <p className="text-sm text-gray-700 dark:text-white/70 leading-relaxed whitespace-pre-wrap">
                 {project.opmerkingen}
               </p>
             ) : (
-              <p className="text-sm text-gray-400 text-center py-8">Geen opmerkingen.</p>
+              <p className="text-sm text-gray-400 dark:text-white/40 text-center py-8">Geen opmerkingen.</p>
             )}
           </div>
         )}
@@ -281,7 +281,7 @@ export default function ProjectDetail() {
       >
         <div className="space-y-3 mb-5">
           {beschikbaar.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-4">Alle medewerkers zijn al gekoppeld.</p>
+            <p className="text-sm text-gray-400 dark:text-white/40 text-center py-4">Alle medewerkers zijn al gekoppeld.</p>
           ) : (
             beschikbaar.map((m) => (
               <div
@@ -290,12 +290,12 @@ export default function ProjectDetail() {
                 className={cn(
                   'flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all',
                   geselecteerd.includes(m.id)
-                    ? 'border-brand-yellow bg-brand-yellow-light'
-                    : 'border-gray-100 hover:border-gray-200 bg-white'
+                    ? 'border-brand-yellow bg-brand-yellow-light dark:bg-brand-yellow/10'
+                    : 'border-gray-100 dark:border-white/10 hover:border-gray-200 dark:hover:border-white/20 bg-white dark:bg-surface-dark-2'
                 )}
               >
                 <Avatar naam={m.naam} size="sm" />
-                <span className="flex-1 text-sm font-medium text-gray-900">{m.naam}</span>
+                <span className="flex-1 text-sm font-medium text-gray-900 dark:text-white">{m.naam}</span>
                 {geselecteerd.includes(m.id) && (
                   <IconCheck className="w-4 h-4 text-brand-yellow-dark" />
                 )}
