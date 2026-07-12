@@ -28,7 +28,7 @@ export function PageWrapper({ title, actions, children }: PageWrapperProps) {
         <div className="md:hidden">
           <MobileTopbar title={title} />
         </div>
-        <main className="flex-1 p-5 md:p-8 pb-24 md:pb-10">
+        <main className="flex-1 p-6 md:p-10 pb-24 md:pb-10 animate-page-in">
           {children}
         </main>
       </div>

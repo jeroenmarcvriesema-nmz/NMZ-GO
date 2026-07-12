@@ -10,9 +10,6 @@ import {
   IconCircleCheck,
 } from '@tabler/icons-react'
 
-const NAV_BG = '#0d1117'
-const NAV_BORDER = 'rgba(255,255,255,0.06)'
-
 function MobileNavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) {
   return (
     <NavLink
@@ -20,7 +17,7 @@ function MobileNavItem({ to, icon, label }: { to: string; icon: React.ReactNode;
       className={({ isActive }) =>
         cn(
           'flex flex-col items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-semibold tracking-wide transition-all',
-          isActive ? 'text-brand-yellow' : 'text-white/40 hover:text-white/70'
+          isActive ? 'text-brand-yellow' : 'text-gray-400 dark:text-white/40 hover:text-gray-700 dark:hover:text-white/70'
         )
       }
     >
@@ -33,10 +30,7 @@ function MobileNavItem({ to, icon, label }: { to: string; icon: React.ReactNode;
 export function MobileNav() {
   const { isBeheerder } = useAuth()
   return (
-    <nav
-      className="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center px-1 py-2 pb-safe"
-      style={{ backgroundColor: NAV_BG, borderTop: `1px solid ${NAV_BORDER}` }}
-    >
+    <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center px-1 py-2 pb-safe bg-white dark:bg-surface-dark border-t border-gray-100 dark:border-white/10">
       {isBeheerder ? (
         <>
           <MobileNavItem to="/dashboard"   icon={<IconLayoutDashboard />} label="Dashboard" />

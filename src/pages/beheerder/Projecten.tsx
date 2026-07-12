@@ -104,12 +104,12 @@ export default function Projecten() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
           {gefilterd.map((project) => (
             <div
               key={project.id}
               onClick={() => navigate(`/projecten/${project.id}`)}
-              className="bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-xl shadow-sm p-5 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group"
+              className="bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-xl shadow-sm p-6 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 ease-brand group"
             >
               {/* Header */}
               <div className="flex items-start justify-between gap-3 mb-3">

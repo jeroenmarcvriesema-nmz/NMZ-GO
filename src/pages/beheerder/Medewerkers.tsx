@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { PageWrapper } from '@/components/layout/PageWrapper'
+import { SectionHeading } from '@/components/ui/SectionHeading'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Avatar } from '@/components/ui/Avatar'
@@ -51,7 +52,7 @@ export default function Medewerkers() {
     }>
       <div className="max-w-2xl">
         <Card>
-          <div className="text-sm font-bold mb-4 text-gray-900 dark:text-white">Alle gebruikers ({medewerkers.length})</div>
+          <SectionHeading title={`Alle gebruikers (${medewerkers.length})`} />
           {loading ? (
             <div className="text-center py-8 text-gray-400 dark:text-white/40">Laden…</div>
           ) : medewerkers.length === 0 ? (
@@ -62,7 +63,7 @@ export default function Medewerkers() {
           ) : (
             <div className="divide-y divide-gray-50 dark:divide-white/5">
               {medewerkers.map((m) => (
-                <div key={m.id} className="flex items-center gap-3 py-3">
+                <div key={m.id} className="flex items-center gap-3 py-3 px-2 -mx-2 rounded-lg transition-colors hover:bg-brand-yellow-light/40 dark:hover:bg-white/5">
                   <Avatar naam={m.naam} size="sm" />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-semibold truncate text-gray-900 dark:text-white">{m.naam}</div>

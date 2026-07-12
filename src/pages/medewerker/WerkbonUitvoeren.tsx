@@ -3,6 +3,7 @@ import { PageWrapper } from '@/components/layout/PageWrapper'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { ProgressBar } from '@/components/ui/ProgressBar'
+import { SectionHeading } from '@/components/ui/SectionHeading'
 import { TaakItem } from '@/components/taak/TaakItem'
 import { Spinner } from '@/components/ui/Spinner'
 import { useWerkbon } from '@/hooks/useWerkbonnen'
@@ -60,7 +61,7 @@ export default function WerkbonUitvoeren() {
         )}
 
         <Card>
-          <h2 className="text-sm font-bold mb-4 text-gray-900 dark:text-white">Taken — maak foto vóór afvinken</h2>
+          <SectionHeading title="Taken — maak foto vóór afvinken" />
           {werkbon.taken?.map((taak) => (
             <TaakItem key={taak.id} taak={taak} werkbonId={werkbon.id} readOnly={werkbon.status === 'voltooid'} onRefresh={refetch} />
           ))}

@@ -53,7 +53,7 @@ export default function Werkbonnen() {
       ) : gefilterd.length === 0 ? (
         <div className="text-center py-16 text-gray-400 dark:text-white/40"><div className="text-4xl mb-3">📋</div><div className="font-medium">Geen werkbonnen gevonden</div></div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {gefilterd.map((w) => <WerkbonKaart key={w.id} werkbon={w} />)}
         </div>
       )}

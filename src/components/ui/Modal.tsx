@@ -26,11 +26,11 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div className={cn('bg-white dark:bg-surface-dark-2 rounded-lg shadow-lg w-full overflow-hidden', sizes[size])}>
-        <div className="bg-gray-900 px-6 py-4 flex items-center justify-between">
-          <h3 className="text-sm font-bold text-white">{title}</h3>
+        <div className="bg-gray-900 px-6 py-5 flex items-center justify-between">
+          <h3 className="text-base font-bold text-white">{title}</h3>
           <button onClick={onClose} className="text-white/60 hover:text-white text-lg leading-none">✕</button>
         </div>
-        <div className="p-6">{children}</div>
+        <div className="p-7">{children}</div>
       </div>
     </div>
   )

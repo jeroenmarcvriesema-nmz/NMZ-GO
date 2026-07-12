@@ -12,7 +12,7 @@
         try {
           var stored = JSON.parse(localStorage.getItem('nmzgo-theme'))
           var theme = stored && stored.state && stored.state.theme
-          var dark = theme ? theme === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches
+          var dark = theme === 'dark'
           document.documentElement.classList.toggle('dark', dark)
         } catch (e) {}
       })()

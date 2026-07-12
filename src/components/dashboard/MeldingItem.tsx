@@ -38,7 +38,7 @@ interface MeldingItemProps {
 export function MeldingItem({ melding }: MeldingItemProps) {
   const c = config[melding.type]
   return (
-    <div className={cn('flex items-center gap-3 px-4 py-3 rounded-lg border', c.bg)}>
+    <div className={cn('flex items-center gap-3 px-5 py-4 rounded-lg border transition-all duration-200 ease-brand hover:-translate-y-0.5 hover:shadow-sm', c.bg)}>
       <span className={cn('flex-shrink-0', c.iconColor)}>{c.icon}</span>
       <div className="flex-1 min-w-0">
         <div className="text-sm font-semibold text-gray-800 dark:text-white truncate">{melding.project}</div>

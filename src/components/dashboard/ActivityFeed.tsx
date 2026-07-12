@@ -15,11 +15,11 @@ export function ActivityFeed({ activiteit }: { activiteit: Activiteit[] }) {
       {activiteit.map((a, i) => {
         const c = config[a.type]
         return (
-          <div key={a.id} className="flex items-start gap-3 py-2.5 relative">
+          <div key={a.id} className="flex items-start gap-3 py-3 relative">
             {i < activiteit.length - 1 && (
-              <div className="absolute left-3.5 top-8 bottom-0 w-px bg-gray-100 dark:bg-white/10" />
+              <div className="absolute left-4 top-9 bottom-0 w-px bg-gray-100 dark:bg-white/10" />
             )}
-            <div className={cn('w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 z-10', c.cls)}>
+            <div className={cn('w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 z-10', c.cls)}>
               {c.icon}
             </div>
             <div className="flex-1 min-w-0 pt-0.5">

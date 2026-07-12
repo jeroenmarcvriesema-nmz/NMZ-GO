@@ -12,9 +12,9 @@ Basis: Tailwind's standaard 4px-grid. Gebruik uitsluitend stappen uit deze schaa
 |---|---|---|
 | `1` / `1.5` | 4px / 6px | Micro-afstand: tussen icoon en label, tussen badge-tekst en rand |
 | `2` / `3` | 8px / 12px | Afstand tussen gerelateerde elementen (knop-groepen, form-velden onderling) |
-| `4` / `5` | 16px / 20px | Interne padding van kaarten en compacte containers (bestaand: `Card`/`KpiCard` gebruiken `p-5`) |
-| `6` / `8` | 24px / 32px | Padding van pagina-content en grotere containers (bestaand: `PageWrapper` gebruikt `p-5 md:p-8`) |
-| `10`+ | 40px+ | Scheiding tussen grote pagina-secties |
+| `5` / `6` | 20px / 24px | Interne padding van kaarten en compacte containers (bestaand: `Card`/`KpiCard`/`StatCard` gebruiken `p-6`) |
+| `6` / `10` | 24px / 40px | Padding van pagina-content en grotere containers (bestaand: `PageWrapper` gebruikt `p-6 md:p-10`) |
+| `10`+ | 40px+ | Scheiding tussen grote pagina-secties (koppen/KPI-rijen gebruiken `mb-10`) |
 
 **Regel:** witruimte is een ontwerpbeslissing, geen restruimte. Liever één extra stap in de spacing-schaal dan een dichtgepakt scherm.
 
@@ -26,11 +26,12 @@ Lettertype: `Inter` (sans), `JetBrains Mono` voor monospace-behoefte (bonnummers
 
 | Niveau | Klasse (richtlijn) | Gebruik |
 |---|---|---|
-| Display / KPI-waarde | `text-3xl font-extrabold tracking-tight` | Grote cijfers (zie `KpiCard`, `StatCard`) |
-| Paginatitel | `text-lg font-bold tracking-tight` | Topbar-titel, sectiekoppen |
+| Paginatitel | `text-3xl font-extrabold tracking-tight` | H1 bovenaan een pagina (zie `Dashboard`, `ProjectDetail`) |
+| Display / KPI-waarde | `text-4xl font-extrabold tracking-tight` | Grote cijfers (zie `KpiCard`, `StatCard`) |
+| Sectiekop | via `SectionHeading` (`text-lg font-bold` + gele kicker-balk) | Elke sectiekop binnen een pagina/kaart — geen losse `<h2>` meer, zie `components/ui/SectionHeading.tsx` |
 | Kaarttitel | `text-base font-bold tracking-tight` | Titel binnen een kaart (zie `WerkbonKaart`) |
 | Body | `text-sm` | Standaardtekst, formulierlabels, kaartinhoud |
-| Caption / meta | `text-xs text-gray-400` / `text-gray-500` | Secundaire info: datums, aantallen, hints |
+| Caption / meta | `text-xs text-gray-400 dark:text-white/40` | Secundaire info: datums, aantallen, hints |
 | Micro-label | `text-[10px] font-bold uppercase tracking-widest` | Sectielabels in navigatie (zie `Sidebar` → `NavSection`) |
 
 **Regel:** maximaal twee gewichten per scherm naast elkaar (bv. `font-semibold` voor labels, `font-bold`/`font-extrabold` voor nadruk) — geen wildgroei aan font-weights.
@@ -39,7 +40,7 @@ Lettertype: `Inter` (sans), `JetBrains Mono` voor monospace-behoefte (bonnummers
 
 ## Grid & layout
 
-- **Contentbreedte:** pagina-content leeft binnen `PageWrapper` (zie `COMPONENT_LIBRARY.md`), met responsive padding (`p-5` mobiel → `p-8` desktop).
+- **Contentbreedte:** pagina-content leeft binnen `PageWrapper` (zie `COMPONENT_LIBRARY.md`), met responsive padding (`p-6` mobiel → `p-10` desktop) en een `animate-page-in`-transitie bij het laden.
 - **Kaartgrids:** KPI's en stat-cards in een responsive grid (bv. 2 kolommen mobiel → 4 kolommen desktop), consistente `gap-4`/`gap-5` tussen kaarten.
 - **Twee-kolomslayouts** (bv. detail + zijpaneel) alleen vanaf `lg:` — op kleinere schermen altijd één kolom, gestapeld in logische leesvolgorde.
 - **Sidebar-breedte:** vast (huidige implementatie: `md:ml-60` content-offset) — content herschaalt, de sidebar zelf niet.
@@ -48,10 +49,10 @@ Lettertype: `Inter` (sans), `JetBrains Mono` voor monospace-behoefte (bonnummers
 
 ## Cards
 
-- Basisvorm: witte (light) / donkere-surface (dark, toekomstig) achtergrond, dunne rand, `rounded-lg`, `shadow-sm`.
-- **Interactieve kaarten** (aanklikbaar, zoals `WerkbonKaart`) krijgen een hover-state: lichte lift (`hover:-translate-y-0.5`), iets diepere schaduw (`hover:shadow-md`), en een accentrand in merkkleur bij hover.
-- **Statuskaarten** (`Card` met `accent`) gebruiken een linker accentrand (`border-l-4`) in plaats van een volledig gekleurde achtergrond — kleur blijft functioneel, niet dominant (zie `PRODUCT_VISION.md`).
-- Interne padding consistent: `p-5` voor standaardkaarten.
+- Basisvorm: witte (light) / `surface-dark-2` (dark) achtergrond, dunne rand, `rounded-lg`, `shadow-sm`.
+- **Interactieve kaarten** (aanklikbaar, zoals `WerkbonKaart`) krijgen een hover-state: lichte lift (`hover:-translate-y-0.5`), iets diepere schaduw (`hover:shadow-md`), een accentrand in merkkleur bij hover, en de `ease-brand`-timing-functie i.p.v. default ease.
+- **Statuskaarten** (`Card` met `accent`) gebruiken een linker accentrand (`border-l-4`) in plaats van een volledig gekleurde achtergrond — kleur blijft functioneel, niet alleen decoratief.
+- Interne padding consistent: `p-6` voor standaardkaarten.
 
 ---
 
@@ -108,19 +109,19 @@ Lettertype: `Inter` (sans), `JetBrains Mono` voor monospace-behoefte (bonnummers
 
 ## Sidebars
 
-- Sidebar (desktop, `≥ md`) is **donker** (`#0d1117`), vast, met secties gegroepeerd onder kleine uppercase-labels (bestaand patroon, zie `Sidebar.tsx`).
-- Actieve route: merkgeel accent op tekst/icoon, niet-actieve routes gedempt wit (`rgba(255,255,255,0.35–0.7)`).
-- Sidebar toont altijd de ingelogde gebruiker (`Avatar` + naam) en een uitlog-actie onderaan.
+- Sidebar (desktop, `≥ md`) is **theme-reactief**: wit/`surface-dark` achtergrond met een rand (`border-gray-100 dark:border-white/10`), vast, met secties gegroepeerd onder kleine uppercase-labels (bestaand patroon, zie `Sidebar.tsx`). Niet langer permanent donker — volgt light/dark net als de rest van het scherm.
+- Actieve route: merkgeel accent op tekst/icoon (in beide thema's identiek, voor contrast), niet-actieve routes gedempt (`text-gray-500 dark:text-white/60`).
+- Sidebar toont altijd de ingelogde gebruiker (`Avatar` + naam), de theme-toggle en een uitlog-actie onderaan.
 
 ## Topbars
 
-- Desktop `Topbar`: witte balk, sticky, paginatitel links, acties (knoppen) rechts.
-- Mobiele `MobileTopbar`: donker (consistent met sidebar/mobiele nav), compact, met het app-icoon + titel.
+- Desktop `Topbar`: theme-reactieve balk (wit/`surface-dark-2`), sticky, met een vaste 3px gele bovenrand als merkaccent, paginatitel links, acties (knoppen) rechts.
+- Mobiele `MobileTopbar`: zelfde theme-reactieve stijl + gele bovenrand, compact, met het app-icoon + titel + theme-toggle.
 
 ## Mobile navigation
 
-- `MobileNav`: onderaan het scherm, donker, vaste iconen + labels voor de belangrijkste routes van de ingelogde rol.
-- Actieve staat: merkgeel; inactief: gedempt wit — consistent met de sidebar.
+- `MobileNav`: onderaan het scherm, theme-reactief (wit/`surface-dark`), vaste iconen + labels voor de belangrijkste routes van de ingelogde rol.
+- Actieve staat: merkgeel; inactief: gedempt (`text-gray-400 dark:text-white/40`) — consistent met de sidebar.
 - Respecteert `pb-safe` voor apparaten met een home-indicator.
 
 ## Dashboard layout
@@ -142,9 +143,9 @@ Lettertype: `Inter` (sans), `JetBrains Mono` voor monospace-behoefte (bonnummers
 ## Animaties & transitions
 
 - Standaardduur: 150–200ms voor micro-interacties (hover, focus, klik), tot 500ms voor grotere statusveranderingen (bv. `ProgressBar`-vulling).
-- Easing: standaard Tailwind `transition-all`/`ease` — geen custom bounce/elastic-easing, dat past niet bij het rustige, professionele karakter uit `PRODUCT_VISION.md`.
+- Easing: `ease-brand` (`cubic-bezier(0.16, 1, 0.3, 1)`, gedefinieerd in `tailwind.config.ts`) voor hover-/press-interacties op kaarten en knoppen — een subtiele, premium "ease-out"-curve. Nog steeds geen bounce/elastic-easing.
 - Animatie bevestigt altijd een gebruikersactie of geeft richting (bv. kaart die optilt bij hover, knop die inklinkt bij klik) — nooit puur decoratieve animatie zonder functie.
-- Paginaovergangen: geen zware route-transition-animaties die de interface trager laten aanvoelen dan hij is.
+- **Pagina-inhoud** krijgt een subtiele `animate-page-in` (fade + 4px omhoog, 250ms) bij het laden van een route — dit is de enige "paginaovergang"; geen zware route-transitie-animaties, en expliciet **geen scroll-triggered reveal-animaties** (elementen die pas verschijnen tijdens het scrollen) — dat past niet bij het rustige, snelle karakter van de app.
 
 ---
 

@@ -42,12 +42,12 @@ export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps
 
   return (
     <div className={cn(
-      'border rounded-lg p-4 mb-3 transition-all duration-200',
+      'border rounded-lg p-5 mb-3 transition-all duration-200 ease-brand',
       taak.voltooid ? 'border-green-200 dark:border-green-500/30 bg-green-50 dark:bg-green-500/10' : 'border-gray-100 dark:border-white/10 bg-white dark:bg-surface-dark-2'
     )}>
       <div className="flex items-start gap-3">
         <div className={cn(
-          'w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold',
+          'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold',
           taak.voltooid ? 'bg-green-500 text-white' : 'bg-surface-2 dark:bg-white/10 text-gray-500 dark:text-white/60'
         )}>
           {taak.voltooid ? <IconCheck className="w-4 h-4" /> : null}
@@ -67,7 +67,7 @@ export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps
           {(taak.fotos || []).map((foto) => (
             <div
               key={foto.id}
-              className="w-14 h-14 rounded-sm border border-brand-yellow bg-brand-yellow-light dark:bg-brand-yellow/10 flex items-center justify-center cursor-pointer"
+              className="w-16 h-16 rounded-sm border border-brand-yellow bg-brand-yellow-light dark:bg-brand-yellow/10 flex items-center justify-center cursor-pointer"
               onClick={() => window.open(getUrl(foto.storage_path), '_blank')}
             >
               <IconPhoto className="w-5 h-5 text-brand-yellow-dark dark:text-brand-yellow" />
@@ -75,7 +75,7 @@ export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps
           ))}
 
           <label className={cn(
-            'w-14 h-14 rounded-sm border-2 border-dashed border-gray-200 dark:border-white/15 bg-surface-2 dark:bg-white/5 flex items-center justify-center cursor-pointer transition-all hover:border-brand-yellow hover:bg-brand-yellow-light dark:hover:bg-brand-yellow/10',
+            'w-16 h-16 rounded-sm border-2 border-dashed border-gray-200 dark:border-white/15 bg-surface-2 dark:bg-white/5 flex items-center justify-center cursor-pointer transition-all hover:border-brand-yellow hover:bg-brand-yellow-light dark:hover:bg-brand-yellow/10',
             uploading && 'opacity-50 cursor-not-allowed'
           )}>
             <IconCamera className="w-5 h-5 text-gray-400 dark:text-white/40" />

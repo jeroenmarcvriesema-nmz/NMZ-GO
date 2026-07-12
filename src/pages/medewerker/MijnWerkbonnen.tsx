@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useWerkdag, formatTijd, geefUren } from '@/hooks/useWerkdag'
 import { TaakItem } from '@/components/taak/TaakItem'
 import { ProgressBar } from '@/components/ui/ProgressBar'
+import { SectionHeading } from '@/components/ui/SectionHeading'
 import { Spinner } from '@/components/ui/Spinner'
 import { berekenVoortgang, formatDatum, cn } from '@/lib/utils'
 import {
@@ -83,9 +84,9 @@ export default function MijnWerkbonnen() {
 
   // ── Gedeelde header — altijd zichtbaar ────────────────────────
   const Header = () => (
-    <div className="bg-gray-900 px-5 py-5">
-      <p className="text-sm text-white/50 mb-0.5 capitalize">{formatDatumLang()}</p>
-      <h1 className="text-xl font-extrabold text-white">
+    <div className="bg-gray-900 px-5 py-6">
+      <p className="text-sm text-white/50 mb-1 capitalize">{formatDatumLang()}</p>
+      <h1 className="text-2xl font-extrabold text-white">
         {greeting()}, {voornaam}
       </h1>
     </div>
@@ -96,7 +97,7 @@ export default function MijnWerkbonnen() {
     return (
       <div className="min-h-screen flex flex-col bg-[#F2F0EB] dark:bg-surface-dark">
         <Header />
-        <div className="flex-1 p-5 space-y-4">
+        <div className="flex-1 p-5 space-y-4 animate-page-in">
           {/* Geen werkbon kaart */}
           <div className="bg-white dark:bg-surface-dark-2 rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm p-6 text-center">
             <div className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-white/10 flex items-center justify-center mx-auto mb-4">
@@ -126,7 +127,7 @@ export default function MijnWerkbonnen() {
       <div className="min-h-screen flex flex-col bg-[#F2F0EB] dark:bg-surface-dark">
         <Header />
 
-        <div className="flex-1 p-5 space-y-4">
+        <div className="flex-1 p-5 space-y-4 animate-page-in">
           {/* Werkbon kaart */}
           <div className="bg-white dark:bg-surface-dark-2 rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm overflow-hidden">
             <div className="h-1 bg-brand-yellow" />
@@ -194,7 +195,7 @@ export default function MijnWerkbonnen() {
     return (
       <div className="min-h-screen flex flex-col bg-[#F2F0EB] dark:bg-surface-dark">
         <Header />
-        <div className="flex-1 p-5 space-y-4">
+        <div className="flex-1 p-5 space-y-4 animate-page-in">
           {/* Afsluitkaart */}
           <div className="bg-white dark:bg-surface-dark-2 rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm p-6 text-center">
             <div className="w-14 h-14 rounded-2xl bg-green-100 dark:bg-green-500/10 flex items-center justify-center mx-auto mb-4">
@@ -244,7 +245,7 @@ export default function MijnWerkbonnen() {
         </div>
       </div>
 
-      <div className="flex-1 p-4 space-y-4 pb-32">
+      <div className="flex-1 p-4 space-y-4 pb-32 animate-page-in">
         {/* Voortgangskaart */}
         <div className="bg-white dark:bg-surface-dark-2 rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
@@ -276,10 +277,10 @@ export default function MijnWerkbonnen() {
 
         {/* Checklist */}
         <div className="bg-white dark:bg-surface-dark-2 rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-bold text-gray-900 dark:text-white">Checklist</h2>
-            <span className="text-xs text-gray-400 dark:text-white/40">Foto vereist voor afvinken</span>
-          </div>
+          <SectionHeading
+            title="Checklist"
+            actions={<span className="text-xs text-gray-400 dark:text-white/40">Foto vereist voor afvinken</span>}
+          />
           {vandaag.taken && vandaag.taken.length > 0 ? (
             vandaag.taken.map((taak) => (
               <TaakItem

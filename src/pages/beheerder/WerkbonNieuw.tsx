@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PageWrapper } from '@/components/layout/PageWrapper'
+import { SectionHeading } from '@/components/ui/SectionHeading'
 import { Button } from '@/components/ui/Button'
 import { Input, Textarea } from '@/components/ui/Input'
 import { Card } from '@/components/ui/Card'
@@ -75,7 +76,7 @@ export default function WerkbonNieuw() {
     }>
       <div className="max-w-2xl space-y-5">
         <Card accent="yellow">
-          <h2 className="text-sm font-bold mb-4 text-gray-900 dark:text-white">Werkbon informatie</h2>
+          <SectionHeading title="Werkbon informatie" />
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <Input label="Bonnummer" value={bonnummer} readOnly className="bg-surface-2 dark:bg-white/5 text-gray-400 dark:text-white/40" />
@@ -88,7 +89,7 @@ export default function WerkbonNieuw() {
         </Card>
 
         <Card>
-          <h2 className="text-sm font-bold mb-3 text-gray-900 dark:text-white">Medewerkers koppelen</h2>
+          <SectionHeading title="Medewerkers koppelen" />
           <div className="flex flex-wrap gap-2">
             {alleProfielen.map((p) => (
               <button key={p.id}
@@ -102,17 +103,19 @@ export default function WerkbonNieuw() {
         </Card>
 
         <Card>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-bold text-gray-900 dark:text-white">Taken</h2>
-            <div className="flex gap-1 bg-surface-2 dark:bg-white/5 p-1 rounded-sm">
-              {(['handmatig','gripp'] as const).map((t) => (
-                <button key={t} onClick={() => setActiveTab(t)}
-                  className={`px-3 py-1 rounded text-xs font-semibold transition-all ${activeTab === t ? 'bg-white dark:bg-surface-dark-2 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 dark:text-white/50'}`}>
-                  {t === 'handmatig' ? 'Handmatig' : 'Gripp import'}
-                </button>
-              ))}
-            </div>
-          </div>
+          <SectionHeading
+            title="Taken"
+            actions={
+              <div className="flex gap-1 bg-surface-2 dark:bg-white/5 p-1 rounded-sm">
+                {(['handmatig','gripp'] as const).map((t) => (
+                  <button key={t} onClick={() => setActiveTab(t)}
+                    className={`px-3 py-1 rounded text-xs font-semibold transition-all ${activeTab === t ? 'bg-white dark:bg-surface-dark-2 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 dark:text-white/50'}`}>
+                    {t === 'handmatig' ? 'Handmatig' : 'Gripp import'}
+                  </button>
+                ))}
+              </div>
+            }
+          />
 
           {activeTab === 'gripp' ? (
             <div className="space-y-3">

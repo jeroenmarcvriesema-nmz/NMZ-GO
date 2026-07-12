@@ -52,14 +52,14 @@ export default function Registreer() {
 
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-6">
-      <div className="bg-white dark:bg-surface-dark-2 rounded-lg w-full max-w-sm p-8">
+      <div className="bg-white dark:bg-surface-dark-2 rounded-lg w-full max-w-sm p-8 animate-page-in">
         <div className="flex items-center gap-2.5 mb-6">
           <div className="w-9 h-9 rounded-sm bg-brand-yellow flex items-center justify-center">
             <IconClipboardCheck className="w-5 h-5 text-gray-900" />
           </div>
           <span className="text-xs font-bold text-gray-400 dark:text-white/40 tracking-widest uppercase">NMZ GO</span>
         </div>
-        <h2 className="text-xl font-extrabold tracking-tight mb-1 text-gray-900 dark:text-white">Account aanmaken</h2>
+        <h2 className="text-2xl font-extrabold tracking-tight mb-1 text-gray-900 dark:text-white">Account aanmaken</h2>
         <p className="text-sm text-gray-500 dark:text-white/60 mb-6">Je bent uitgenodigd voor NMZ GO</p>
         <form onSubmit={handleRegistreer} className="space-y-4">
           <Input label="Volledige naam" placeholder="Jan de Vries" value={naam} onChange={(e) => setNaam(e.target.value)} required />

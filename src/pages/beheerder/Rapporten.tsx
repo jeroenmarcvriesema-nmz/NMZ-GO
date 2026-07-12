@@ -1,4 +1,5 @@
 import { PageWrapper } from '@/components/layout/PageWrapper'
+import { SectionHeading } from '@/components/ui/SectionHeading'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { StatusBadge } from '@/components/ui/Badge'
@@ -15,7 +16,7 @@ export default function Rapporten() {
     <PageWrapper title="Rapporten">
       <div className="max-w-2xl">
         <Card>
-          <div className="text-sm font-bold mb-4 text-gray-900 dark:text-white">Voltooide werkbonnen ({voltooid.length})</div>
+          <SectionHeading title={`Voltooide werkbonnen (${voltooid.length})`} />
           {loading ? <div className="flex justify-center py-8"><Spinner /></div>
             : voltooid.length === 0 ? (
               <div className="text-center py-12 text-gray-400 dark:text-white/40">
@@ -25,7 +26,7 @@ export default function Rapporten() {
             ) : (
               <div className="divide-y divide-gray-50 dark:divide-white/5">
                 {voltooid.map((w) => (
-                  <div key={w.id} className="flex items-center justify-between gap-3 py-4">
+                  <div key={w.id} className="flex items-center justify-between gap-3 py-4 px-2 -mx-2 rounded-lg transition-colors hover:bg-brand-yellow-light/40 dark:hover:bg-white/5">
                     <div>
                       <div className="text-sm font-semibold text-gray-900 dark:text-white">{w.adres}</div>
                       <div className="text-xs text-gray-400 dark:text-white/40 mt-0.5">

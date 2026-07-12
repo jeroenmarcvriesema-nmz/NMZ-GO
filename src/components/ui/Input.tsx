@@ -14,7 +14,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       <input
         ref={ref}
         className={cn(
-          'w-full px-3.5 py-3 text-sm text-gray-900 dark:text-white bg-white dark:bg-surface-dark-2 border border-gray-200 dark:border-white/10 rounded-sm outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/30',
+          'w-full px-4 py-3.5 text-sm text-gray-900 dark:text-white bg-white dark:bg-surface-dark-2 border border-gray-200 dark:border-white/10 rounded-sm outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/30',
           'focus:border-brand-yellow focus:ring-2 focus:ring-brand-yellow/20',
           error && 'border-brand-red focus:border-brand-red focus:ring-brand-red/20',
           className
@@ -40,7 +40,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
       <textarea
         ref={ref}
         className={cn(
-          'w-full px-3.5 py-3 text-sm text-gray-900 dark:text-white bg-white dark:bg-surface-dark-2 border border-gray-200 dark:border-white/10 rounded-sm outline-none transition-all resize-y placeholder:text-gray-400 dark:placeholder:text-white/30',
+          'w-full px-4 py-3.5 text-sm text-gray-900 dark:text-white bg-white dark:bg-surface-dark-2 border border-gray-200 dark:border-white/10 rounded-sm outline-none transition-all resize-y placeholder:text-gray-400 dark:placeholder:text-white/30',
           'focus:border-brand-yellow focus:ring-2 focus:ring-brand-yellow/20',
           error && 'border-brand-red',
           className

@@ -40,6 +40,18 @@ export default {
         md: '0 8px 24px rgba(0,0,0,0.10)',
         lg: '0 20px 48px rgba(0,0,0,0.13)',
       },
+      transitionTimingFunction: {
+        brand: 'cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+      keyframes: {
+        'fade-in-up': {
+          '0%': { opacity: '0', transform: 'translateY(4px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        'page-in': 'fade-in-up 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+      },
     },
   },
   plugins: [],

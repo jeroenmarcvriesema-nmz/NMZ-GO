@@ -1,5 +1,19 @@
 # NMZ GO — Changelog
 
+## Sprint 3.1b — Premium Redesign v2 (light-primair, meer merkkleur, groter, meer animatie)
+
+### Nieuw
+- **[FEATURE]** Thema-default omgedraaid: **light is nu het primaire thema** (geen `prefers-color-scheme`-fallback meer zonder opgeslagen voorkeur) — dark blijft volledig gelijkwaardig beschikbaar.
+- **[FEATURE]** `SectionHeading`-component toegevoegd (`components/ui/SectionHeading.tsx`) — vervangt alle losse `<h2>`-sectiekoppen door een consistente kop met gele merk-kicker, over ~12 pagina's.
+- **[FEATURE]** Nieuwe animatie-tokens: `ease-brand` (premium ease-out-curve voor hover/press) en `animate-page-in` (subtiele fade/slide-in bij het laden van een pagina).
+
+### Verbeteringen
+- **[UI]** `Sidebar`/`MobileNav`/`Topbar`/`MobileTopbar` zijn niet langer permanent donker — ze zijn nu theme-reactief, consistent met de rest van het scherm. Desktop `Topbar` en `MobileTopbar` hebben een vaste gele bovenrand als merkaccent.
+- **[UI]** Merkkleur (geel/rood) prominenter aanwezig: kicker-balken bij sectiekoppen, sterker verzadigde badge-/KPI-achtergronden, een vleugje merkkleur op neutrale iconvlakken.
+- **[UI]** Kaarten, containers en KPI-typografie een stap groter (`p-5`→`p-6`, KPI-waarden `text-3xl`→`text-4xl`, paginatitels `text-2xl`→`text-3xl`).
+- **[UI]** Statische lijstrijen (Medewerkers, Rapporten) hebben nu een subtiele hover-state; kaarten behouden hun bestaande lift+schaduw-hover.
+- **[DOCS]** `PRODUCT_VISION.md`/`DESIGN_SYSTEM.md`/`UI_GUIDELINES.md` bijgewerkt naar de nieuwe richting (light-primair, merkkleur, typografie-schaal, animatie-tokens).
+
 ## Sprint 3.1 — Premium UI Redesign (dark mode)
 
 ### Nieuw

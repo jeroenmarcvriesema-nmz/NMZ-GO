@@ -37,7 +37,7 @@ export default function Planning() {
 
   return (
     <PageWrapper title="Weekplanning">
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between">
         <p className="text-sm text-gray-500 dark:text-white/60">
           Week van{' '}
           <span className="font-semibold text-gray-700 dark:text-white/80">
@@ -47,7 +47,7 @@ export default function Planning() {
       </div>
 
       {/* Desktop: 5-kolommen grid */}
-      <div className="hidden md:grid grid-cols-5 gap-3">
+      <div className="hidden md:grid grid-cols-5 gap-4">
         {dagen.map((dag, i) => {
           const dagStr = dag.toISOString().split('T')[0]
           const isVandaag = dag.getTime() === vandaag.getTime()

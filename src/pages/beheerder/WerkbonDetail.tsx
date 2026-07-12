@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { PageWrapper } from '@/components/layout/PageWrapper'
+import { SectionHeading } from '@/components/ui/SectionHeading'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { StatusBadge } from '@/components/ui/Badge'
@@ -53,7 +54,7 @@ export default function WerkbonDetail() {
         <Card accent="yellow">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
-              <h1 className="text-xl font-extrabold tracking-tight text-gray-900 dark:text-white">{werkbon.adres}</h1>
+              <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">{werkbon.adres}</h1>
               <p className="text-sm text-gray-500 dark:text-white/60 mt-0.5">{werkbon.projectnaam}</p>
               <div className="flex flex-wrap gap-3 mt-3 text-xs text-gray-400 dark:text-white/40">
                 <span className="flex items-center gap-1"><IconFileText className="w-3.5 h-3.5" />{werkbon.bonnummer}</span>
@@ -81,10 +82,12 @@ export default function WerkbonDetail() {
         </Card>
 
         <Card>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-bold text-gray-900 dark:text-white">Taken ({(werkbon.taken || []).filter((t) => t.voltooid).length}/{(werkbon.taken || []).length})</h2>
-            <Button variant="primary" size="sm" onClick={() => setPuntModal(true)}><IconPlus className="w-4 h-4" /> Taak toevoegen</Button>
-          </div>
+          <SectionHeading
+            title={`Taken (${(werkbon.taken || []).filter((t) => t.voltooid).length}/${(werkbon.taken || []).length})`}
+            actions={
+              <Button variant="primary" size="sm" onClick={() => setPuntModal(true)}><IconPlus className="w-4 h-4" /> Taak toevoegen</Button>
+            }
+          />
           {werkbon.taken?.map((taak) => (
             <TaakItem key={taak.id} taak={taak} werkbonId={werkbon.id} readOnly onRefresh={refetch} />
           ))}

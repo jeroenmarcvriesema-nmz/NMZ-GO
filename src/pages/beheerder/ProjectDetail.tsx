@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { PageWrapper } from '@/components/layout/PageWrapper'
+import { SectionHeading } from '@/components/ui/SectionHeading'
 import { Button } from '@/components/ui/Button'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { Avatar } from '@/components/ui/Avatar'
@@ -78,7 +79,7 @@ export default function ProjectDetail() {
         <div className="flex flex-col lg:flex-row lg:items-start gap-6">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">{project.naam}</h1>
+              <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">{project.naam}</h1>
               <span className={cn('inline-flex items-center text-xs font-bold px-2.5 py-1 rounded-lg border', statusKleur(project.status))}>
                 {statusLabel(project.status)}
               </span>
@@ -115,15 +116,15 @@ export default function ProjectDetail() {
           {/* KPI blokken */}
           <div className="grid grid-cols-3 gap-3 lg:gap-4 lg:min-w-[280px]">
             <div className="text-center">
-              <div className="text-2xl font-extrabold text-gray-900 dark:text-white">{project.aantalTakenKlaar}</div>
+              <div className="text-3xl font-extrabold text-gray-900 dark:text-white">{project.aantalTakenKlaar}</div>
               <div className="text-xs text-gray-400 dark:text-white/40 mt-0.5">van {project.aantalTaken} taken</div>
             </div>
             <div className="text-center border-x border-gray-100 dark:border-white/10">
-              <div className="text-2xl font-extrabold text-gray-900 dark:text-white">{project.aantalFotos}</div>
+              <div className="text-3xl font-extrabold text-gray-900 dark:text-white">{project.aantalFotos}</div>
               <div className="text-xs text-gray-400 dark:text-white/40 mt-0.5">foto&apos;s</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-extrabold text-gray-900 dark:text-white">{project.medewerkers.length}</div>
+              <div className="text-3xl font-extrabold text-gray-900 dark:text-white">{project.medewerkers.length}</div>
               <div className="text-xs text-gray-400 dark:text-white/40 mt-0.5">medewerkers</div>
             </div>
           </div>
@@ -153,7 +154,7 @@ export default function ProjectDetail() {
       <div className="bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-xl shadow-sm p-6">
         {actieveTab === 'overzicht' && (
           <div className="space-y-4">
-            <h2 className="text-sm font-bold text-gray-900 dark:text-white mb-4">Algemene gegevens</h2>
+            <SectionHeading title="Algemene gegevens" />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
                 { label: 'Projectnaam',    value: project.naam },
@@ -176,14 +177,14 @@ export default function ProjectDetail() {
 
         {actieveTab === 'medewerkers' && (
           <div>
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-sm font-bold text-gray-900 dark:text-white">
-                Gekoppelde medewerkers ({project.medewerkers.length})
-              </h2>
-              <Button variant="primary" size="sm" onClick={() => { setGeselecteerd([]); setKoppelModal(true) }}>
-                <IconUserPlus className="w-4 h-4" /> Koppelen
-              </Button>
-            </div>
+            <SectionHeading
+              title={`Gekoppelde medewerkers (${project.medewerkers.length})`}
+              actions={
+                <Button variant="primary" size="sm" onClick={() => { setGeselecteerd([]); setKoppelModal(true) }}>
+                  <IconUserPlus className="w-4 h-4" /> Koppelen
+                </Button>
+              }
+            />
             {project.medewerkers.length === 0 ? (
               <p className="text-sm text-gray-400 dark:text-white/40 text-center py-8">Nog geen medewerkers gekoppeld.</p>
             ) : (
@@ -207,12 +208,14 @@ export default function ProjectDetail() {
 
         {actieveTab === 'planning' && (
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-bold text-gray-900 dark:text-white">Ingeplande dagen</h2>
-              <Button variant="ghost" size="sm" onClick={() => navigate('/planning')}>
-                <IconCalendar className="w-4 h-4" /> Weekplanning
-              </Button>
-            </div>
+            <SectionHeading
+              title="Ingeplande dagen"
+              actions={
+                <Button variant="ghost" size="sm" onClick={() => navigate('/planning')}>
+                  <IconCalendar className="w-4 h-4" /> Weekplanning
+                </Button>
+              }
+            />
             {projectPlanning.length === 0 ? (
               <p className="text-sm text-gray-400 dark:text-white/40 text-center py-8">Nog geen dagen ingepland voor dit project.</p>
             ) : (
@@ -233,9 +236,7 @@ export default function ProjectDetail() {
 
         {actieveTab === 'fotos' && (
           <div>
-            <h2 className="text-sm font-bold text-gray-900 dark:text-white mb-4">
-              Foto&apos;s ({project.aantalFotos})
-            </h2>
+            <SectionHeading title={`Foto's (${project.aantalFotos})`} />
             {project.aantalFotos === 0 ? (
               <p className="text-sm text-gray-400 dark:text-white/40 text-center py-8">Nog geen foto&apos;s toegevoegd.</p>
             ) : (
@@ -260,7 +261,7 @@ export default function ProjectDetail() {
 
         {actieveTab === 'opmerkingen' && (
           <div>
-            <h2 className="text-sm font-bold text-gray-900 dark:text-white mb-4">Opmerkingen</h2>
+            <SectionHeading title="Opmerkingen" />
             {project.opmerkingen ? (
               <p className="text-sm text-gray-700 dark:text-white/70 leading-relaxed whitespace-pre-wrap">
                 {project.opmerkingen}

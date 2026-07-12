@@ -71,7 +71,7 @@ export function ProjectTabel({ projecten }: ProjectTabelProps) {
               onClick={() => navigate(`/werkbonnen/${p.id}`)}
               className="hover:bg-gray-50/50 dark:hover:bg-white/5 cursor-pointer transition-colors"
             >
-              <td className="py-3.5 pr-4">
+              <td className="py-4 pr-4">
                 <div className="font-semibold text-gray-900 dark:text-white text-sm">{p.projectnaam}</div>
                 <div className="text-xs text-gray-400 dark:text-white/40 mt-0.5">{p.adres}</div>
                 <div className="flex items-center gap-3 mt-1.5 md:hidden">
@@ -85,17 +85,17 @@ export function ProjectTabel({ projecten }: ProjectTabelProps) {
                   </span>
                 </div>
               </td>
-              <td className="py-3.5 pr-4 hidden md:table-cell">
+              <td className="py-4 pr-4 hidden md:table-cell">
                 <div className="flex flex-col gap-0.5">
                   {p.team.map((naam) => (
                     <span key={naam} className="text-xs text-gray-600 dark:text-white/60">{naam}</span>
                   ))}
                 </div>
               </td>
-              <td className="py-3.5 pr-4">
+              <td className="py-4 pr-4">
                 <StatusPil status={p.status} />
               </td>
-              <td className="py-3.5 pr-4">
+              <td className="py-4 pr-4">
                 <VoortgangBalk value={p.voortgang} status={p.status} />
                 <div className="flex items-center gap-3 mt-1.5 hidden lg:flex">
                   <span className="flex items-center gap-1 text-[11px] text-gray-400 dark:text-white/40">
@@ -108,7 +108,7 @@ export function ProjectTabel({ projecten }: ProjectTabelProps) {
                   </span>
                 </div>
               </td>
-              <td className="py-3.5 text-right hidden lg:table-cell">
+              <td className="py-4 text-right hidden lg:table-cell">
                 <span className="text-xs text-gray-400 dark:text-white/40">{formatRelatief(p.laatsteUpdate)}</span>
               </td>
             </tr>

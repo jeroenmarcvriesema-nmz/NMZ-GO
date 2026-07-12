@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { PageWrapper } from '@/components/layout/PageWrapper'
+import { SectionHeading } from '@/components/ui/SectionHeading'
 import { KpiCard } from '@/components/dashboard/KpiCard'
 import { MeldingItem } from '@/components/dashboard/MeldingItem'
 import { ProjectTabel } from '@/components/dashboard/ProjectTabel'
@@ -75,11 +76,11 @@ export default function Dashboard() {
       }
     >
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">
+      <div className="mb-10">
+        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
           {greeting()}, {voornaam}
         </h1>
-        <p className="text-sm text-gray-400 dark:text-white/40 mt-1 capitalize">{formatDatumLang()}</p>
+        <p className="text-sm text-gray-400 dark:text-white/40 mt-1.5 capitalize">{formatDatumLang()}</p>
         {urgenteMeldingen.length > 0 && (
           <div className="mt-3 inline-flex items-center gap-2 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-400 text-sm font-medium px-3 py-1.5 rounded-lg">
             <IconAlertTriangle className="w-4 h-4" />
@@ -89,7 +90,7 @@ export default function Dashboard() {
       </div>
 
       {/* KPI's — 6 stuks Sprint 3 */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-10">
         <KpiCard label="Lopende projecten" value={lopend}        icon={<IconFolderOpen />}    variant="neutral" />
         <KpiCard label="Vandaag actief"    value={vandaagActief} icon={<IconPlayerPlay />}    variant="blue" />
         <KpiCard label="Niet gestart"      value={nietGestart}   icon={<IconClock />}         variant={nietGestart > 0 ? 'yellow' : 'neutral'} />
@@ -100,8 +101,8 @@ export default function Dashboard() {
 
       {/* Operationele meldingen */}
       {data.meldingen.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-base font-bold text-gray-900 dark:text-white mb-3">Operationele meldingen</h2>
+        <div className="mb-10">
+          <SectionHeading title="Operationele meldingen" />
           <div className="space-y-2">
             {data.meldingen.map((m) => (
               <MeldingItem key={m.id} melding={m} />
@@ -111,23 +112,25 @@ export default function Dashboard() {
       )}
 
       {/* Projectoverzicht + Activiteit */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         <div className="xl:col-span-2 bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-xl shadow-sm p-6">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="text-base font-bold text-gray-900 dark:text-white">Projectoverzicht</h2>
-            <div className="flex gap-2">
-              <Button variant="ghost" size="sm" onClick={() => navigate('/planning')}>
-                <IconCalendar className="w-4 h-4" /> Planning
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => navigate('/projecten')}>
-                Alle projecten →
-              </Button>
-            </div>
-          </div>
+          <SectionHeading
+            title="Projectoverzicht"
+            actions={
+              <>
+                <Button variant="ghost" size="sm" onClick={() => navigate('/planning')}>
+                  <IconCalendar className="w-4 h-4" /> Planning
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => navigate('/projecten')}>
+                  Alle projecten →
+                </Button>
+              </>
+            }
+          />
           <ProjectTabel projecten={data.projecten} />
         </div>
         <div className="bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-xl shadow-sm p-6">
-          <h2 className="text-base font-bold text-gray-900 dark:text-white mb-5">Activiteit vandaag</h2>
+          <SectionHeading title="Activiteit vandaag" />
           <ActivityFeed activiteit={data.activiteit} />
         </div>
       </div>

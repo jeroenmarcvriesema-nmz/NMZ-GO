@@ -69,6 +69,13 @@ Dit document beschrijft elke bestaande component in `src/components/`, plus de c
 **Styling:** SVG-spinner in merkgeel; `PageLoader` toont daarbij het app-icoon in een geel vlak.
 **Regels:** `PageLoader` alleen bij het laden van een hele pagina/route (zie `App.tsx` guards), niet binnen een kaart of lijst — daar hoort een lokale `Spinner` of straks een skeleton (zie "Nog te bouwen").
 
+### SectionHeading
+**Bestand:** `src/components/ui/SectionHeading.tsx`
+**Doel:** enige sectiekop-implementatie binnen een pagina/kaart — vervangt losse `<h2 className="text-sm/text-base font-bold">`-patronen.
+**Gebruik:** `<SectionHeading title="Taken" actions={<Button size="sm">...</Button>} />`
+**Styling:** kleine gele "kicker"-balk vóór de titel (`w-1 h-4 bg-brand-yellow`), titel `text-lg font-bold`, optionele `actions` rechts uitgelijnd.
+**Regels:** gebruik dit voor elke sectiekop, ook als er geen `actions` nodig zijn — geen nieuwe losse `<h2>`-styling per pagina.
+
 ---
 
 ## `components/dashboard/` — dashboardspecifiek

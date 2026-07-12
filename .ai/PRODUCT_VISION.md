@@ -2,7 +2,7 @@
 
 Dit document beschrijft hoe NMZ GO moet **aanvoelen**. Waar [`PROJECT.md`](./PROJECT.md) beschrijft *wat* NMZ GO doet en voor wie, beschrijft dit document *hoe het moet ogen en aanvoelen* terwijl het dat doet. Dit is de esthetische en merkstrategie waar [`UI_GUIDELINES.md`](./UI_GUIDELINES.md) en [`COMPONENT_LIBRARY.md`](./COMPONENT_LIBRARY.md) de concrete uitwerking van zijn.
 
-> **Status:** dit is de **richting** voor de visuele ontwikkeling van NMZ GO, niet (nog) volledig de huidige implementatie. Zie [`DESIGN_SYSTEM.md`](./DESIGN_SYSTEM.md) voor wat er op dit moment daadwerkelijk gebouwd is (een licht, single-theme kleurenpalet met een donkere sidebar/mobiele navigatie). Dit document is het kompas voor nieuwe schermen en voor een toekomstige, bewuste migratie naar het volledige dark-mode-systeem — niet een vrijbrief om in één taak de hele app te herstijlen. Iedere visuele wijziging blijft onderworpen aan de regels in `CLAUDE.md` (scope, implementatieplan bij grote wijzigingen, geen ongevraagde herstructurering).
+> **Status:** dit document beschrijft de daadwerkelijk uitgerolde richting (Sprint 3.1/3.1b). Zie [`DESIGN_SYSTEM.md`](./DESIGN_SYSTEM.md) voor de concrete, huidige implementatiedetails (tokens, componentregels). Iedere volgende visuele wijziging blijft onderworpen aan de regels in `CLAUDE.md` (scope, implementatieplan bij grote wijzigingen, geen ongevraagde herstructurering).
 
 ---
 
@@ -17,7 +17,7 @@ Inspiratiebronnen, elk om een specifieke reden:
 | Bron | Wat we ervan overnemen |
 |---|---|
 | **Apple** | Rust, precisie, terughoudendheid — nooit meer visueel geweld dan nodig |
-| **Linear** | Snelheid als gevoel: directe feedback, subtiele micro-animaties, een donker canvas dat focus geeft |
+| **Linear** | Snelheid als gevoel: directe feedback, subtiele micro-animaties, een rustig canvas dat focus geeft |
 | **Notion** | Veel witruimte, duidelijke hiërarchie, content die ademt in plaats van wordt platgedrukt door UI-chrome |
 | **Stripe Dashboard** | Data serieus en helder presenteren — cijfers, statussen en tabellen die vertrouwen wekken |
 | **Raycast** | Keyboard-first snelheid, minimale chrome, strakke command-palette-achtige efficiëntie |
@@ -43,23 +43,24 @@ Elk nieuw scherm en elke nieuwe component wordt getoetst aan deze eigenschappen:
 
 ---
 
-## Thema-strategie: dark mode als primaire ervaring
+## Thema-strategie: light mode als primaire ervaring
 
-- **Dark mode is de primaire, standaard ervaring** van NMZ GO. Dit is de modus waarin het merk zich het beste manifesteert: rustig, focus-gevend, premium — consistent met de reeds bestaande donkere sidebar/mobiele navigatie (`#0d1117`) die nu al in de app zit.
-- **Light mode wordt volledig ondersteund**, niet als bijzaak maar als gelijkwaardig, compleet uitgewerkt tweede thema — nodig voor gebruikers die in fel buitenlicht werken (relevant voor medewerkers op locatie, zie `PROJECT.md` → Doelgroep) of simpelweg een voorkeur hebben.
-- **De gebruiker kan wisselen** tussen dark en light mode via een expliciete, altijd vindbare instelling.
-- **De themakeuze wordt opgeslagen** per gebruiker/device, zodat de voorkeur niet bij elke sessie opnieuw ingesteld hoeft te worden.
-- **Implementatie-aanpak (richtinggevend, niet bindend voor een specifieke taak):** Tailwind's `dark:`-variant-systeem met een expliciete theme-toggle, opgeslagen voorkeur (bv. `localStorage`) en een startwaarde die eventueel de systeemvoorkeur (`prefers-color-scheme`) respecteert. De daadwerkelijke implementatie is een eigen, bewust geplande taak — zie `FEATURE_BACKLOG.md`. Tot die taak is uitgevoerd, geldt de huidige single-theme (licht, met donkere navigatie) implementatie zoals beschreven in `DESIGN_SYSTEM.md`.
+- **Light mode is de primaire, standaard ervaring** van NMZ GO — dit is wat een nieuwe gebruiker zonder opgeslagen voorkeur te zien krijgt. Helder, functioneel in fel buitenlicht (relevant voor medewerkers op locatie, zie `PROJECT.md` → Doelgroep), en het startpunt voor de premium uitstraling.
+- **Dark mode wordt volledig ondersteund**, niet als bijzaak maar als gelijkwaardig, compleet uitgewerkt tweede thema — met één klik bereikbaar via de theme-toggle.
+- **De gebruiker kan wisselen** tussen light en dark mode via een expliciete, altijd vindbare instelling (Sidebar op desktop, Topbar op mobiel).
+- **De themakeuze wordt opgeslagen** per gebruiker/device (`localStorage`, via `themeStore.ts`), zodat de voorkeur niet bij elke sessie opnieuw ingesteld hoeft te worden.
+- **Elk vlak volgt het gekozen thema, inclusief de chrome.** De sidebar/mobiele navigatie is niet langer permanent donker — die volgt nu ook light/dark, consistent met de rest van het scherm. Dit is coherenter voor een licht-primaire, Apple-achtige interface dan een vaste donkere balk naast een verder licht scherm.
+- **Implementatie:** Tailwind's `dark:`-variant-systeem (`darkMode: 'class'`), een Zustand-store met `persist`-middleware (`themeStore.ts`), en een inline script in `index.html` dat vóór React-mount de juiste class zet om een flits van het verkeerde thema te voorkomen. Zonder opgeslagen voorkeur is de standaard altijd **light** (geen `prefers-color-scheme`-fallback naar dark).
 
 ---
 
 ## Kleurgebruik
 
-- **NMZ Geel** (`brand.yellow`) is de primaire accentkleur — voor primaire acties, actieve navigatiestatus, voortgang en merkidentiteit.
-- **NMZ Rood** (`brand.red`) is uitsluitend voor waarschuwingen en kritieke/destructieve acties (verwijderen, fouten, kritieke status).
-- **Geen overmatig kleurgebruik.** De basis van elk scherm is neutraal (surface-tinten in light mode, donkere neutrale tinten in dark mode). Kleur is een uitzondering die aandacht trekt, niet de standaardtoestand van een scherm.
-- **Kleur is uitsluitend functioneel** — kleur communiceert altijd iets (status, actie, waarschuwing), nooit puur decoratief. Als een kleur weggehaald kan worden zonder dat betekenis verloren gaat, hoort die kleur er niet te staan.
-- Secundaire statuskleuren (groen voor "voltooid", blauw/oranje voor tussenliggende statussen — zoals al gebruikt in `Badge`/`KpiCard`) blijven toegestaan zolang ze functioneel zijn (status-communicatie), maar worden nooit de dominante kleur van een scherm.
+- **NMZ Geel** (`brand.yellow`) is de primaire accentkleur — voor primaire acties, actieve navigatiestatus, voortgang, én als een zichtbaar, herkenbaar merkelement dat op elk scherm terugkomt (bv. de kicker-balk vóór sectiekoppen, een accentlijn op de Topbar).
+- **NMZ Rood** (`brand.red`) blijft voor waarschuwingen en kritieke/destructieve acties, maar mag daarbinnen ook duidelijker/prominenter zichtbaar zijn dan voorheen (bv. sterker verzadigde achtergronden bij kritieke meldingen) — rood communiceert nog steeds uitsluitend urgentie, nooit puur decoratief.
+- **Geel en rood zijn een herkenbaar, terugkerend merkelement**, niet langer uitsluitend spaarzaam-functioneel. De basis van elk scherm blijft neutraal (surface-tinten), maar merkkleur mag vaker en zichtbaarder terugkomen dan in de eerste, zeer terughoudende versie van dit document.
+- **Kleur blijft betekenisvol** — ook als merkkleur nu vaker zichtbaar is, communiceert elke toepassing nog iets (merk/identiteit, actie, status, waarschuwing). Het verschil met de vorige versie van deze richtlijn: merkidentiteit (geel als "dit is NMZ GO") is nu zelf een geldige reden, niet alleen status/actie.
+- Secundaire statuskleuren (groen voor "voltooid", blauw/oranje voor tussenliggende statussen) blijven functioneel en worden nooit de dominante kleur van een scherm — de basis blijft neutraal, geel/rood zijn de herkenbare accenten daarbovenop.
 
 ---
 
