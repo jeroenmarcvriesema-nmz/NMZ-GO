@@ -1,5 +1,25 @@
 # NMZ GO — Changelog
 
+## Sprint 3 — Projecten & Planning (mock-data)
+
+### Kritieke fix
+- **[CRITICAL FIX]** `Sidebar.tsx` en `MobileNav.tsx` hersteld — een eerdere, afgebroken restyling liet beide bestanden middenin een statement eindigen, waardoor `npm run build` faalde. Afgemaakt met het nieuwe donkere navthema (`NAV_BG`/`NAV_BORDER`) consistent met `Topbar`/`MobileTopbar`.
+
+### Nieuw
+- **[FEATURE]** Projecten-overzicht (`/projecten`), projectdetail (`/projecten/:id`) en weekplanning (`/planning`) toegevoegd voor de beheerdersrol, inclusief navigatie in sidebar en mobiele tab-bar. Draait op mock data (`useProjecten.ts`) — dezelfde aanpak als het bestaande dashboard, met TODO's voor de latere Supabase-koppeling.
+- **[FEATURE]** Dashboard uitgebreid naar 6 KPI's gebaseerd op projectstatus (lopend, vandaag actief, niet gestart, op schema, vertraging, opleveringen).
+- **[FEATURE]** Projectdetail → tab "Planning" toont nu de echte (mock) ingeplande dagen voor dat project, i.p.v. een herhaling van start-/einddatum.
+- **[FEATURE]** Projectdetail → "Medewerkers koppelen"-modal werkt nu functioneel (in-memory) in plaats van een no-op.
+
+### Verbeteringen
+- **[UI]** Lege-staat op `/projecten` vervangen door een Tabler-icoon + uitleg + "filters wissen"-actie (was een kale emoji, in strijd met de iconregels).
+- **[UI]** Consistente hover-transities toegevoegd aan de planningsitems op `/planning`.
+- **[CLEANUP]** Ongebruikte imports (`IconX`, `berekenVoortgang`) verwijderd uit `ProjectDetail.tsx`.
+
+### Bekende beperkingen (bewust uitgesteld)
+- Projecten/Planning/medewerkerskoppeling zijn volledig mock-data — niets wordt persistent opgeslagen in Supabase. Een echte `projecten`-tabel, migratie en RLS-policies zijn een aparte, volgende sprint.
+- Dark mode blijft niet uitgerold — deze sprint blijft binnen het bestaande lichte thema.
+
 ## v1.0.0 — MVP Release
 
 ### Auth fixes

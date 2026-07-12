@@ -1,0 +1,192 @@
+# UI_GUIDELINES.md — Concrete UI-patronen
+
+Dit document werkt de visie uit [`PRODUCT_VISION.md`](./PRODUCT_VISION.md) uit in concrete, bruikbare patronen: een modern enterprise design in de lijn van Linear/Stripe/Notion, gebouwd op de bestaande design tokens uit `tailwind.config.ts` (zie [`DESIGN_SYSTEM.md`](./DESIGN_SYSTEM.md)). Voor de daadwerkelijke componenten die deze patronen implementeren, zie [`COMPONENT_LIBRARY.md`](./COMPONENT_LIBRARY.md).
+
+---
+
+## Spacing
+
+Basis: Tailwind's standaard 4px-grid. Gebruik uitsluitend stappen uit deze schaal, geen losse arbitrary waarden.
+
+| Token | Waarde | Gebruik |
+|---|---|---|
+| `1` / `1.5` | 4px / 6px | Micro-afstand: tussen icoon en label, tussen badge-tekst en rand |
+| `2` / `3` | 8px / 12px | Afstand tussen gerelateerde elementen (knop-groepen, form-velden onderling) |
+| `4` / `5` | 16px / 20px | Interne padding van kaarten en compacte containers (bestaand: `Card`/`KpiCard` gebruiken `p-5`) |
+| `6` / `8` | 24px / 32px | Padding van pagina-content en grotere containers (bestaand: `PageWrapper` gebruikt `p-5 md:p-8`) |
+| `10`+ | 40px+ | Scheiding tussen grote pagina-secties |
+
+**Regel:** witruimte is een ontwerpbeslissing, geen restruimte. Liever één extra stap in de spacing-schaal dan een dichtgepakt scherm.
+
+---
+
+## Typography
+
+Lettertype: `Inter` (sans), `JetBrains Mono` voor monospace-behoefte (bonnummers, codes) — zie `DESIGN_SYSTEM.md`.
+
+| Niveau | Klasse (richtlijn) | Gebruik |
+|---|---|---|
+| Display / KPI-waarde | `text-3xl font-extrabold tracking-tight` | Grote cijfers (zie `KpiCard`, `StatCard`) |
+| Paginatitel | `text-lg font-bold tracking-tight` | Topbar-titel, sectiekoppen |
+| Kaarttitel | `text-base font-bold tracking-tight` | Titel binnen een kaart (zie `WerkbonKaart`) |
+| Body | `text-sm` | Standaardtekst, formulierlabels, kaartinhoud |
+| Caption / meta | `text-xs text-gray-400` / `text-gray-500` | Secundaire info: datums, aantallen, hints |
+| Micro-label | `text-[10px] font-bold uppercase tracking-widest` | Sectielabels in navigatie (zie `Sidebar` → `NavSection`) |
+
+**Regel:** maximaal twee gewichten per scherm naast elkaar (bv. `font-semibold` voor labels, `font-bold`/`font-extrabold` voor nadruk) — geen wildgroei aan font-weights.
+
+---
+
+## Grid & layout
+
+- **Contentbreedte:** pagina-content leeft binnen `PageWrapper` (zie `COMPONENT_LIBRARY.md`), met responsive padding (`p-5` mobiel → `p-8` desktop).
+- **Kaartgrids:** KPI's en stat-cards in een responsive grid (bv. 2 kolommen mobiel → 4 kolommen desktop), consistente `gap-4`/`gap-5` tussen kaarten.
+- **Twee-kolomslayouts** (bv. detail + zijpaneel) alleen vanaf `lg:` — op kleinere schermen altijd één kolom, gestapeld in logische leesvolgorde.
+- **Sidebar-breedte:** vast (huidige implementatie: `md:ml-60` content-offset) — content herschaalt, de sidebar zelf niet.
+
+---
+
+## Cards
+
+- Basisvorm: witte (light) / donkere-surface (dark, toekomstig) achtergrond, dunne rand, `rounded-lg`, `shadow-sm`.
+- **Interactieve kaarten** (aanklikbaar, zoals `WerkbonKaart`) krijgen een hover-state: lichte lift (`hover:-translate-y-0.5`), iets diepere schaduw (`hover:shadow-md`), en een accentrand in merkkleur bij hover.
+- **Statuskaarten** (`Card` met `accent`) gebruiken een linker accentrand (`border-l-4`) in plaats van een volledig gekleurde achtergrond — kleur blijft functioneel, niet dominant (zie `PRODUCT_VISION.md`).
+- Interne padding consistent: `p-5` voor standaardkaarten.
+
+---
+
+## Buttons
+
+- Vijf varianten (bestaand, zie `COMPONENT_LIBRARY.md` → Button): `primary` (merkgeel, hoofdactie), `secondary` (neutraal, meest gebruikte actie), `danger`/`red` (destructief/kritiek), `ghost` (laagste nadruk, bv. annuleren).
+- **Maximaal één `primary`-knop per scherm/sectie** — meerdere primaire knoppen naast elkaar breekt de "één duidelijke actie"-regel uit `PRODUCT_VISION.md`.
+- Alle knoppen hebben een `loading`-state (spinner + disabled) voor elke actie die een netwerkcall triggert — nooit een knop die "hangt" zonder feedback.
+- `active:scale-[0.98]` als tactiele feedback bij klikken (bestaand patroon) — dit soort micro-interactie blijft de norm voor alle klikbare elementen.
+
+---
+
+## Forms
+
+- Elk formulierveld heeft een zichtbaar `label`, nooit alleen een placeholder als label-vervanging.
+- Foutstaat: rode rand + focus-ring in merkrood + duidelijke foutmelding onder het veld (bestaand patroon in `Input`/`Textarea`).
+- Hint-tekst (grijs, klein) alleen tonen als er geen fout is — fout heeft altijd voorrang op hint.
+- Focus-state: gele rand + subtiele ring (`focus:ring-2 focus:ring-brand-yellow/20`) — consistent op elk formulierelement, ook toekomstige `Select`/`Checkbox`/`Radio`.
+- Formuliervalidatie geeft directe, per-veld feedback — geen alleen-bij-submit verzamelfoutmelding boven het formulier als losstaand patroon.
+
+---
+
+## Tables
+
+*(Nog geen `Table`-component in de codebase — deze richtlijn geldt zodra deze gebouwd wordt, zie `FEATURE_BACKLOG.md`/`COMPONENT_LIBRARY.md`.)*
+
+- Compacte rijen, dunne horizontale scheidingslijnen (geen zware celranden).
+- Kolomkoppen: klein, `uppercase`, `tracking-wide`, gedempte kleur — consistent met de micro-label-stijl hierboven.
+- Rij-hover: subtiele achtergrondverandering (`hover:bg-surface-2`), nooit een schaduw of lift-effect (dat is voorbehouden aan kaarten).
+- Status altijd via `Badge`/`StatusBadge`, nooit via losse gekleurde tekst.
+- Op mobiel: tabellen worden een gestapelde kaartenlijst (zoals `WerkbonKaart`) in plaats van horizontaal scrollen, tenzij de tabel inherent breed moet blijven (dan `overflow-x-auto` in een bewuste wrapper — zie `DESIGN_SYSTEM.md` → Responsive regels).
+
+---
+
+## Modals & dialogs
+
+- **Modal** (bestaand, zie `COMPONENT_LIBRARY.md`): voor gestructureerde content/formulieren binnen een overlay. Donkere header-balk met titel + sluitknop, `Escape` en klik-buiten sluiten de modal.
+- **Dialog** (nog te bouwen, zie `FEATURE_BACKLOG.md`): een lichtere, kleinere variant specifiek voor bevestigingsvragen ("Weet je zeker dat je deze werkbon wilt verwijderen?") — altijd met een duidelijke primaire en secundaire actie, destructieve acties in `danger`/`red`-variant.
+- Nooit meer dan één modal/dialog tegelijk open.
+- Overlay altijd `bg-black/50` (bestaand patroon) — consistent verduisteringsniveau door de hele app.
+
+---
+
+## Toasts
+
+*(Nog geen `Toast`-component in de codebase — zie `FEATURE_BACKLOG.md`/`COMPONENT_LIBRARY.md`.)*
+
+- Kort, non-blocking feedback voor acties die niet in beeld blijven (bv. "Werkbon opgeslagen", "Foto geüpload").
+- Positie: rechtsonder op desktop, onderaan boven de mobiele navigatie op mobiel (respecteer `.pb-safe`).
+- Auto-dismiss na enkele seconden, met een handmatige sluitoptie.
+- Varianten: success (bevestiging), error (mislukte actie), nooit puur decoratief — elke toast communiceert een resultaat van een actie.
+
+---
+
+## Sidebars
+
+- Sidebar (desktop, `≥ md`) is **donker** (`#0d1117`), vast, met secties gegroepeerd onder kleine uppercase-labels (bestaand patroon, zie `Sidebar.tsx`).
+- Actieve route: merkgeel accent op tekst/icoon, niet-actieve routes gedempt wit (`rgba(255,255,255,0.35–0.7)`).
+- Sidebar toont altijd de ingelogde gebruiker (`Avatar` + naam) en een uitlog-actie onderaan.
+
+## Topbars
+
+- Desktop `Topbar`: witte balk, sticky, paginatitel links, acties (knoppen) rechts.
+- Mobiele `MobileTopbar`: donker (consistent met sidebar/mobiele nav), compact, met het app-icoon + titel.
+
+## Mobile navigation
+
+- `MobileNav`: onderaan het scherm, donker, vaste iconen + labels voor de belangrijkste routes van de ingelogde rol.
+- Actieve staat: merkgeel; inactief: gedempt wit — consistent met de sidebar.
+- Respecteert `pb-safe` voor apparaten met een home-indicator.
+
+## Dashboard layout
+
+- Bovenaan: KPI-rij (`KpiCard`s) voor de belangrijkste getallen in één oogopslag.
+- Daaronder: een primaire content-sectie (bv. `ProjectTabel`) naast of onder een secundaire sectie (`ActivityFeed`/`MeldingItem`).
+- Geen dashboard-widget zonder duidelijk doel — elk blok beantwoordt één vraag ("hoeveel werkbonnen staan open", "wat is er recent gebeurd").
+
+---
+
+## Icongebruik
+
+- Uitsluitend `@tabler/icons-react` — geen tweede icon-set introduceren.
+- Iconen ondersteunen tekst, vervangen die zelden volledig (uitzondering: compacte mobiele navigatie waar ruimte schaars is, altijd met een label eronder).
+- Consistente afmetingen per context: klein (`w-3.5 h-3.5`/`w-4 h-4`) in inline meta-info, middel (`w-5 h-5`) in knoppen/kaarten, groter (`w-7 h-7`+) in nadrukkelijke iconvlakken (zie `PageLoader`).
+
+---
+
+## Animaties & transitions
+
+- Standaardduur: 150–200ms voor micro-interacties (hover, focus, klik), tot 500ms voor grotere statusveranderingen (bv. `ProgressBar`-vulling).
+- Easing: standaard Tailwind `transition-all`/`ease` — geen custom bounce/elastic-easing, dat past niet bij het rustige, professionele karakter uit `PRODUCT_VISION.md`.
+- Animatie bevestigt altijd een gebruikersactie of geeft richting (bv. kaart die optilt bij hover, knop die inklinkt bij klik) — nooit puur decoratieve animatie zonder functie.
+- Paginaovergangen: geen zware route-transition-animaties die de interface trager laten aanvoelen dan hij is.
+
+---
+
+## Loading states
+
+- Elke asynchrone actie heeft een zichtbare loading-state: knop-spinner (`loading`-prop op `Button`), volledige paginaspinner (`PageLoader`) alleen bij initiële paginalaad.
+- Geen enkele actie mag een "stille" wachttijd hebben zonder enige visuele indicatie.
+
+## Skeleton loaders
+
+*(Nog niet in de codebase — richtlijn voor toekomstige implementatie, zie `FEATURE_BACKLOG.md`.)*
+
+- Voor content die merkbare tijd nodig heeft om te laden (dashboardlijsten, tabellen): een skeleton-vorm die de uiteindelijke layout benadert, in plaats van een centrale spinner die de hele pagina blokkeert.
+- Skeletons gebruiken een subtiele pulse-animatie, in neutrale surface-tinten — geen merkkleur in een skeleton.
+
+## Empty states
+
+*(Nog geen gedeelde `EmptyState`-component — zie `COMPONENT_LIBRARY.md`.)*
+
+- Elke lijst/overzicht die leeg kán zijn (geen werkbonnen vandaag, geen taken, geen medewerkers) toont een geruststellende, informatieve empty state: korte uitleg + eventueel een primaire actie ("Nieuwe werkbon aanmaken").
+- Nooit een kaal wit vlak of een technische "no data"-tekst.
+
+## Error states
+
+*(Nog geen gedeelde `ErrorState`-component — zie `COMPONENT_LIBRARY.md`.)*
+
+- Bij een mislukte data-load: duidelijke, Nederlandstalige uitleg + een "opnieuw proberen"-actie (bestaand patroon in `App.tsx` → `AuthGuard`-foutscherm — dit wordt het uitgangspunt voor een generieke `ErrorState`-component).
+- Nooit een rauwe technische foutmelding (stacktrace, Supabase-foutcode) rechtstreeks aan de gebruiker tonen — zie `CODING_STANDARDS.md`/`ARCHITECTURE.md` voor foutafhandelingsregels.
+
+---
+
+## Hover-effecten
+
+- Klikbare kaarten: lichte lift + schaduwtoename + accentrand (zie "Cards" hierboven).
+- Klikbare rijen/lijst-items: achtergrondverandering, geen lift.
+- Knoppen: achtergrond-verdieping per variant (bestaand patroon in `Button`) + `active:scale-[0.98]` bij klik.
+- Navigatie-items: tekstkleur wordt voller/witter bij hover (mobiele nav/sidebar), geen achtergrondverandering nodig bovenop de kleurverandering.
+
+---
+
+## Responsive gedrag
+
+- **Mobile-first** in elke nieuwe layout — zie `DESIGN_SYSTEM.md` → Responsive regels voor de volledige regels (touch targets, geen horizontale scroll, safe-areas).
+- Breakpoint-gebruik consistent met bestaand patroon: `md:` als omslagpunt tussen mobiele en desktop-navigatie/layout (zie `PageWrapper`).
+- Content-dichtheid neemt toe naarmate het scherm breder wordt (meer kolommen, meer info per rij), nooit andersom — mobiel toont nooit meer tegelijk dan desktop.
