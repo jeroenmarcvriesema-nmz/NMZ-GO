@@ -10,13 +10,13 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ variant = 'secondary', size = 'md', loading, fullWidth, className, children, disabled, ...props }, ref) => {
-    const base = 'inline-flex items-center justify-center gap-2 font-semibold rounded-sm transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] cursor-pointer'
+    const base = 'inline-flex items-center justify-center gap-2 font-semibold rounded-sm transition-all duration-150 ease-brand disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] cursor-pointer'
     const variants = {
       primary:   'bg-brand-yellow text-gray-900 border border-brand-yellow-dark hover:bg-brand-yellow-dark shadow-sm',
-      secondary: 'bg-white text-gray-900 border border-gray-200 hover:bg-surface-2',
-      danger:    'bg-brand-red-light text-brand-red border border-brand-red hover:bg-brand-red hover:text-white',
+      secondary: 'bg-white dark:bg-surface-dark-2 text-gray-900 dark:text-white border border-gray-200 dark:border-white/10 hover:bg-surface-2 dark:hover:bg-white/5',
+      danger:    'bg-brand-red-light dark:bg-brand-red/10 text-brand-red dark:text-red-400 border border-brand-red hover:bg-brand-red hover:text-white',
       red:       'bg-brand-red text-white border border-brand-red-dark hover:bg-brand-red-dark',
-      ghost:     'bg-transparent text-gray-500 border-transparent hover:bg-surface-2 hover:text-gray-900',
+      ghost:     'bg-transparent text-gray-500 dark:text-white/50 border-transparent hover:bg-surface-2 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white',
     }
     const sizes = {
       sm: 'px-3 py-1.5 text-sm',

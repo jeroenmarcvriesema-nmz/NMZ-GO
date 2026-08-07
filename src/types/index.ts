@@ -1,5 +1,7 @@
+export type Theme = 'light' | 'dark'
 export type Rol = 'beheerder' | 'medewerker'
 export type WerkbonStatus = 'open' | 'bezig' | 'voltooid'
+export type ProjectStatus = 'actief' | 'niet_gestart' | 'op_schema' | 'vertraging' | 'afgerond'
 
 export interface Profile {
   id: string
@@ -53,4 +55,31 @@ export interface Uitnodiging {
   gebruikt: boolean
   created_at: string
   verloopt_op: string | null
+}
+
+export interface Project {
+  id: string
+  naam: string
+  adres: string
+  opdrachtgever: string
+  status: ProjectStatus
+  voortgang: number
+  startdatum: string
+  einddatum: string
+  medewerkers: Profile[]
+  aantalWerkbonnen: number
+  aantalTaken: number
+  aantalTakenKlaar: number
+  aantalFotos: number
+  opmerkingen: string
+}
+
+export interface PlanningItem {
+  id: string
+  datum: string
+  projectId: string
+  projectnaam: string
+  adres: string
+  medewerkers: string[]
+  status: ProjectStatus
 }

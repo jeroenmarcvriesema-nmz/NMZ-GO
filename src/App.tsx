@@ -2,11 +2,15 @@ import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/authStore'
+import { useThemeStore } from '@/store/themeStore'
 import { PageLoader } from '@/components/ui/Spinner'
 
 import Login            from '@/pages/auth/Login'
 import Registreer       from '@/pages/auth/Registreer'
 import Dashboard        from '@/pages/beheerder/Dashboard'
+import Projecten        from '@/pages/beheerder/Projecten'
+import ProjectDetail    from '@/pages/beheerder/ProjectDetail'
+import Planning         from '@/pages/beheerder/Planning'
 import Werkbonnen       from '@/pages/beheerder/Werkbonnen'
 import WerkbonNieuw     from '@/pages/beheerder/WerkbonNieuw'
 import WerkbonDetail    from '@/pages/beheerder/WerkbonDetail'
@@ -16,76 +20,57 @@ import MijnWerkbonnen   from '@/pages/medewerker/MijnWerkbonnen'
 import WerkbonUitvoeren from '@/pages/medewerker/WerkbonUitvoeren'
 import Afgerond         from '@/pages/medewerker/Afgerond'
 
-// ── Auth initialisatie — draait eenmalig in de root ───────────
-// Eén centrale plek voor alle auth state management.
-// Voorkomt race conditions door meerdere listeners.
 function AuthInitializer() {
   const { fetchProfile, setLoading, setProfile } = useAuthStore()
 
   useEffect(() => {
-    // Check bestaande sessie bij opstarten
     supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error) {
-        console.error('[Auth] Sessie ophalen mislukt:', error.message)
-        setLoading(false)
-        return
-      }
-      if (session?.user) {
-        fetchProfile(session.user.id)
-      } else {
-        setLoading(false)
-      }
+      if (error) { console.error('[Auth] Sessie fout:', error.message); setLoading(false); return }
+      if (session?.user) { fetchProfile(session.user.id) } else { setLoading(false) }
     })
 
-    // Luister naar auth events (login/logout/token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         fetchProfile(session.user.id)
       } else if (event === 'SIGNED_OUT') {
-        setProfile(null)
-        setLoading(false)
+        setProfile(null); setLoading(false)
       } else if (!session && event !== 'TOKEN_REFRESHED' && event !== 'INITIAL_SESSION' && event !== 'USER_UPDATED') {
-        setProfile(null)
-        setLoading(false)
+        setProfile(null); setLoading(false)
       }
     })
 
     return () => subscription.unsubscribe()
-  }, []) // Eenmalig — lege dependency array is correct hier
+  }, [])
 
   return null
 }
 
-// ── Route guards ──────────────────────────────────────────────
+function ThemeInitializer() {
+  const theme = useThemeStore((state) => state.theme)
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark')
+  }, [theme])
+
+  return null
+}
+
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { profile, loading, error } = useAuthStore()
-
   if (loading) return <PageLoader />
-
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6" style={{ backgroundColor: '#F2F0EB' }}>
-        <div className="bg-white rounded-lg shadow p-8 max-w-sm w-full text-center">
+      <div className="min-h-screen flex items-center justify-center p-6 bg-[#F4F3EF] dark:bg-surface-dark">
+        <div className="bg-white dark:bg-surface-dark-2 rounded-xl shadow-lg p-8 max-w-sm w-full text-center">
           <div className="text-3xl mb-3">⚠️</div>
-          <h2 className="font-bold text-lg mb-2">Kan niet laden</h2>
-          <p className="text-sm text-gray-500 mb-5">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="bg-brand-yellow text-gray-900 font-semibold px-4 py-2.5 rounded-sm w-full mb-2"
-          >
-            Opnieuw proberen
-          </button>
-          <button
-            onClick={() => supabase.auth.signOut().then(() => (window.location.href = '/login'))}
-            className="text-sm text-gray-400 underline"
-          >
-            Uitloggen
-          </button>
+          <h2 className="font-bold text-lg mb-2 text-gray-900 dark:text-white">Kan niet laden</h2>
+          <p className="text-sm text-gray-500 dark:text-white/60 mb-5">{error}</p>
+          <button onClick={() => window.location.reload()} className="bg-brand-yellow text-gray-900 font-semibold px-4 py-2.5 rounded-lg w-full mb-2">Opnieuw proberen</button>
+          <button onClick={() => supabase.auth.signOut().then(() => (window.location.href = '/login'))} className="text-sm text-gray-400 dark:text-white/40 underline">Uitloggen</button>
         </div>
       </div>
     )
   }
-
   if (!profile) return <Navigate to="/login" replace />
   return <>{children}</>
 }
@@ -105,17 +90,20 @@ function RootRedirect() {
   return <Navigate to={profile.rol === 'beheerder' ? '/dashboard' : '/mijn-werkbonnen'} replace />
 }
 
-// ── App ───────────────────────────────────────────────────────
 export default function App() {
   return (
     <BrowserRouter>
       <AuthInitializer />
+      <ThemeInitializer />
       <Routes>
         <Route path="/login"      element={<Login />} />
         <Route path="/registreer" element={<Registreer />} />
         <Route path="/"           element={<RootRedirect />} />
 
         <Route path="/dashboard"        element={<BeheerderGuard><Dashboard /></BeheerderGuard>} />
+        <Route path="/projecten"        element={<BeheerderGuard><Projecten /></BeheerderGuard>} />
+        <Route path="/projecten/:id"    element={<BeheerderGuard><ProjectDetail /></BeheerderGuard>} />
+        <Route path="/planning"         element={<BeheerderGuard><Planning /></BeheerderGuard>} />
         <Route path="/werkbonnen"       element={<BeheerderGuard><Werkbonnen /></BeheerderGuard>} />
         <Route path="/werkbonnen/nieuw" element={<BeheerderGuard><WerkbonNieuw /></BeheerderGuard>} />
         <Route path="/werkbonnen/:id"   element={<BeheerderGuard><WerkbonDetail /></BeheerderGuard>} />

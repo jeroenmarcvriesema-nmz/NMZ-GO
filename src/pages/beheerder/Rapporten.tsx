@@ -1,4 +1,5 @@
 import { PageWrapper } from '@/components/layout/PageWrapper'
+import { SectionHeading } from '@/components/ui/SectionHeading'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { StatusBadge } from '@/components/ui/Badge'
@@ -15,20 +16,20 @@ export default function Rapporten() {
     <PageWrapper title="Rapporten">
       <div className="max-w-2xl">
         <Card>
-          <div className="text-sm font-bold mb-4">Voltooide werkbonnen ({voltooid.length})</div>
+          <SectionHeading title={`Voltooide werkbonnen (${voltooid.length})`} />
           {loading ? <div className="flex justify-center py-8"><Spinner /></div>
             : voltooid.length === 0 ? (
-              <div className="text-center py-12 text-gray-400">
+              <div className="text-center py-12 text-gray-400 dark:text-white/40">
                 <div className="text-4xl mb-3">📄</div>
                 <div className="font-medium">Nog geen voltooide werkbonnen</div>
               </div>
             ) : (
-              <div className="divide-y divide-gray-50">
+              <div className="divide-y divide-gray-50 dark:divide-white/5">
                 {voltooid.map((w) => (
-                  <div key={w.id} className="flex items-center justify-between gap-3 py-4">
+                  <div key={w.id} className="flex items-center justify-between gap-3 py-4 px-2 -mx-2 rounded-lg transition-colors hover:bg-brand-yellow-light/40 dark:hover:bg-white/5">
                     <div>
-                      <div className="text-sm font-semibold">{w.adres}</div>
-                      <div className="text-xs text-gray-400 mt-0.5">
+                      <div className="text-sm font-semibold text-gray-900 dark:text-white">{w.adres}</div>
+                      <div className="text-xs text-gray-400 dark:text-white/40 mt-0.5">
                         {formatDatum(w.datum)} · {(w.medewerkers || []).map((m) => m.naam).join(', ') || '—'}
                       </div>
                     </div>

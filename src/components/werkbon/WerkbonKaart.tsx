@@ -21,12 +21,12 @@ export function WerkbonKaart({ werkbon, linkPrefix = '/werkbonnen' }: WerkbonKaa
     <Card accent="yellow" onClick={() => navigate(`${linkPrefix}/${werkbon.id}`)}>
       <div className="flex items-start justify-between gap-3 mb-2">
         <div>
-          <div className="text-base font-bold tracking-tight">{werkbon.adres}</div>
-          <div className="text-sm text-gray-500 mt-0.5">{werkbon.projectnaam}</div>
+          <div className="text-base font-bold tracking-tight text-gray-900 dark:text-white">{werkbon.adres}</div>
+          <div className="text-sm text-gray-500 dark:text-white/60 mt-0.5">{werkbon.projectnaam}</div>
         </div>
         <StatusBadge status={werkbon.status} />
       </div>
-      <div className="flex flex-wrap gap-3 text-xs text-gray-400 mb-3">
+      <div className="flex flex-wrap gap-3 text-xs text-gray-400 dark:text-white/40 mb-3">
         <span className="flex items-center gap-1"><IconCalendar className="w-3.5 h-3.5" />{formatDatumKort(werkbon.datum)}</span>
         {(werkbon.medewerkers || []).length > 0 && (
           <span className="flex items-center gap-1"><IconUsers className="w-3.5 h-3.5" />{werkbon.medewerkers!.map((m) => m.naam).join(', ')}</span>
@@ -34,7 +34,7 @@ export function WerkbonKaart({ werkbon, linkPrefix = '/werkbonnen' }: WerkbonKaa
         <span className="flex items-center gap-1"><IconListCheck className="w-3.5 h-3.5" />{voltooide}/{totaal} taken</span>
       </div>
       <ProgressBar value={voortgang} variant={voortgang === 100 ? 'green' : 'yellow'} />
-      <div className="text-[11px] text-gray-400 font-semibold mt-1">{voortgang}% voltooid</div>
+      <div className="text-[11px] text-gray-400 dark:text-white/40 font-semibold mt-1">{voortgang}% voltooid</div>
     </Card>
   )
 }

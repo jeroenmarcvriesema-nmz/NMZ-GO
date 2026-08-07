@@ -11,38 +11,38 @@ interface KpiCardProps {
 
 const variants = {
   neutral: {
-    bg: 'bg-white',
-    iconBg: 'bg-gray-100',
-    iconColor: 'text-gray-500',
-    value: 'text-gray-900',
-    bar: 'bg-gray-200',
+    bg: 'bg-white dark:bg-surface-dark-2',
+    iconBg: 'bg-brand-yellow-light/60 dark:bg-white/10',
+    iconColor: 'text-brand-yellow-dark dark:text-white/60',
+    value: 'text-gray-900 dark:text-white',
+    bar: 'bg-gray-200 dark:bg-white/10',
   },
   green: {
-    bg: 'bg-white',
-    iconBg: 'bg-green-50',
-    iconColor: 'text-green-600',
-    value: 'text-green-700',
+    bg: 'bg-white dark:bg-surface-dark-2',
+    iconBg: 'bg-green-50 dark:bg-green-500/10',
+    iconColor: 'text-green-600 dark:text-green-400',
+    value: 'text-green-700 dark:text-green-400',
     bar: 'bg-green-500',
   },
   yellow: {
-    bg: 'bg-white',
-    iconBg: 'bg-brand-yellow-light',
-    iconColor: 'text-brand-yellow-dark',
-    value: 'text-brand-yellow-dark',
+    bg: 'bg-white dark:bg-surface-dark-2',
+    iconBg: 'bg-brand-yellow-light dark:bg-brand-yellow/10',
+    iconColor: 'text-brand-yellow-dark dark:text-brand-yellow',
+    value: 'text-brand-yellow-dark dark:text-brand-yellow',
     bar: 'bg-brand-yellow',
   },
   red: {
-    bg: 'bg-white',
-    iconBg: 'bg-red-50',
-    iconColor: 'text-red-600',
-    value: 'text-red-600',
+    bg: 'bg-white dark:bg-surface-dark-2',
+    iconBg: 'bg-red-50 dark:bg-red-500/10',
+    iconColor: 'text-red-600 dark:text-red-400',
+    value: 'text-red-600 dark:text-red-400',
     bar: 'bg-red-500',
   },
   blue: {
-    bg: 'bg-white',
-    iconBg: 'bg-blue-50',
-    iconColor: 'text-blue-600',
-    value: 'text-blue-700',
+    bg: 'bg-white dark:bg-surface-dark-2',
+    iconBg: 'bg-blue-50 dark:bg-blue-500/10',
+    iconColor: 'text-blue-600 dark:text-blue-400',
+    value: 'text-blue-700 dark:text-blue-400',
     bar: 'bg-blue-500',
   },
 }
@@ -50,16 +50,16 @@ const variants = {
 export function KpiCard({ label, value, icon, variant = 'neutral', sub }: KpiCardProps) {
   const v = variants[variant]
   return (
-    <div className={cn('rounded-xl border border-gray-100 shadow-sm p-5 flex flex-col gap-3 relative overflow-hidden', v.bg)}>
-      <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center', v.iconBg)}>
-        <span className={cn('text-[18px]', v.iconColor)}>{icon}</span>
+    <div className={cn('rounded-xl border border-gray-100 dark:border-white/10 shadow-sm p-6 flex flex-col gap-3 relative overflow-hidden transition-all duration-200 ease-brand hover:-translate-y-0.5 hover:shadow-md', v.bg)}>
+      <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center', v.iconBg)}>
+        <span className={cn('text-[19px]', v.iconColor)}>{icon}</span>
       </div>
       <div>
-        <div className={cn('text-3xl font-extrabold tracking-tight leading-none', v.value)}>
+        <div className={cn('text-4xl font-extrabold tracking-tight leading-none', v.value)}>
           {value}
         </div>
-        <div className="text-xs font-medium text-gray-400 mt-1.5">{label}</div>
-        {sub && <div className="text-[11px] text-gray-300 mt-0.5">{sub}</div>}
+        <div className="text-sm font-medium text-gray-400 dark:text-white/40 mt-2">{label}</div>
+        {sub && <div className="text-xs text-gray-300 dark:text-white/30 mt-0.5">{sub}</div>}
       </div>
       <div className={cn('absolute bottom-0 left-0 right-0 h-0.5', v.bar)} />
     </div>

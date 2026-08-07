@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PageWrapper } from '@/components/layout/PageWrapper'
+import { SectionHeading } from '@/components/ui/SectionHeading'
 import { Button } from '@/components/ui/Button'
 import { Input, Textarea } from '@/components/ui/Input'
 import { Card } from '@/components/ui/Card'
@@ -75,10 +76,10 @@ export default function WerkbonNieuw() {
     }>
       <div className="max-w-2xl space-y-5">
         <Card accent="yellow">
-          <h2 className="text-sm font-bold mb-4">Werkbon informatie</h2>
+          <SectionHeading title="Werkbon informatie" />
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
-              <Input label="Bonnummer" value={bonnummer} readOnly className="bg-surface-2 text-gray-400" />
+              <Input label="Bonnummer" value={bonnummer} readOnly className="bg-surface-2 dark:bg-white/5 text-gray-400 dark:text-white/40" />
               <Input label="Datum" type="date" value={datum} onChange={(e) => setDatum(e.target.value)} />
             </div>
             <Input label="Projectnaam" placeholder="Bijv. Renovatie badkamer" value={projectnaam} onChange={(e) => setProjectnaam(e.target.value)} required />
@@ -88,31 +89,33 @@ export default function WerkbonNieuw() {
         </Card>
 
         <Card>
-          <h2 className="text-sm font-bold mb-3">Medewerkers koppelen</h2>
+          <SectionHeading title="Medewerkers koppelen" />
           <div className="flex flex-wrap gap-2">
             {alleProfielen.map((p) => (
               <button key={p.id}
                 onClick={() => setMedewerkers((prev) => prev.includes(p.id) ? prev.filter((id) => id !== p.id) : [...prev, p.id])}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${medewerkers.includes(p.id) ? 'bg-brand-yellow text-gray-900 border-brand-yellow-dark' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}>
+                className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${medewerkers.includes(p.id) ? 'bg-brand-yellow text-gray-900 border-brand-yellow-dark' : 'bg-white dark:bg-surface-dark-2 text-gray-600 dark:text-white/60 border-gray-200 dark:border-white/10 hover:border-gray-400 dark:hover:border-white/30'}`}>
                 {p.naam}
               </button>
             ))}
-            {alleProfielen.length === 0 && <p className="text-sm text-gray-400">Geen medewerkers gevonden.</p>}
+            {alleProfielen.length === 0 && <p className="text-sm text-gray-400 dark:text-white/40">Geen medewerkers gevonden.</p>}
           </div>
         </Card>
 
         <Card>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-bold">Taken</h2>
-            <div className="flex gap-1 bg-surface-2 p-1 rounded-sm">
-              {(['handmatig','gripp'] as const).map((t) => (
-                <button key={t} onClick={() => setActiveTab(t)}
-                  className={`px-3 py-1 rounded text-xs font-semibold transition-all ${activeTab === t ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'}`}>
-                  {t === 'handmatig' ? 'Handmatig' : 'Gripp import'}
-                </button>
-              ))}
-            </div>
-          </div>
+          <SectionHeading
+            title="Taken"
+            actions={
+              <div className="flex gap-1 bg-surface-2 dark:bg-white/5 p-1 rounded-sm">
+                {(['handmatig','gripp'] as const).map((t) => (
+                  <button key={t} onClick={() => setActiveTab(t)}
+                    className={`px-3 py-1 rounded text-xs font-semibold transition-all ${activeTab === t ? 'bg-white dark:bg-surface-dark-2 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 dark:text-white/50'}`}>
+                    {t === 'handmatig' ? 'Handmatig' : 'Gripp import'}
+                  </button>
+                ))}
+              </div>
+            }
+          />
 
           {activeTab === 'gripp' ? (
             <div className="space-y-3">
@@ -128,13 +131,13 @@ export default function WerkbonNieuw() {
                   <div className="flex-1 space-y-1.5">
                     <input type="text" placeholder={`Taak ${i + 1}…`} value={taak.titel}
                       onChange={(e) => setTaken((prev) => prev.map((t, j) => j === i ? { ...t, titel: e.target.value } : t))}
-                      className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-sm outline-none focus:border-brand-yellow" />
+                      className="w-full px-3 py-2.5 text-sm text-gray-900 dark:text-white bg-white dark:bg-surface-dark-2 border border-gray-200 dark:border-white/10 rounded-sm outline-none focus:border-brand-yellow" />
                     <input type="text" placeholder="Toelichting (optioneel)" value={taak.omschrijving}
                       onChange={(e) => setTaken((prev) => prev.map((t, j) => j === i ? { ...t, omschrijving: e.target.value } : t))}
-                      className="w-full px-3 py-2 text-xs border border-gray-100 rounded-sm outline-none focus:border-brand-yellow text-gray-500" />
+                      className="w-full px-3 py-2 text-xs bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-sm outline-none focus:border-brand-yellow text-gray-500 dark:text-white/50" />
                   </div>
                   <button onClick={() => setTaken((prev) => prev.filter((_, j) => j !== i))}
-                    className="p-2 text-gray-300 hover:text-brand-red transition-colors mt-0.5">
+                    className="p-2 text-gray-300 dark:text-white/30 hover:text-brand-red transition-colors mt-0.5">
                     <IconTrash className="w-4 h-4" />
                   </button>
                 </div>

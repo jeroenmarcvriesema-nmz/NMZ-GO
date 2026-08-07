@@ -12,7 +12,7 @@ export function Spinner({ className }: { className?: string }) {
 
 export function PageLoader() {
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F2F0EB' }}>
+    <div className="min-h-screen flex items-center justify-center bg-[#F2F0EB] dark:bg-surface-dark">
       <div className="flex flex-col items-center gap-4">
         <div className="w-12 h-12 rounded-xl bg-brand-yellow flex items-center justify-center">
           <IconClipboardCheck className="w-7 h-7 text-gray-900" />
