@@ -29,12 +29,43 @@ select 'Nooitmeerzwam'
 where not exists (select 1 from public.tenants);
 
 
--- ── A2. SECURITY DEFINER FUNCTIE — TENANT ────────────────────
+-- ── A2. TENANT_ID OP BESTAANDE TABELLEN ──────────────────────
+-- Nog zonder standaardwaarde: die verwijst straks naar
+-- get_mijn_tenant(), en die functie leest op haar beurt uit
+-- profiles.tenant_id. De kolom moet er dus eerst zijn.
+
+alter table public.profiles            add column if not exists tenant_id uuid references public.tenants(id) on delete restrict;
+alter table public.werkbonnen          add column if not exists tenant_id uuid references public.tenants(id) on delete restrict;
+alter table public.taken               add column if not exists tenant_id uuid references public.tenants(id) on delete restrict;
+alter table public.fotos               add column if not exists tenant_id uuid references public.tenants(id) on delete restrict;
+alter table public.werkbon_medewerkers add column if not exists tenant_id uuid references public.tenants(id) on delete restrict;
+alter table public.uitnodigingen       add column if not exists tenant_id uuid references public.tenants(id) on delete restrict;
+
+-- Bestaande rijen aan de standaard tenant hangen
+update public.profiles            set tenant_id = (select id from public.tenants order by created_at limit 1) where tenant_id is null;
+update public.werkbonnen          set tenant_id = (select id from public.tenants order by created_at limit 1) where tenant_id is null;
+update public.taken               set tenant_id = (select id from public.tenants order by created_at limit 1) where tenant_id is null;
+update public.fotos               set tenant_id = (select id from public.tenants order by created_at limit 1) where tenant_id is null;
+update public.werkbon_medewerkers set tenant_id = (select id from public.tenants order by created_at limit 1) where tenant_id is null;
+update public.uitnodigingen       set tenant_id = (select id from public.tenants order by created_at limit 1) where tenant_id is null;
+
+-- Pas ná de backfill verplicht stellen
+alter table public.profiles            alter column tenant_id set not null;
+alter table public.werkbonnen          alter column tenant_id set not null;
+alter table public.taken               alter column tenant_id set not null;
+alter table public.fotos               alter column tenant_id set not null;
+alter table public.werkbon_medewerkers alter column tenant_id set not null;
+alter table public.uitnodigingen       alter column tenant_id set not null;
+
+
+-- ── A3. SECURITY DEFINER FUNCTIE — TENANT ────────────────────
 -- Zelfde constructie als get_mijn_rol(): draait als database-
 -- eigenaar buiten de RLS-context, zodat een policy op profiles
 -- deze functie kan aanroepen zonder 42P17 recursie.
 -- Valt terug op de oudste tenant zolang een gebruiker er nog
 -- geen heeft (bv. tijdens registratie, vóór het profiel bestaat).
+-- Staat bewust ná A2: de functie leest profiles.tenant_id, en
+-- Postgres controleert de body van een SQL-functie direct.
 
 create or replace function public.get_mijn_tenant()
   returns uuid
@@ -53,32 +84,17 @@ revoke execute on function public.get_mijn_tenant() from public;
 grant  execute on function public.get_mijn_tenant() to authenticated;
 
 
--- ── A3. TENANT_ID OP BESTAANDE TABELLEN ──────────────────────
--- Default = de tenant van de ingelogde gebruiker, zodat de
--- frontend niets hoeft mee te sturen en bestaande code blijft werken.
+-- ── A4. STANDAARDWAARDEN ─────────────────────────────────────
+-- Nieuwe rijen krijgen automatisch de tenant van de ingelogde
+-- gebruiker, zodat de frontend niets hoeft mee te sturen en
+-- bestaande code ongewijzigd blijft werken.
 
-alter table public.profiles            add column if not exists tenant_id uuid references public.tenants(id) on delete restrict default public.get_mijn_tenant();
-alter table public.werkbonnen          add column if not exists tenant_id uuid references public.tenants(id) on delete restrict default public.get_mijn_tenant();
-alter table public.taken               add column if not exists tenant_id uuid references public.tenants(id) on delete restrict default public.get_mijn_tenant();
-alter table public.fotos               add column if not exists tenant_id uuid references public.tenants(id) on delete restrict default public.get_mijn_tenant();
-alter table public.werkbon_medewerkers add column if not exists tenant_id uuid references public.tenants(id) on delete restrict default public.get_mijn_tenant();
-alter table public.uitnodigingen       add column if not exists tenant_id uuid references public.tenants(id) on delete restrict default public.get_mijn_tenant();
-
--- Bestaande rijen aan de standaard tenant hangen
-update public.profiles            set tenant_id = (select id from public.tenants order by created_at limit 1) where tenant_id is null;
-update public.werkbonnen          set tenant_id = (select id from public.tenants order by created_at limit 1) where tenant_id is null;
-update public.taken               set tenant_id = (select id from public.tenants order by created_at limit 1) where tenant_id is null;
-update public.fotos               set tenant_id = (select id from public.tenants order by created_at limit 1) where tenant_id is null;
-update public.werkbon_medewerkers set tenant_id = (select id from public.tenants order by created_at limit 1) where tenant_id is null;
-update public.uitnodigingen       set tenant_id = (select id from public.tenants order by created_at limit 1) where tenant_id is null;
-
--- Pas ná de backfill verplicht stellen
-alter table public.profiles            alter column tenant_id set not null;
-alter table public.werkbonnen          alter column tenant_id set not null;
-alter table public.taken               alter column tenant_id set not null;
-alter table public.fotos               alter column tenant_id set not null;
-alter table public.werkbon_medewerkers alter column tenant_id set not null;
-alter table public.uitnodigingen       alter column tenant_id set not null;
+alter table public.profiles            alter column tenant_id set default public.get_mijn_tenant();
+alter table public.werkbonnen          alter column tenant_id set default public.get_mijn_tenant();
+alter table public.taken               alter column tenant_id set default public.get_mijn_tenant();
+alter table public.fotos               alter column tenant_id set default public.get_mijn_tenant();
+alter table public.werkbon_medewerkers alter column tenant_id set default public.get_mijn_tenant();
+alter table public.uitnodigingen       alter column tenant_id set default public.get_mijn_tenant();
 
 
 -- ── B1. PROJECTEN ─────────────────────────────────────────────
