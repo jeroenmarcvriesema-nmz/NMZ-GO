@@ -1,189 +1,223 @@
 import { useState, useEffect } from 'react'
-import type { Project, PlanningItem, ProjectStatus } from '@/types'
+import { supabase } from '@/lib/supabase'
+import type { Project, PlanningItem, Profile, ProjectStatus } from '@/types'
 
-// ── Mock data — later vervangen door Supabase queries ──────────
-// Supabase koppeling:
-//   projecten     → SELECT * FROM werkbonnen GROUP BY projectnaam (of aparte projecten tabel)
-//   voortgang     → COUNT taken WHERE voltooid / COUNT taken totaal
-//   medewerkers   → JOIN werkbon_medewerkers + profiles
-//   aantalFotos   → COUNT fotos WHERE werkbon_id IN project werkbonnen
+// Eén genest select levert alles wat een projectkaart nodig heeft.
+// De aggregaties (voortgang, aantallen) worden client-side berekend:
+// het gaat om tientallen rijen, niet duizenden, en dit houdt de hook
+// leesbaar zonder database-view of RPC.
+const PROJECT_SELECT = `
+  *,
+  werkbonnen (
+    id, datum, adres, status,
+    taken ( id, voltooid ),
+    fotos!fotos_werkbon_id_fkey ( id ),
+    werkbon_medewerkers ( medewerker:profiles(*) )
+  )
+`
 
-const MOCK_MEDEWERKERS = [
-  { id: 'u1', naam: 'Mike Jansen',      rol: 'medewerker' as const, actief: true, created_at: '' },
-  { id: 'u2', naam: 'Jeffrey de Groot', rol: 'medewerker' as const, actief: true, created_at: '' },
-  { id: 'u3', naam: 'Lars Smit',        rol: 'medewerker' as const, actief: true, created_at: '' },
-  { id: 'u4', naam: 'Marco Visser',     rol: 'medewerker' as const, actief: true, created_at: '' },
-  { id: 'u5', naam: 'Ahmed El Fassi',   rol: 'medewerker' as const, actief: true, created_at: '' },
-  { id: 'u6', naam: 'Piet Bakker',      rol: 'medewerker' as const, actief: true, created_at: '' },
-]
+function mapProject(row: any): Project {
+  const werkbonnen: any[] = row.werkbonnen || []
 
-const MOCK_PROJECTEN: Project[] = [
-  {
-    id: 'p1',
-    naam: 'Renovatie badkamer blok A',
-    adres: 'Kerkstraat 12, Amsterdam',
-    opdrachtgever: 'Woningstichting Eigen Haard',
-    status: 'actief',
-    voortgang: 65,
-    startdatum: '2025-05-19',
-    einddatum: '2025-05-30',
-    medewerkers: [MOCK_MEDEWERKERS[0], MOCK_MEDEWERKERS[1]],
-    aantalWerkbonnen: 3,
-    aantalTaken: 18,
-    aantalTakenKlaar: 12,
-    aantalFotos: 24,
-    opmerkingen: 'Klant is tevreden met voortgang. Let op waterleiding 2e verdieping.',
-  },
-  {
-    id: 'p2',
-    naam: 'CV ketel vervanging',
-    adres: 'Hoofdweg 44, Haarlem',
-    opdrachtgever: 'Particulier: J. Smit',
-    status: 'niet_gestart',
-    voortgang: 0,
-    startdatum: '2025-05-26',
-    einddatum: '2025-05-27',
-    medewerkers: [MOCK_MEDEWERKERS[2]],
-    aantalWerkbonnen: 1,
-    aantalTaken: 6,
-    aantalTakenKlaar: 0,
-    aantalFotos: 0,
-    opmerkingen: '',
-  },
-  {
-    id: 'p3',
-    naam: 'Dakgoot reiniging en herstel',
-    adres: 'Laan v. Meerdervoort 7, Den Haag',
-    opdrachtgever: 'VvE Meerdervoort',
-    status: 'vertraging',
-    voortgang: 20,
-    startdatum: '2025-05-20',
-    einddatum: '2025-05-23',
-    medewerkers: [MOCK_MEDEWERKERS[3], MOCK_MEDEWERKERS[4]],
-    aantalWerkbonnen: 2,
-    aantalTaken: 12,
-    aantalTakenKlaar: 3,
-    aantalFotos: 4,
-    opmerkingen: 'Vertraging door slecht weer. Nieuwe einddatum: 27 mei.',
-  },
-  {
-    id: 'p4',
-    naam: 'Vloerverwarming inspectie',
-    adres: 'Bergweg 10, Leiden',
-    opdrachtgever: 'Particulier: A. de Vries',
-    status: 'op_schema',
-    voortgang: 50,
-    startdatum: '2025-05-22',
-    einddatum: '2025-05-23',
-    medewerkers: [MOCK_MEDEWERKERS[4]],
-    aantalWerkbonnen: 1,
-    aantalTaken: 8,
-    aantalTakenKlaar: 4,
-    aantalFotos: 8,
-    opmerkingen: '',
-  },
-  {
-    id: 'p5',
-    naam: 'Badkamer kitwerk volledig',
-    adres: 'Rijnstraat 22, Utrecht',
-    opdrachtgever: 'Particulier: M. Bakker',
-    status: 'afgerond',
-    voortgang: 100,
-    startdatum: '2025-05-15',
-    einddatum: '2025-05-16',
-    medewerkers: [MOCK_MEDEWERKERS[5]],
-    aantalWerkbonnen: 1,
-    aantalTaken: 8,
-    aantalTakenKlaar: 8,
-    aantalFotos: 18,
-    opmerkingen: 'Opgeleverd en goedgekeurd door klant.',
-  },
-  {
-    id: 'p6',
-    naam: 'Radiatoren onderhoud complex',
-    adres: 'Stationsplein 3, Rotterdam',
-    opdrachtgever: 'Woningstichting Havenstede',
-    status: 'niet_gestart',
-    voortgang: 0,
-    startdatum: '2025-05-27',
-    einddatum: '2025-05-29',
-    medewerkers: [MOCK_MEDEWERKERS[0]],
-    aantalWerkbonnen: 2,
-    aantalTaken: 10,
-    aantalTakenKlaar: 0,
-    aantalFotos: 0,
-    opmerkingen: '',
-  },
-]
+  const taken = werkbonnen.flatMap((w) => w.taken || [])
+  const aantalTaken = taken.length
+  const aantalTakenKlaar = taken.filter((t: any) => t.voltooid).length
 
-const MOCK_PLANNING: PlanningItem[] = [
-  { id: 'pl1', datum: '2025-05-19', projectId: 'p1', projectnaam: 'Renovatie badkamer blok A', adres: 'Kerkstraat 12, Amsterdam', medewerkers: ['Mike Jansen', 'Jeffrey de Groot'], status: 'actief' },
-  { id: 'pl2', datum: '2025-05-20', projectId: 'p1', projectnaam: 'Renovatie badkamer blok A', adres: 'Kerkstraat 12, Amsterdam', medewerkers: ['Mike Jansen', 'Jeffrey de Groot'], status: 'actief' },
-  { id: 'pl3', datum: '2025-05-20', projectId: 'p3', projectnaam: 'Dakgoot reiniging en herstel', adres: 'Laan v. Meerdervoort 7', medewerkers: ['Marco Visser', 'Ahmed El Fassi'], status: 'vertraging' },
-  { id: 'pl4', datum: '2025-05-21', projectId: 'p1', projectnaam: 'Renovatie badkamer blok A', adres: 'Kerkstraat 12, Amsterdam', medewerkers: ['Mike Jansen'], status: 'actief' },
-  { id: 'pl5', datum: '2025-05-22', projectId: 'p4', projectnaam: 'Vloerverwarming inspectie', adres: 'Bergweg 10, Leiden', medewerkers: ['Ahmed El Fassi'], status: 'op_schema' },
-  { id: 'pl6', datum: '2025-05-23', projectId: 'p4', projectnaam: 'Vloerverwarming inspectie', adres: 'Bergweg 10, Leiden', medewerkers: ['Ahmed El Fassi'], status: 'op_schema' },
-  { id: 'pl7', datum: '2025-05-26', projectId: 'p2', projectnaam: 'CV ketel vervanging', adres: 'Hoofdweg 44, Haarlem', medewerkers: ['Lars Smit'], status: 'niet_gestart' },
-  { id: 'pl8', datum: '2025-05-27', projectId: 'p6', projectnaam: 'Radiatoren onderhoud complex', adres: 'Stationsplein 3, Rotterdam', medewerkers: ['Mike Jansen'], status: 'niet_gestart' },
-]
+  // Dezelfde medewerker kan op meerdere werkbonnen van hetzelfde
+  // project staan — ontdubbelen op id.
+  const medewerkers: Profile[] = Object.values(
+    werkbonnen
+      .flatMap((w) => w.werkbon_medewerkers || [])
+      .map((wm: any) => wm.medewerker)
+      .filter(Boolean)
+      .reduce((acc: Record<string, Profile>, m: Profile) => {
+        acc[m.id] = m
+        return acc
+      }, {})
+  )
+
+  return {
+    id: row.id,
+    naam: row.naam ?? '',
+    adres: row.adres ?? '',
+    opdrachtgever: row.opdrachtgever ?? '',
+    status: row.status as ProjectStatus,
+    startdatum: row.startdatum ?? '',
+    einddatum: row.einddatum ?? '',
+    opmerkingen: row.opmerkingen ?? '',
+    voortgang: aantalTaken > 0 ? Math.round((aantalTakenKlaar / aantalTaken) * 100) : 0,
+    medewerkers,
+    aantalWerkbonnen: werkbonnen.length,
+    aantalTaken,
+    aantalTakenKlaar,
+    aantalFotos: werkbonnen.reduce((n, w) => n + (w.fotos?.length || 0), 0),
+  }
+}
 
 export function useProjecten() {
   const [projecten, setProjecten] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setProjecten(MOCK_PROJECTEN)
-      setLoading(false)
-    }, 300)
-    return () => clearTimeout(t)
-  }, [])
+  const fetch = async () => {
+    setLoading(true)
+    const { data, error } = await supabase
+      .from('projecten')
+      .select(PROJECT_SELECT)
+      .order('startdatum', { ascending: false, nullsFirst: false })
 
-  return { projecten, loading }
+    if (error) {
+      setError(error.message)
+    } else {
+      setError(null)
+      setProjecten((data || []).map(mapProject))
+    }
+    setLoading(false)
+  }
+
+  useEffect(() => { fetch() }, [])
+
+  return { projecten, loading, error, refetch: fetch }
 }
 
 export function useProject(id: string) {
   const [project, setProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setProject(MOCK_PROJECTEN.find((p) => p.id === id) ?? null)
-      setLoading(false)
-    }, 200)
-    return () => clearTimeout(t)
-  }, [id])
+  const fetch = async () => {
+    if (!id) { setLoading(false); return }
+    setLoading(true)
+    const { data, error } = await supabase
+      .from('projecten')
+      .select(PROJECT_SELECT)
+      .eq('id', id)
+      .single()
 
-  // Mock-only koppeling: werkt uitsluitend in-memory voor deze sessie.
-  // Supabase-koppeling volgt zodra de echte 'projecten'-tabel er is (zie .ai/FEATURE_BACKLOG.md).
-  const koppelMedewerkers = (medewerkerIds: string[]) => {
-    setProject((prev) => {
-      if (!prev) return prev
-      const bestaandeIds = new Set(prev.medewerkers.map((m) => m.id))
-      const nieuwe = MOCK_MEDEWERKERS.filter((m) => medewerkerIds.includes(m.id) && !bestaandeIds.has(m.id))
-      const bijgewerkt: Project = { ...prev, medewerkers: [...prev.medewerkers, ...nieuwe] }
-      const idx = MOCK_PROJECTEN.findIndex((p) => p.id === prev.id)
-      if (idx !== -1) MOCK_PROJECTEN[idx] = bijgewerkt
-      return bijgewerkt
-    })
+    if (error) {
+      setError(error.message)
+      setProject(null)
+    } else {
+      setError(null)
+      setProject(data ? mapProject(data) : null)
+    }
+    setLoading(false)
   }
 
-  return { project, loading, koppelMedewerkers }
+  useEffect(() => { fetch() }, [id])
+
+  // Let op: medewerkers hangen in het datamodel aan een wérkbon, niet
+  // aan een project (zie 001_initial.sql). "Koppelen aan een project"
+  // betekent daarom: koppelen aan alle werkbonnen van dat project.
+  // Heeft het project nog geen werkbonnen, dan is er niets om aan te
+  // koppelen en geeft deze functie een fout terug.
+  const koppelMedewerkers = async (medewerkerIds: string[]) => {
+    if (!project || medewerkerIds.length === 0) return { error: null }
+
+    const { data: werkbonnen, error: werkbonError } = await supabase
+      .from('werkbonnen')
+      .select('id')
+      .eq('project_id', project.id)
+
+    if (werkbonError) return { error: werkbonError.message }
+
+    if (!werkbonnen || werkbonnen.length === 0) {
+      return { error: 'Dit project heeft nog geen werkbonnen om medewerkers aan te koppelen.' }
+    }
+
+    const rijen = werkbonnen.flatMap((w) =>
+      medewerkerIds.map((medewerkerId) => ({
+        werkbon_id: w.id,
+        medewerker_id: medewerkerId,
+      }))
+    )
+
+    // Bestaande koppelingen negeren in plaats van als fout behandelen —
+    // de primary key op (werkbon_id, medewerker_id) vangt duplicaten af.
+    const { error: insertError } = await supabase
+      .from('werkbon_medewerkers')
+      .upsert(rijen, { onConflict: 'werkbon_id,medewerker_id', ignoreDuplicates: true })
+
+    if (insertError) return { error: insertError.message }
+
+    await fetch()
+    return { error: null }
+  }
+
+  return { project, loading, error, refetch: fetch, koppelMedewerkers }
 }
 
+// Vervangt de vroegere MOCK_MEDEWERKERS-constante.
+// Alleen actieve medewerkers — een uit dienst gemelde collega hoort
+// niet meer in een koppellijst te staan.
+export function useMedewerkers() {
+  const [medewerkers, setMedewerkers] = useState<Profile[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetch = async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('actief', true)
+        .order('naam')
+
+      if (error) setError(error.message)
+      else { setError(null); setMedewerkers(data || []) }
+      setLoading(false)
+    }
+    fetch()
+  }, [])
+
+  return { medewerkers, loading, error }
+}
+
+// De planning wordt afgeleid uit werkbonnen: elke werkbon met een datum
+// die aan een project hangt, is één regel in de weekplanning.
 export function usePlanning() {
   const [planning, setPlanning] = useState<PlanningItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      setPlanning(MOCK_PLANNING)
+    const fetch = async () => {
+      const { data, error } = await supabase
+        .from('werkbonnen')
+        .select(`
+          id, datum, adres,
+          project:projecten ( id, naam, status ),
+          werkbon_medewerkers ( medewerker:profiles(naam) )
+        `)
+        .not('project_id', 'is', null)
+        .order('datum', { ascending: true })
+
+      if (error) {
+        setError(error.message)
+      } else {
+        setError(null)
+        setPlanning(
+          (data || [])
+            .filter((w: any) => w.project)
+            .map((w: any) => ({
+              id: w.id,
+              datum: w.datum,
+              projectId: w.project.id,
+              projectnaam: w.project.naam ?? '',
+              adres: w.adres ?? '',
+              medewerkers: (w.werkbon_medewerkers || [])
+                .map((wm: any) => wm.medewerker?.naam)
+                .filter(Boolean),
+              status: w.project.status as ProjectStatus,
+            }))
+        )
+      }
       setLoading(false)
-    }, 200)
-    return () => clearTimeout(t)
+    }
+    fetch()
   }, [])
 
-  return { planning, loading }
+  return { planning, loading, error }
 }
 
 export function statusLabel(s: ProjectStatus): string {
@@ -207,5 +241,3 @@ export function statusKleur(s: ProjectStatus): string {
   }
   return map[s]
 }
-
-export { MOCK_MEDEWERKERS }

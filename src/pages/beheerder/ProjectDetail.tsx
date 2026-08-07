@@ -7,7 +7,7 @@ import { ProgressBar } from '@/components/ui/ProgressBar'
 import { Avatar } from '@/components/ui/Avatar'
 import { Modal } from '@/components/ui/Modal'
 import { Spinner } from '@/components/ui/Spinner'
-import { useProject, usePlanning, statusLabel, statusKleur, MOCK_MEDEWERKERS } from '@/hooks/useProjecten'
+import { useProject, usePlanning, useMedewerkers, statusLabel, statusKleur } from '@/hooks/useProjecten'
 import { cn, formatDatum } from '@/lib/utils'
 import type { Profile } from '@/types'
 import {
@@ -31,6 +31,7 @@ export default function ProjectDetail() {
   const navigate = useNavigate()
   const { project, loading: loadingProject, koppelMedewerkers } = useProject(id ?? '')
   const { planning, loading: loadingPlanning } = usePlanning()
+  const { medewerkers } = useMedewerkers()
   const [actieveTab, setActieveTab] = useState<Tab>('overzicht')
   const [koppelModal, setKoppelModal] = useState(false)
   const [geselecteerd, setGeselecteerd] = useState<string[]>([])
@@ -51,7 +52,7 @@ export default function ProjectDetail() {
     )
   }
 
-  const beschikbaar = MOCK_MEDEWERKERS.filter(
+  const beschikbaar = medewerkers.filter(
     (m) => !project.medewerkers.find((pm) => pm.id === m.id)
   )
 
