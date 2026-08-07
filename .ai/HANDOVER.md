@@ -144,6 +144,24 @@ Na afloop opnieuw getest met `supabase/tests/rollentest.sql`, uitgebreid met de 
 
 Aan de clientkant: `Registreer.tsx` (via de functie, token als metadata mee), `WerkbonUitvoeren.tsx`, `WerkbonDetail.tsx` en `TaakItem.tsx` (foutafhandeling, `alert()` eruit). `npm run build` groen.
 
+## ClickUp-scope — besloten: Diemen én Leek
+
+Het architectuurdocument gaat uit van één lijst: *Uitvoering 2026 Diemen*. Een telling in de echte werkruimte (augustus 2026) liet zien dat dat te smal is. Op status `volgende week` stonden **30 taken**, verdeeld over drie lijsten:
+
+| Lijst | Lijst-ID | Taken |
+|---|---|---|
+| Uitvoering 2026 Diemen | `901517814355` | 24 |
+| Uitvoering 2026 Leek | `901522829990` | 5 |
+| Uitvoering | `901506909996` | 1 |
+
+Alleen Diemen synchroniseren zou vijf adressen stil laten verdwijnen — Bolswarderbaan in Sneek, Stationsstraat in Eext, 27 woningen in Oude Pekela, Bangmastrjitte in Rheduzum, Dahliastraat in Rijnsburg — zonder dat iemand het merkt tot een monteur ergens zonder werkbon staat.
+
+**Besluit van de eigenaar: Diemen én Leek doen mee.** Leek is een tweede vestiging met dezelfde werkwijze. De losse lijst *Uitvoering* (1 taak) blijft buiten scope; die lijkt een restant.
+
+Voor fase 2 betekent dit: de synchronisatie filtert op deze twee lijst-ID's, niet op de space (dan zou *Uitvoering* er alsnog bij komen) en niet op één lijst. Zet ze als constante bij elkaar bovenin de handler, zodat een derde vestiging één regel is.
+
+Space *Werkvoorbereiding* = `90152805075`.
+
 ## Mock data — eruit
 
 `useDashboard` en `useWerkdag` waren de laatste twee hooks op verzonnen data. Beide draaien nu op echte tabellen; migratie 006 voegde `werkdag_logs` toe. Daarmee is er **geen mock data meer in de app**.
