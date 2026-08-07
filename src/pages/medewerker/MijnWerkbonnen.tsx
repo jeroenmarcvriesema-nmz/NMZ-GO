@@ -67,7 +67,7 @@ export default function MijnWerkbonnen() {
   )
 
   const vandaag = werkbonnen.find((w) => w.status !== 'voltooid') ?? null
-  const { state: werkdag, startWerkdag, stopWerkdag } = useWerkdag(vandaag?.id ?? null)
+  const { state: werkdag, bezig: werkdagBezig, startWerkdag, stopWerkdag } = useWerkdag(vandaag?.id ?? null)
 
   if (loading) {
     return (
@@ -158,10 +158,11 @@ export default function MijnWerkbonnen() {
           {/* START knop */}
           <button
             onClick={startWerkdag}
-            className="w-full py-5 rounded-2xl bg-green-500 text-white font-extrabold text-lg flex items-center justify-center gap-3 shadow-[0_4px_20px_rgba(34,197,94,0.35)] active:scale-[0.98] transition-transform"
+            disabled={werkdagBezig}
+            className="w-full py-5 rounded-2xl bg-green-500 text-white font-extrabold text-lg flex items-center justify-center gap-3 shadow-[0_4px_20px_rgba(34,197,94,0.35)] active:scale-[0.98] transition-transform disabled:opacity-60 disabled:active:scale-100"
           >
             <IconPlayerPlay className="w-6 h-6" />
-            START WERKDAG
+            {werkdagBezig ? 'BEZIG…' : 'START WERKDAG'}
           </button>
 
           {/* Status overzicht */}
@@ -309,10 +310,11 @@ export default function MijnWerkbonnen() {
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/90 dark:bg-surface-dark-2/90 backdrop-blur-sm border-t border-gray-100 dark:border-white/10">
         <button
           onClick={stopWerkdag}
-          className="w-full py-4 rounded-xl bg-gray-900 text-white font-bold text-base flex items-center justify-center gap-3 active:scale-[0.98] transition-transform shadow-lg"
+          disabled={werkdagBezig}
+          className="w-full py-4 rounded-xl bg-gray-900 text-white font-bold text-base flex items-center justify-center gap-3 active:scale-[0.98] transition-transform shadow-lg disabled:opacity-60 disabled:active:scale-100"
         >
           <IconPlayerStop className="w-5 h-5" />
-          STOP WERKDAG
+          {werkdagBezig ? 'BEZIG…' : 'STOP WERKDAG'}
         </button>
       </div>
       <LogoutButton raised />

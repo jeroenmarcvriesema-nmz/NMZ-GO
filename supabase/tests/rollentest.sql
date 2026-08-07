@@ -209,6 +209,35 @@ begin
     when sqlstate 'ZZ001' then insert into zz_uitslag values (10,'taak_aanmaken() aanroepen','GELUKT','geweigerd');
     when others          then insert into zz_uitslag values (10,'taak_aanmaken() aanroepen','geweigerd: '||sqlerrm,'geweigerd');
   end;
+
+  -- 11 t/m 13: werkdag_logs (migratie 006). Een monteur mag zijn eigen
+  -- werkdag starten en stoppen, maar zijn starttijd niet vervalsen en
+  -- geen log op naam van een collega zetten.
+  begin
+    insert into public.werkdag_logs (medewerker_id, werkbon_id) values (auth.uid(), eigen_bon);
+    raise exception using errcode = 'ZZ001', message = '1';
+  exception
+    when sqlstate 'ZZ001' then insert into zz_uitslag values (11,'eigen werkdag starten','GELUKT','mag');
+    when others          then insert into zz_uitslag values (11,'eigen werkdag starten','geweigerd: '||sqlerrm,'mag');
+  end;
+
+  begin
+    update public.werkdag_logs set start_tijd = now() - interval '4 hours'
+     where medewerker_id = auth.uid();
+    raise exception using errcode = 'ZZ001', message = '1';
+  exception
+    when sqlstate 'ZZ001' then insert into zz_uitslag values (12,'eigen starttijd vervalsen','GELUKT','geweigerd');
+    when others          then insert into zz_uitslag values (12,'eigen starttijd vervalsen','geweigerd: '||sqlerrm,'geweigerd');
+  end;
+
+  begin
+    insert into public.werkdag_logs (medewerker_id, werkbon_id, datum)
+    values ('<beheerder_id>', eigen_bon, current_date - 1);
+    raise exception using errcode = 'ZZ001', message = '1';
+  exception
+    when sqlstate 'ZZ001' then insert into zz_uitslag values (13,'werkdag voor een collega aanmaken','GELUKT','geweigerd');
+    when others          then insert into zz_uitslag values (13,'werkdag voor een collega aanmaken','geweigerd: '||sqlerrm,'geweigerd');
+  end;
 end $$;
 
 select * from zz_uitslag order by nr;
@@ -350,6 +379,7 @@ order by nr;
 -- ── 5. OPRUIMEN ───────────────────────────────────────────────
 -- Draai dit altijd, ook als een blok hierboven is afgebroken.
 
+delete from public.werkdag_logs     where werkbon_id in (select id from public.werkbonnen where bonnummer like 'ZZ-%');
 delete from public.taken            where titel like 'ZZ-%';
 delete from public.werkbonnen       where bonnummer like 'ZZ-%';
 delete from public.projecten        where naam like 'ZZ-%';

@@ -144,6 +144,16 @@ Na afloop opnieuw getest met `supabase/tests/rollentest.sql`, uitgebreid met de 
 
 Aan de clientkant: `Registreer.tsx` (via de functie, token als metadata mee), `WerkbonUitvoeren.tsx`, `WerkbonDetail.tsx` en `TaakItem.tsx` (foutafhandeling, `alert()` eruit). `npm run build` groen.
 
+## Mock data — eruit
+
+`useDashboard` en `useWerkdag` waren de laatste twee hooks op verzonnen data. Beide draaien nu op echte tabellen; migratie 006 voegde `werkdag_logs` toe. Daarmee is er **geen mock data meer in de app**.
+
+Wat dat praktisch betekent voor de testfase: het dashboard toont nu wat er werkelijk staat. Met één werkbon in de database die niet op de datum van vandaag staat, zie je een lege staat — dat is correct, geen bug. Wil je het dashboard gevuld zien, maak dan een werkbon aan met de datum van vandaag, koppel er een monteur aan, en laat die zijn werkdag starten.
+
+De drempels waarop het dashboard alarm slaat staan als benoemde constanten bovenin `useDashboard.ts`: verwachte starttijd 08:00, één uur bezig zonder foto is een melding, en na twee uur bezig met minder dan de helft van de taken klaar geldt een bon als "achter op schema". Dat zijn keuzes, geen natuurwetten — verstel ze als de praktijk anders blijkt.
+
+**Nog wel op mock/afwezig:** niets in de hooks. Wat resteert zijn features die simpelweg nog niet bestaan (PDF-export, foto-annotaties) — zie de backlog.
+
 ## Designfase — afgerond
 
 **De overdracht hieronder (hoofdstuk 7, 10 en 11) is op dit punt achterhaald.** Die stelt dat de premium redesign nog volledig moet gebeuren. Dat klopt niet meer: in Sprint 3.1 en 3.1b is die grotendeels uitgevoerd, ná het schrijven van dat hoofdstuk. Wat er nu staat:

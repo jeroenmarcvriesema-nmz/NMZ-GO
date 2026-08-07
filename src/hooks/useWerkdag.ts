@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { toast } from '@/store/toastStore'
 
-// ── Werkdag state ──────────────────────────────────────────────
-// Supabase koppeling (later):
-//   - Tabel: werkdag_logs (id, medewerker_id, werkbon_id, start_tijd, stop_tijd, datum)
-//   - START: INSERT INTO werkdag_logs (medewerker_id, werkbon_id, start_tijd, datum)
-//   - STOP:  UPDATE werkdag_logs SET stop_tijd = now() WHERE id = ?
-//   - Herstellen: SELECT * FROM werkdag_logs WHERE medewerker_id = ? AND datum = today
+// Tabel: werkdag_logs (migratie 006). Eén rij per monteur per
+// werkbon per dag; start zet de rij, stop vult stop_tijd.
+//
+// Tot 006 leefde dit alleen in sessionStorage: het verdween bij het
+// sluiten van het tabblad en de beheerder zag er niets van. Nu staat
+// het in de database, en voedt het het dashboard.
 
 export type WerkdagFase = 'voor_start' | 'actief' | 'gestopt'
 
@@ -17,57 +19,116 @@ export interface WerkdagState {
   werkdagLogId: string | null
 }
 
-const STORAGE_KEY = 'nmzgo_werkdag'
+const LEEG: WerkdagState = { fase: 'voor_start', startTijd: null, stopTijd: null, werkdagLogId: null }
+
+function vandaag(): string {
+  return new Date().toISOString().split('T')[0]
+}
+
+function naarState(rij: { id: string; start_tijd: string; stop_tijd: string | null }): WerkdagState {
+  return {
+    fase: rij.stop_tijd ? 'gestopt' : 'actief',
+    startTijd: new Date(rij.start_tijd),
+    stopTijd: rij.stop_tijd ? new Date(rij.stop_tijd) : null,
+    werkdagLogId: rij.id,
+  }
+}
 
 export function useWerkdag(werkbonId: string | null) {
   const { profile } = useAuth()
+  const [state, setState] = useState<WerkdagState>(LEEG)
+  const [loading, setLoading] = useState(true)
+  const [bezig, setBezig] = useState(false)
 
-  const herstelState = (): WerkdagState => {
-    try {
-      const opgeslagen = sessionStorage.getItem(STORAGE_KEY)
-      if (opgeslagen) {
-        const parsed = JSON.parse(opgeslagen)
-        if (parsed.werkbonId === werkbonId) {
-          return {
-            fase: parsed.fase,
-            startTijd: parsed.startTijd ? new Date(parsed.startTijd) : null,
-            stopTijd: parsed.stopTijd ? new Date(parsed.stopTijd) : null,
-            werkdagLogId: parsed.werkdagLogId,
-          }
-        }
-      }
-    } catch {}
-    return { fase: 'voor_start', startTijd: null, stopTijd: null, werkdagLogId: null }
-  }
+  // Herstellen bij het openen van het scherm. Dit is wat sessionStorage
+  // deed, maar nu over apparaten heen: begint een monteur op zijn
+  // telefoon, dan ziet hij dat ook terug na een herstart.
+  useEffect(() => {
+    let afgebroken = false
 
-  const [state, setState] = useState<WerkdagState>(herstelState)
+    const herstel = async () => {
+      if (!profile || !werkbonId) { setState(LEEG); setLoading(false); return }
+      setLoading(true)
 
-  const slaOp = (s: WerkdagState) => {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ ...s, werkbonId }))
-    setState(s)
-  }
+      const { data, error } = await supabase
+        .from('werkdag_logs')
+        .select('id, start_tijd, stop_tijd')
+        .eq('medewerker_id', profile.id)
+        .eq('werkbon_id', werkbonId)
+        .eq('datum', vandaag())
+        .maybeSingle()
+
+      if (afgebroken) return
+      setState(error || !data ? LEEG : naarState(data))
+      setLoading(false)
+    }
+
+    herstel()
+    return () => { afgebroken = true }
+  }, [profile?.id, werkbonId])
 
   const startWerkdag = async () => {
-    const nu = new Date()
-    // TODO: INSERT INTO werkdag_logs via Supabase
-    // const { data } = await supabase.from('werkdag_logs').insert({
-    //   medewerker_id: profile?.id,
-    //   werkbon_id: werkbonId,
-    //   start_tijd: nu.toISOString(),
-    //   datum: nu.toISOString().split('T')[0],
-    // }).select().single()
-    slaOp({ fase: 'actief', startTijd: nu, stopTijd: null, werkdagLogId: 'mock-id' })
+    if (!profile || !werkbonId || bezig) return
+    setBezig(true)
+
+    // Upsert op de unieke sleutel: twee keer op "start" drukken mag
+    // nooit een tweede rij of een nieuwe starttijd opleveren.
+    const { data, error } = await supabase
+      .from('werkdag_logs')
+      .upsert(
+        { medewerker_id: profile.id, werkbon_id: werkbonId, datum: vandaag() },
+        { onConflict: 'medewerker_id,werkbon_id,datum', ignoreDuplicates: true }
+      )
+      .select('id, start_tijd, stop_tijd')
+      .maybeSingle()
+
+    setBezig(false)
+
+    if (error) {
+      toast.fout('Starten lukte niet. Controleer je verbinding en probeer het opnieuw.')
+      return
+    }
+
+    // ignoreDuplicates geeft niets terug als de rij er al was —
+    // dan is de werkdag al gestart en halen we de bestaande op.
+    if (data) {
+      setState(naarState(data))
+      return
+    }
+
+    const { data: bestaand } = await supabase
+      .from('werkdag_logs')
+      .select('id, start_tijd, stop_tijd')
+      .eq('medewerker_id', profile.id)
+      .eq('werkbon_id', werkbonId)
+      .eq('datum', vandaag())
+      .maybeSingle()
+
+    if (bestaand) setState(naarState(bestaand))
   }
 
   const stopWerkdag = async () => {
+    if (!state.werkdagLogId || bezig) return
+    setBezig(true)
+
     const nu = new Date()
-    // TODO: UPDATE werkdag_logs SET stop_tijd = nu WHERE id = state.werkdagLogId
-    // await supabase.from('werkdag_logs').update({ stop_tijd: nu.toISOString() })
-    //   .eq('id', state.werkdagLogId)
-    slaOp({ ...state, fase: 'gestopt', stopTijd: nu })
+    const { data, error } = await supabase
+      .from('werkdag_logs')
+      .update({ stop_tijd: nu.toISOString() })
+      .eq('id', state.werkdagLogId)
+      .select('id')
+
+    setBezig(false)
+
+    if (error || !data || data.length === 0) {
+      toast.fout('Stoppen lukte niet. Controleer je verbinding en probeer het opnieuw.')
+      return
+    }
+
+    setState((s) => ({ ...s, fase: 'gestopt', stopTijd: nu }))
   }
 
-  return { state, startWerkdag, stopWerkdag }
+  return { state, loading, bezig, startWerkdag, stopWerkdag }
 }
 
 export function formatTijd(d: Date | null): string {

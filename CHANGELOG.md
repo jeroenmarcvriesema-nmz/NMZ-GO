@@ -1,5 +1,26 @@
 # NMZ GO — Changelog
 
+## Mock data eruit — dashboard en werkdag op echte data
+
+### Database
+- **[FEATURE]** Migratie 006: tabel `werkdag_logs` (één rij per monteur per werkbon per dag), met RLS, een unieke sleutel tegen dubbele starts, een check dat stoppen niet vóór starten kan, en een trigger die een monteur tot de kolom `stop_tijd` beperkt — dezelfde tweetrapsopzet als 003 en 005.
+
+### Verbeteringen
+- **[FEATURE]** `useWerkdag` draaide op `sessionStorage`: de werkdag verdween bij het sluiten van het tabblad en de beheerder zag er niets van. Nu echte rijen, met herstel bij het openen van het scherm — begint een monteur op zijn telefoon, dan ziet hij dat terug na een herstart. Start gebruikt een upsert, zodat twee keer tikken nooit een tweede rij of een nieuwe starttijd oplevert.
+- **[FEATURE]** `useDashboard` draaide volledig op verzonnen cijfers. Nu berekend uit de werkbonnen van vandaag, hun taken en foto's, en de werkdag_logs. De drempels die bepalen wanneer het dashboard alarm slaat (verwachte starttijd, uren zonder foto, uren voor zichtbare voortgang) staan als benoemde constanten bij elkaar bovenin de hook.
+- **[UI]** De KPI's op het dashboard kwamen uit de `projecten`-tabel. Die vult zich pas met de ClickUp-synchronisatie, dus tot die tijd toonde het dashboard zes nullen boven een tabel die wél werk liet zien. Ze komen nu uit de werkbonnen van vandaag; labels aangepast ("Lopend vandaag", "Gestart", "Achter op schema", "Gem. voortgang").
+- **[UI]** Dashboard heeft nu een lege staat en een foutstaat in plaats van een lege tabel.
+- **[UI]** De start- en stopknop van de werkdag blokkeren tijdens het opslaan. Bij een wisselende verbinding in het veld tikte een monteur anders twee keer.
+
+### Geverifieerd
+- ✅ Monteur kan eigen werkdag starten en stoppen
+- ✅ Monteur kan zijn starttijd niet vervalsen (`42501`)
+- ✅ Monteur kan geen werkdag op naam van een collega aanmaken
+- ✅ Monteur kan zijn eigen log niet verwijderen (0 rijen — beheerderswerk)
+- ✅ Beheerder ziet werkbon, taken, foto's, team én starttijd van de monteur in één keer
+- ✅ Alle foreign-keynamen komen overeen met wat de queries aannemen
+- ✅ `npm run build` groen
+
 ## Designfase afgerond — systeemstaten en meldingen
 
 ### Nieuw
