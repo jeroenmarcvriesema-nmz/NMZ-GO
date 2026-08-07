@@ -1,5 +1,27 @@
 # NMZ GO — Changelog
 
+## Migratie 005 — uitnodigingen, registratie en werkbonstatus
+
+### Database / RLS fixes
+- **[CRITICAL FIX]** Rol-escalatie bij registratie gedicht. `handle_new_user()` las de rol uit `raw_user_meta_data`, en die metadata komt rechtstreeks uit `supabase.auth.signUp({ options: { data } })`. Eén registratie met `{ rol: 'beheerder' }` volstond om beheerder te worden. De `with check` uit migratie 003 hielp niet: de trigger draait als `security definer` en gaat langs RLS heen. De rol staat nu vast op `'medewerker'`.
+- **[CRITICAL FIX]** `uitnodigingen` stond open voor iedereen: `uitnodigingen_select` had als voorwaarde letterlijk `true`, waardoor een niet-ingelogde bezoeker alle tokens van alle tenants kon opvragen. Aangetoond met een testrij. De tabel is nu beperkt tot de beheerder van de eigen tenant; `uitnodigingen_update` idem, met `with check`.
+- **[FEATURE]** `uitnodiging_controleren(token)` toegevoegd (`security definer`, uitvoerbaar door `anon`): geeft alleen `true`/`false` terug, zodat de registratiepagina een link kan controleren zonder dat de tabel open hoeft.
+- **[FIX]** Een uitgenodigde belandde altijd in de oudste tenant. `handle_new_user()` haalt de tenant nu uit de uitnodiging en verzilvert die in dezelfde transactie — daarmee is een token ook niet meer twee keer bruikbaar.
+- **[FIX]** Een toegewezen medewerker kan zijn eigen werkbon afronden. Nieuwe policy `werkbonnen_update_toegewezen` plus trigger `werkbonnen_guard_kolommen`, die zo iemand beperkt tot de kolom `status` en tot de waarden `bezig`/`voltooid`.
+
+### Verbeteringen
+- **[FIX]** `WerkbonUitvoeren.tsx` meldde "voltooid" terwijl de update door RLS werd geblokkeerd — een update die nul rijen raakt is voor PostgREST een geldige lege respons. Er wordt nu op `error` én op het aantal geraakte rijen gecontroleerd, met een zichtbare foutmelding. De `alert()` is vervangen door de reguliere foutstijl.
+- **[FIX]** Foutafhandeling toegevoegd op `WerkbonDetail.tsx` (statuswissel) en `TaakItem.tsx` (afvinken en foto-upload) — die negeerden hun `error` stilzwijgend.
+
+### Geverifieerd
+- ✅ Medewerker kan eigen werkbon op `bezig`/`voltooid` zetten, niet terug op `open`
+- ✅ Medewerker kan geen andere kolom van zijn werkbon wijzigen (`42501`)
+- ✅ Medewerker kan de werkbon van een collega niet afronden (0 rijen)
+- ✅ Niet-ingelogde bezoeker ziet geen enkel uitnodigingstoken meer
+- ✅ `uitnodiging_controleren()` werkt wel voor `anon` — registratieflow blijft heel
+- ✅ Beheerder ongewijzigd: status, adres, uitnodiging aanmaken; tenant-grens blijft dicht
+- ✅ `npm run build` groen
+
 ## Migratie 003 — rol-escalatie op profiles
 
 ### Database / RLS fixes

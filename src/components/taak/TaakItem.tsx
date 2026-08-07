@@ -5,7 +5,7 @@ import { useTaken } from '@/hooks/useTaken'
 import { useFotos } from '@/hooks/useFotos'
 import { useAuth } from '@/hooks/useAuth'
 import type { Taak } from '@/types'
-import { IconCamera, IconCheck, IconSquare, IconPhoto } from '@tabler/icons-react'
+import { IconCamera, IconCheck, IconSquare, IconPhoto, IconAlertCircle } from '@tabler/icons-react'
 
 interface TaakItemProps {
   taak: Taak
@@ -20,24 +20,29 @@ export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps
   const { profile } = useAuth()
   const [uploading, setUploading] = useState(false)
   const [toggling, setToggling] = useState(false)
+  const [fout, setFout] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const heeftFoto = (taak.fotos?.length ?? 0) > 0
 
   const handleFotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !profile) return
+    setFout(null)
     setUploading(true)
-    await upload(werkbonId, taak.id, profile.id, file)
-    await onRefresh()
+    const { error } = await upload(werkbonId, taak.id, profile.id, file)
     setUploading(false)
+    if (error) { setFout('De foto kon niet worden opgeslagen. Probeer het opnieuw.'); return }
+    await onRefresh()
   }
 
   const handleToggle = async () => {
     if (!heeftFoto || readOnly || toggling) return
+    setFout(null)
     setToggling(true)
-    await toggleVoltooid(taak)
-    await onRefresh()
+    const { error } = await toggleVoltooid(taak)
     setToggling(false)
+    if (error) { setFout('De taak kon niet worden bijgewerkt. Probeer het opnieuw.'); return }
+    await onRefresh()
   }
 
   return (
@@ -98,6 +103,12 @@ export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps
             <span className="text-xs text-gray-400 dark:text-white/40 italic flex items-center gap-1">
               <IconCamera className="w-3.5 h-3.5" /> Foto vereist
             </span>
+          )}
+
+          {fout && (
+            <div className="w-full flex items-start gap-2 text-xs text-brand-red dark:text-red-400 bg-brand-red-light dark:bg-brand-red/10 border border-brand-red rounded-sm p-2.5 mt-1">
+              <IconAlertCircle className="w-4 h-4 flex-shrink-0" />{fout}
+            </div>
           )}
         </div>
       )}

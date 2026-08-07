@@ -150,13 +150,40 @@ begin
     when others          then insert into zz_uitslag values (6,'eigen taak naar andere tenant','geweigerd: '||sqlerrm,'geweigerd');
   end;
 
+  -- 7 t/m 7c: afronden mag sinds migratie 005, maar alleen de
+  -- kolom `status` en alleen naar bezig/voltooid.
   begin
     update public.werkbonnen set status = 'voltooid' where id = eigen_bon;
     get diagnostics v = row_count;
     raise exception using errcode = 'ZZ001', message = v::text;
   exception
-    when sqlstate 'ZZ001' then insert into zz_uitslag values (7,'eigen werkbon op voltooid zetten','geraakte rijen: '||sqlerrm,'zie bevinding 1');
-    when others          then insert into zz_uitslag values (7,'eigen werkbon op voltooid zetten','geweigerd: '||sqlerrm,'zie bevinding 1');
+    when sqlstate 'ZZ001' then insert into zz_uitslag values (7,'eigen werkbon op voltooid zetten','GELUKT ('||sqlerrm||' rijen)','mag (1 rij)');
+    when others          then insert into zz_uitslag values (7,'eigen werkbon op voltooid zetten','geweigerd: '||sqlerrm,'mag (1 rij)');
+  end;
+
+  begin
+    update public.werkbonnen set status = 'open' where id = eigen_bon;
+    raise exception using errcode = 'ZZ001', message = '1';
+  exception
+    when sqlstate 'ZZ001' then insert into zz_uitslag values (71,'eigen werkbon terug op open zetten','GELUKT','geweigerd');
+    when others          then insert into zz_uitslag values (71,'eigen werkbon terug op open zetten','geweigerd: '||sqlerrm,'geweigerd');
+  end;
+
+  begin
+    update public.werkbonnen set adres = 'ZZ-GEKAAPT' where id = eigen_bon;
+    raise exception using errcode = 'ZZ001', message = '1';
+  exception
+    when sqlstate 'ZZ001' then insert into zz_uitslag values (72,'adres van eigen werkbon wijzigen','GELUKT','geweigerd');
+    when others          then insert into zz_uitslag values (72,'adres van eigen werkbon wijzigen','geweigerd: '||sqlerrm,'geweigerd');
+  end;
+
+  begin
+    update public.werkbonnen set status = 'voltooid' where id = '00000000-0000-4000-8000-000000000001';
+    get diagnostics v = row_count;
+    raise exception using errcode = 'ZZ001', message = v::text;
+  exception
+    when sqlstate 'ZZ001' then insert into zz_uitslag values (73,'werkbon van een collega op voltooid zetten','geraakte rijen: '||sqlerrm,'0 rijen');
+    when others          then insert into zz_uitslag values (73,'werkbon van een collega op voltooid zetten','geweigerd: '||sqlerrm,'0 rijen');
   end;
 
   begin
@@ -294,8 +321,14 @@ select * from zz_uitslag_b order by nr;
 
 
 -- ── 4. NIET INGELOGD ──────────────────────────────────────────
--- Verwacht: overal nul. `uitnodigingen` is de uitzondering die er
--- niet hoort te zijn — zie bevinding 2 in .ai/HANDOVER.md.
+-- Verwacht: overal nul, en geen enkel uitnodigingstoken zichtbaar.
+-- De registratiepagina moet een link wél kunnen controleren; dat
+-- loopt sinds migratie 005 via uitnodiging_controleren(), die alleen
+-- ja of nee teruggeeft.
+--
+-- Zet vóór dit blok een testuitnodiging klaar (als postgres):
+--   insert into public.uitnodigingen (token, tenant_id)
+--   values ('ZZ-GEHEIM-TOKEN', '00000000-0000-4000-8000-0000000000b2');
 
 set local role anon;
 
@@ -305,6 +338,12 @@ union all select 3, 'anon: taken',           (select count(*) from public.taken)
 union all select 4, 'anon: projecten',       (select count(*) from public.projecten)::text,       '0'
 union all select 5, 'anon: tenants',         (select count(*) from public.tenants)::text,         '0'
 union all select 6, 'anon: uitnodigingen',   (select count(*) from public.uitnodigingen)::text,   '0'
+union all select 7, 'anon: zichtbare tokens',
+       (select coalesce(string_agg(token, ','), 'geen') from public.uitnodigingen), 'geen'
+union all select 8, 'anon: geldig token via functie',
+       (select public.uitnodiging_controleren('ZZ-GEHEIM-TOKEN'))::text, 'true'
+union all select 9, 'anon: onzin-token via functie',
+       (select public.uitnodiging_controleren('bestaat-niet'))::text, 'false'
 order by nr;
 
 
