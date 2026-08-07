@@ -10,7 +10,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import { useWerkbon } from '@/hooks/useWerkbonnen'
 import { berekenVoortgang, formatDatum, cn } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
-import { IconArrowLeft, IconCheck, IconAlertCircle } from '@tabler/icons-react'
+import { IconArrowLeft, IconCheck, IconAlertCircle, IconCircleCheck } from '@tabler/icons-react'
 
 export default function WerkbonUitvoeren() {
   const { id } = useParams<{ id: string }>()
@@ -39,8 +39,16 @@ export default function WerkbonUitvoeren() {
       .select('id')
     setVoltooien(false)
 
-    if (error || !data || data.length === 0) {
-      setFout('De werkbon kon niet worden afgerond. Probeer het opnieuw of neem contact op met de beheerder.')
+    // Twee verschillende oorzaken, twee verschillende meldingen.
+    // Een fout is techniek (verbinding, server). Nul geraakte rijen
+    // betekent dat RLS de update tegenhield — in de praktijk: deze
+    // monteur staat niet meer op de werkbon.
+    if (error) {
+      setFout('Opslaan lukte niet. Controleer je verbinding en probeer het opnieuw.')
+      return
+    }
+    if (!data || data.length === 0) {
+      setFout('Je staat niet meer op deze werkbon, dus afronden lukt niet. Vraag de beheerder om je opnieuw in te plannen.')
       return
     }
     navigate('/mijn-werkbonnen')
@@ -66,7 +74,9 @@ export default function WerkbonUitvoeren() {
 
         {allesAfgevinkt && werkbon.status !== 'voltooid' && (
           <div className="bg-brand-yellow-light dark:bg-brand-yellow/10 border border-brand-yellow rounded-lg p-4">
-            <div className="font-bold text-sm mb-1 text-gray-900 dark:text-white">🎉 Alle taken afgevinkt!</div>
+            <div className="flex items-center gap-2 font-bold text-sm mb-1 text-gray-900 dark:text-white">
+              <IconCircleCheck className="w-4 h-4 text-brand-yellow-dark dark:text-brand-yellow" /> Alle taken afgevinkt
+            </div>
             <div className="text-xs text-gray-600 dark:text-white/60 mb-3">Rond de werkbon af zodat de beheerder het rapport kan inzien.</div>
             <Button variant="primary" fullWidth loading={voltooien} onClick={voltooiWerkbon}><IconCheck className="w-4 h-4" /> Werkbon voltooien</Button>
             {fout && (
@@ -79,7 +89,9 @@ export default function WerkbonUitvoeren() {
 
         {werkbon.status === 'voltooid' && (
           <div className="bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-lg p-4 text-center">
-            <div className="text-green-700 dark:text-green-400 font-bold">✅ Werkbon voltooid</div>
+            <div className="flex items-center justify-center gap-2 text-green-700 dark:text-green-400 font-bold">
+              <IconCircleCheck className="w-4 h-4" /> Werkbon voltooid
+            </div>
           </div>
         )}
 

@@ -1,5 +1,24 @@
 # NMZ GO — Changelog
 
+## Designfase afgerond — systeemstaten en meldingen
+
+### Nieuw
+- **[FEATURE]** `EmptyState` — één gedeelde vorm voor "er is hier nog niets", met verplicht Tabler-icoon en hoogstens één actie. Vervangt acht handgemaakte lege staten die elk net anders waren.
+- **[FEATURE]** `ErrorState` — tegenhanger voor een mislukte load. Hiervóór was een mislukte load niet te onderscheiden van een lege lijst: je zag in beide gevallen niets.
+- **[FEATURE]** `Toaster` + `toastStore` — niet-blokkerende actiefeedback. Een fout blijft 7 seconden staan, de rest 4.
+
+### Verbeteringen
+- **[UI]** Alle zes `alert()`-popups vervangen door toasts. Een blokkerende browserpopup past niet bij een app die premium moet aanvoelen, en is op een telefoon in het veld ronduit hinderlijk.
+- **[UI]** Alle emoji-als-icoon verwijderd (🎉 ✅ ⚠️ 📋 📄 👥 🔒) en vervangen door Tabler-iconen, conform de iconregel in `UI_GUIDELINES.md`. Dit was dezelfde overtreding die in Sprint 3 al één keer is gecorrigeerd.
+- **[UI]** `Modal` is theme-reactief geworden. De kop was nog permanent donker (`bg-gray-900`) en week daarmee af van de rest van de schil sinds 3.1b. Ook een echt sluit-icoon in plaats van het teken ✕, plus `role="dialog"` en `aria-modal`.
+- **[UI]** Foutstaten aangesloten op `Werkbonnen` en `Projecten`: mislukt laden toont nu een melding met "Opnieuw proberen" in plaats van een lege lijst.
+- **[FIX]** `WerkbonNieuw` controleerde de inserts van taken en monteurs niet. Bij een fout kreeg de monteur een lege werkbon zonder dat iemand het merkte; nu volgt er een melding.
+- **[FIX]** Foutmelding bij het afronden van een werkbon benoemt nu de oorzaak — "je staat niet meer op deze werkbon" bij een geblokkeerde update, en een verbindingsmelding bij een technische fout.
+
+### Bewust niet gedaan
+- `Select`, generieke `Table` en `Dialog` zijn **niet** gebouwd. Geen enkel scherm heeft ze nodig: er staat nergens een `<select>`, de drie tabellen verschillen te veel voor een zinnige gemene deler, en er is geen destructieve actie in de UI. `Dialog` is wél gebouwd en weer verwijderd toen bleek dat hij geen afnemer had.
+- Het thema is **niet** omgezet naar dark-primair. `PRODUCT_VISION.md` schrijft dat voor, maar in Sprint 3.1b is bewust voor light-primair gekozen — dat is de latere beslissing en die blijft staan.
+
 ## Migratie 005 — uitnodigingen, registratie en werkbonstatus
 
 ### Database / RLS fixes

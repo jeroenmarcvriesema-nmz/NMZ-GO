@@ -144,6 +144,20 @@ Na afloop opnieuw getest met `supabase/tests/rollentest.sql`, uitgebreid met de 
 
 Aan de clientkant: `Registreer.tsx` (via de functie, token als metadata mee), `WerkbonUitvoeren.tsx`, `WerkbonDetail.tsx` en `TaakItem.tsx` (foutafhandeling, `alert()` eruit). `npm run build` groen.
 
+## Designfase — afgerond
+
+**De overdracht hieronder (hoofdstuk 7, 10 en 11) is op dit punt achterhaald.** Die stelt dat de premium redesign nog volledig moet gebeuren. Dat klopt niet meer: in Sprint 3.1 en 3.1b is die grotendeels uitgevoerd, ná het schrijven van dat hoofdstuk. Wat er nu staat:
+
+- Themasysteem compleet — `themeStore` met opgeslagen voorkeur, `class`-strategie, no-flash-script in `index.html`, toggle in zowel `Sidebar` als `Topbar`. `dark:`-varianten zitten in vrijwel elk bestand.
+- Merktokens, radius-/schaduwschaal, `ease-brand`-curve en `animate-page-in` staan in `tailwind.config.ts` en worden overal gebruikt.
+- `SectionHeading` vervangt alle losse sectiekoppen.
+
+Wat de fase openhield was niet het uiterlijk maar de **samenhang**: zes `alert()`-popups, acht verschillende lege staten, zeven emoji als icoon, geen enkele foutstaat, en een `Modal` met een permanent donkere kop. Dat is nu opgelost — zie het bovenste blok in `CHANGELOG.md` en de nieuwe componenten in `.ai/COMPONENT_LIBRARY.md`.
+
+**Eén beslissing die expliciet blijft staan:** het thema is light-primair, niet dark-primair. `PRODUCT_VISION.md` schrijft dark-primair voor, maar in 3.1b is bewust omgedraaid naar light. Dat is de latere beslissing en die is aangehouden. Wil je alsnog dark-primair, dan is dat één regel in `themeStore` plus het script in `index.html` — maar het is een keuze van de eigenaar, geen achterstallig werk.
+
+**Nog open, bewust:** `Select`, generieke `Table` en `Dialog`. Geen enkel scherm heeft ze nodig. Bouw ze op het moment dat het eerste scherm ze vraagt.
+
 ## Volgende stap
 
 **Fase 1: serverlaag en verwerkingswachtrij.** Eerste Edge Function, takenwachtrij in Postgres, periodieke starter, en een beheerdersscherm dat toont wat er draait — bewust nog zonder ClickUp, om het patroon te bewijzen op iets ongevaarlijks.

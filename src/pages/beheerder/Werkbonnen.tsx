@@ -5,7 +5,9 @@ import { WerkbonKaart } from '@/components/werkbon/WerkbonKaart'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { useWerkbonnen } from '@/hooks/useWerkbonnen'
-import { IconPlus, IconSearch } from '@tabler/icons-react'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { IconPlus, IconSearch, IconClipboardList } from '@tabler/icons-react'
 import type { WerkbonStatus } from '@/types'
 
 const statusFilters: { label: string; value: WerkbonStatus | 'alle' }[] = [
@@ -15,7 +17,7 @@ const statusFilters: { label: string; value: WerkbonStatus | 'alle' }[] = [
 
 export default function Werkbonnen() {
   const navigate = useNavigate()
-  const { werkbonnen, loading } = useWerkbonnen()
+  const { werkbonnen, loading, error, refetch } = useWerkbonnen()
   const [statusFilter, setStatusFilter] = useState<WerkbonStatus | 'alle'>('alle')
   const [zoek, setZoek] = useState('')
 
@@ -50,8 +52,22 @@ export default function Werkbonnen() {
       </div>
       {loading ? (
         <div className="flex justify-center py-20"><Spinner className="w-8 h-8" /></div>
+      ) : error ? (
+        <ErrorState
+          melding="De werkbonnen konden niet worden geladen. Controleer je verbinding."
+          onOpnieuw={refetch}
+        />
       ) : gefilterd.length === 0 ? (
-        <div className="text-center py-16 text-gray-400 dark:text-white/40"><div className="text-4xl mb-3">📋</div><div className="font-medium">Geen werkbonnen gevonden</div></div>
+        <EmptyState
+          icon={<IconClipboardList />}
+          titel="Geen werkbonnen gevonden"
+          uitleg={zoek || statusFilter !== 'alle'
+            ? 'Pas je zoekterm of filter aan om meer resultaten te zien.'
+            : 'Maak je eerste werkbon aan om te beginnen.'}
+          actie={!zoek && statusFilter === 'alle'
+            ? <Button variant="primary" size="sm" onClick={() => navigate('/werkbonnen/nieuw')}><IconPlus className="w-4 h-4" /> Nieuwe werkbon</Button>
+            : undefined}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {gefilterd.map((w) => <WerkbonKaart key={w.id} werkbon={w} />)}

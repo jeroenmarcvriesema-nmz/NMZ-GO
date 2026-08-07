@@ -3,7 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { IconClipboardCheck, IconAlertCircle } from '@tabler/icons-react'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { IconClipboardCheck, IconAlertCircle, IconLock } from '@tabler/icons-react'
 
 export default function Registreer() {
   const navigate = useNavigate()
@@ -47,10 +48,12 @@ export default function Registreer() {
 
   if (tokenGeldig === false) return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-6">
-      <div className="bg-white dark:bg-surface-dark-2 rounded-lg p-8 max-w-sm w-full text-center">
-        <div className="text-4xl mb-4">🔒</div>
-        <h2 className="text-lg font-bold mb-2 text-gray-900 dark:text-white">Ongeldige uitnodigingslink</h2>
-        <p className="text-sm text-gray-500 dark:text-white/60">Neem contact op met de beheerder.</p>
+      <div className="bg-white dark:bg-surface-dark-2 rounded-lg max-w-sm w-full">
+        <EmptyState
+          icon={<IconLock />}
+          titel="Ongeldige uitnodigingslink"
+          uitleg="Deze link is verlopen of al gebruikt. Vraag de beheerder om een nieuwe."
+        />
       </div>
     </div>
   )
