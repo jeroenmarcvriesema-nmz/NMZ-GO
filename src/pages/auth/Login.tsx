@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -20,7 +20,17 @@ export default function Login() {
     const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
 
     if (signInError) {
-      setError('E-mail of wachtwoord onjuist.')
+      // Elke fout op één hoop gooien kostte een middag zoeken: een
+      // onbevestigd e-mailadres zag er precies zo uit als een verkeerd
+      // wachtwoord. Benoem daarom wat er werkelijk aan de hand is.
+      const melding = signInError.message.toLowerCase()
+      if (melding.includes('not confirmed')) {
+        setError('Je e-mailadres is nog niet bevestigd. Kijk in je mailbox — ook in je spam.')
+      } else if (melding.includes('invalid login')) {
+        setError('E-mail of wachtwoord onjuist.')
+      } else {
+        setError(`Inloggen lukte niet: ${signInError.message}`)
+      }
       setLoading(false)
       return
     }
@@ -100,6 +110,13 @@ export default function Login() {
               Inloggen
             </Button>
           </form>
+
+          <Link
+            to="/wachtwoord-vergeten"
+            className="block text-sm text-gray-500 dark:text-white/50 hover:text-gray-900 dark:hover:text-white mt-5 transition-colors"
+          >
+            Wachtwoord vergeten?
+          </Link>
         </div>
       </div>
     </div>

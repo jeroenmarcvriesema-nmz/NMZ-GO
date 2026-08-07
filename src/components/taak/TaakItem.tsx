@@ -35,6 +35,20 @@ export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps
     await onRefresh()
   }
 
+  // Het venster wordt geopend vóór de await. Doe je dat erna, dan
+  // ziet de browser het niet meer als gevolg van een tik en blokkeert
+  // de popup-blokkering het — juist op mobiel.
+  const openFoto = async (storagePath: string) => {
+    const venster = window.open('', '_blank')
+    const url = await getUrl(storagePath)
+    if (!url) {
+      venster?.close()
+      setFout('De foto kon niet worden geopend. Probeer het opnieuw.')
+      return
+    }
+    if (venster) venster.location.href = url
+  }
+
   const handleToggle = async () => {
     if (!heeftFoto || readOnly || toggling) return
     setFout(null)
@@ -73,7 +87,7 @@ export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps
             <div
               key={foto.id}
               className="w-16 h-16 rounded-sm border border-brand-yellow bg-brand-yellow-light dark:bg-brand-yellow/10 flex items-center justify-center cursor-pointer"
-              onClick={() => window.open(getUrl(foto.storage_path), '_blank')}
+              onClick={() => openFoto(foto.storage_path)}
             >
               <IconPhoto className="w-5 h-5 text-brand-yellow-dark dark:text-brand-yellow" />
             </div>

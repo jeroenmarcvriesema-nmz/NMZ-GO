@@ -9,6 +9,8 @@ import { Toaster } from '@/components/ui/Toaster'
 
 import Login            from '@/pages/auth/Login'
 import Registreer       from '@/pages/auth/Registreer'
+import WachtwoordVergeten   from '@/pages/auth/WachtwoordVergeten'
+import WachtwoordHerstellen from '@/pages/auth/WachtwoordHerstellen'
 import Dashboard        from '@/pages/beheerder/Dashboard'
 import Projecten        from '@/pages/beheerder/Projecten'
 import ProjectDetail    from '@/pages/beheerder/ProjectDetail'
@@ -109,6 +111,8 @@ export default function App() {
       <Routes>
         <Route path="/login"      element={<Login />} />
         <Route path="/registreer" element={<Registreer />} />
+        <Route path="/wachtwoord-vergeten"    element={<WachtwoordVergeten />} />
+        <Route path="/wachtwoord-herstellen"  element={<WachtwoordHerstellen />} />
         <Route path="/"           element={<RootRedirect />} />
 
         <Route path="/dashboard"        element={<BeheerderGuard><Dashboard /></BeheerderGuard>} />

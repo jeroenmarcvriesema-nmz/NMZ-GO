@@ -28,11 +28,16 @@ export function useFotos() {
     return { error: dbError }
   }
 
-  const getUrl = (storagePath: string) => {
-    const { data } = supabase.storage
+  // Ondertekende URL in plaats van een publieke link. De bucket is
+  // besloten (migratie 007): dit zijn foto's van de woningen van
+  // bewoners, en een publieke link blijft voor altijd werken voor
+  // iedereen die hem heeft. Deze link vervalt na een uur.
+  const getUrl = async (storagePath: string): Promise<string | null> => {
+    const { data, error } = await supabase.storage
       .from('werkbon-fotos')
-      .getPublicUrl(storagePath)
-    return data.publicUrl
+      .createSignedUrl(storagePath, 3600)
+    if (error || !data) return null
+    return data.signedUrl
   }
 
   return { upload, getUrl }

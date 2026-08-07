@@ -27,11 +27,17 @@ export default function Medewerkers() {
   }, [])
 
   const genereerLink = async () => {
-    const token = Math.random().toString(36).slice(2) + Date.now().toString(36)
-    await supabase.from('uitnodigingen').insert({
+    // crypto.randomUUID is niet te raden; Math.random wel — en dit token
+    // geeft toegang tot je tenant.
+    const token = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '')
+    const { error } = await supabase.from('uitnodigingen').insert({
       token, aangemaakt_door: profile?.id,
       verloopt_op: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     })
+    if (error) {
+      toast.fout('De uitnodiging kon niet worden aangemaakt. Probeer het opnieuw.')
+      return
+    }
     setUitnodigingLink(`${window.location.origin}/registreer?token=${token}`)
     setLinkModal(true)
   }
@@ -44,7 +50,11 @@ export default function Medewerkers() {
   }
 
   const resetWachtwoord = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email)
+    // Zonder redirectTo landt de monteur op de voorpagina in plaats van
+    // op het scherm waar hij een nieuw wachtwoord kan kiezen.
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/wachtwoord-herstellen`,
+    })
     if (error) toast.fout('De reset-mail kon niet worden verstuurd. Probeer het opnieuw.')
     else toast.goed(`Reset-mail verstuurd naar ${email}`)
   }
