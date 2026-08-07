@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
@@ -26,6 +26,7 @@ import Afgerond         from '@/pages/medewerker/Afgerond'
 
 function AuthInitializer() {
   const { fetchProfile, setLoading, setProfile } = useAuthStore()
+  const navigate = useNavigate()
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session }, error }) => {
@@ -34,6 +35,17 @@ function AuthInitializer() {
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // Een herstellink levert een sessie op met precies één doel: een
+      // nieuw wachtwoord zetten. Landt zo'n link op de voorpagina — wat
+      // gebeurt bij een link zonder bestemming, zoals die uit het
+      // Supabase-dashboard — dan zou de gebruiker gewoon binnengelaten
+      // worden zonder ooit een wachtwoord te kiezen. Stuur hem daarom
+      // altijd naar het herstelscherm, waar de link ook binnenkomt.
+      if (event === 'PASSWORD_RECOVERY') {
+        navigate('/wachtwoord-herstellen', { replace: true })
+        return
+      }
+
       if (event === 'SIGNED_IN' && session?.user) {
         fetchProfile(session.user.id)
       } else if (event === 'SIGNED_OUT') {
