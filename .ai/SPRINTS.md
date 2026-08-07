@@ -49,3 +49,29 @@ Opgeleverd:
 Bewust niet in deze sprint: echte `projecten`-tabel/migratie/RLS, dark-mode-uitrol. Zie `CHANGELOG.md` voor het volledige overzicht.
 
 **Testkanttekening:** volledige geauthenticeerde browser-doorloop kon niet automatisch worden uitgevoerd (geen Supabase-testcredentials en geen browser-automatiseringstool beschikbaar in deze omgeving zonder een nieuwe dependency te installeren). Geverifieerd is: een schone productie-build (`tsc` + `vite build`, alle modules), een dev-server-smoketest, en een grondige handmatige codereview van elk gewijzigd bestand. Een menselijke doorloop van de kernflows (zie `TESTING.md`) wordt aanbevolen vóór het sprint-checkpoint als definitief "werkend" wordt gemarkeerd.
+
+### Sprint 3.1 — Premium redesign + dark mode (branch `feature/dark-mode-redesign`, PR #1)
+
+Bouwt het ontbrekende dark-mode-systeem (theme store met `persist`, FOUC-preventie via een inline script in `index.html`, Tailwind class-strategie) en past `dark:` consistent toe over alle gedeelde componenten en pagina's. Daarna omgedraaid naar **light-primair** met meer zichtbare merkkleur, een `SectionHeading`-component met gele kicker, en theme-reactieve navigatie in plaats van een permanent donkere balk.
+
+Nog binnen deze branch toegevoegd na een visuele review:
+- `MeldingItem` van gekleurde vlakken naar een neutrale kaart met accentrand links (commit op de branch). Vijf verzadigde balken onder elkaar lieten geen enkele melding nog urgentie communiceren, en de gele tint werd bruinig in dark mode. Waarschuwingsrood naar `brand-red`, en een doelloos hover-effect verwijderd op een element dat niet klikbaar is.
+
+**Nog openstaand op deze branch:** de KPI-rij op het dashboard heeft zes gelijkwaardige kaarten zonder onderlinge hiërarchie (en de eerste mist de gekleurde onderrand die de andere vijf wél hebben), en het Planning-scherm laat circa 80% van het scherm leeg zonder bruikbare lege staat.
+
+---
+
+## Epic 4 — Intelligent Work Preparation
+
+Architectuur volledig uitgewerkt; zie hoofdstuk 0 van `HANDOVER.md` voor de link en de kernbesluiten. Epic 4 verandert NMZ GO van een invoerapplicatie in een systeem dat werk automatisch uit ClickUp overneemt.
+
+### Fase 0 — Fundament (afgerond)
+
+- **Migratie 002** (`supabase/migrations/002_projecten_tenants_rapportvelden.sql`): `tenants`-tabel met `tenant_id` op alle tabellen, `get_mijn_tenant()` in dezelfde `SECURITY DEFINER`-stijl als `get_mijn_rol()`, de `projecten`-tabel met `project_id` op werkbonnen, en de velden die het opleverrapport vereist. Alle bestaande RLS-policies uitgebreid met een tenant-voorwaarde; de rolscheiding uit 001 is ongewijzigd gebleven.
+- **`useProjecten.ts`** (commit `587ba30`): van mock data naar echte Supabase-queries, in hetzelfde geneste-select-idioom als `useWerkbonnen`. `MOCK_MEDEWERKERS` vervangen door `useMedewerkers()`; `koppelMedewerkers` schrijft nu echt weg naar `werkbon_medewerkers`.
+
+**Testkanttekening:** de rollentest (beheerder + medewerker) na deze RLS-wijziging is nog niet uitgevoerd — `supabase.co` is niet bereikbaar vanuit de ontwikkelomgeving. `GIT_WORKFLOW.md` schrijft die test voor; doe hem alsnog vóór dit als afgerond geldt.
+
+### Fase 1 — Serverlaag en verwerkingswachtrij (volgende stap)
+
+Eerste Edge Function, takenwachtrij in Postgres, periodieke starter, en een beheerdersscherm dat toont wat er draait. Bewust nog zonder ClickUp, om het patroon te bewijzen op iets ongevaarlijks.

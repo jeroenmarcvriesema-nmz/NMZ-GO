@@ -32,13 +32,38 @@ Elk item wordt vóór opname in een sprint getoetst aan `PROJECT.md` (helpt dit 
 
 ---
 
-## Sprint 4 — Echte backend voor Projecten & Planning
+## Sprint 4 — Echte backend voor Projecten & Planning ✅ afgerond
 
-| Item | Prioriteit | Toelichting |
+Opgegaan in **Epic 4, fase 0**. Zie `SPRINTS.md` en hoofdstuk 0 van `HANDOVER.md`.
+
+| Item | Status |
+|---|---|
+| Nieuwe `projecten`-tabel + migratie | Gereed — migratie 002, incl. `project_id`-FK op `werkbonnen` |
+| RLS-policies voor projecten | Gereed — via `get_mijn_rol()` + nieuwe `get_mijn_tenant()` |
+| `useProjecten.ts` herschrijven naar echte Supabase-queries | Gereed — commit `587ba30` |
+| Multi-tenancy (niet oorspronkelijk gepland) | Gereed — `tenant_id` op alle tabellen, vooruitlopend op SaaS/white label |
+
+---
+
+## Epic 4 — Intelligent Work Preparation (nieuwe hoofdlijn)
+
+De koppeling met ClickUp en de intelligentielaag daarbovenop. **Volledige architectuur:** https://claude.ai/code/artifact/68edd097-0c39-4c48-9789-dad233cf8e64
+
+Kern: werkvoorbereiders werken door in ClickUp, NMZ GO neemt de uitvoering over. Werk met status `volgende week` stroomt automatisch binnen, inclusief tekening en werkopdracht; de uit te voeren punten worden uit die werkopdracht gelezen en als taken op de werkbon gezet.
+
+| Fase | Inhoud | Prioriteit |
 |---|---|---|
-| Nieuwe `projecten`-tabel + migratie | Hoog | Incl. `project_id`-FK op `werkbonnen`; `Project` heeft velden (`opdrachtgever`, `startdatum`, `einddatum`, `opmerkingen`) die niet op `werkbonnen` bestaan |
-| RLS-policies voor projecten | Hoog | Consistent met bestaande rolscheiding (zie `ARCHITECTURE.md`) |
-| `useProjecten.ts` herschrijven naar echte Supabase-queries | Hoog | Vervangt de huidige mock-implementatie volledig |
+| 0 | Projecten-tabel, tenant-isolatie | ✅ Afgerond |
+| 1 | Serverlaag (Edge Functions) + verwerkingswachtrij | Hoog — volgende stap |
+| 2 | ClickUp lezen, eenrichtingsverkeer | Hoog |
+| 3 | Webhooks + waarneembaarheid | Hoog |
+| 4 | Documenten binnenhalen, versiebeheer, privé-opslag | Hoog |
+| 4b | Werkopdracht uitlezen naar taken (deterministische parser) | Hoog |
+| 5 | Terugkoppeling naar ClickUp | Hoog — voorwaarde voor productie |
+| — | Opleverrapport, gelijk aan het bestaande document | Hoog |
+| 6–10 | Kennisbank, calculatie, workflowmotor, AI-assistent | Geen datum |
+
+**Uitgesteld op verzoek van de eigenaar:** de materiaalberekening (later, en dan gericht op het aantal vloerplaten — vuistregel ±1,5 m² per Top Floor plaat) en het uitlezen van maatvoering uit tekeningen.
 
 ---
 

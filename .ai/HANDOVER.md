@@ -1,9 +1,62 @@
-# HANDOVER.md — Overdracht Claude Code (terminal) → Claude Desktop
+# HANDOVER.md — Overdracht tussen sessies
 
-**Datum van overdracht:** deze sessie (Claude Code terminal), direct voortgezet in Claude Desktop.
-**Doel van dit document:** Claude Desktop moet dit project kunnen overnemen **zonder enig contextverlies** — geen enkel feit hieronder is aangenomen; alles is geverifieerd tegen de daadwerkelijke codebase, git-historie en documentatie tijdens deze sessie.
+**Doel van dit document:** een volgende sessie moet dit project kunnen overnemen **zonder enig contextverlies**. Geen enkel feit hieronder is aangenomen; alles is geverifieerd tegen de daadwerkelijke codebase, database, git-historie en documentatie.
 
-Lees dit document volledig vóór je iets anders doet. Het vervangt geen van de andere `.ai/`-documenten — het legt uit wat er is gebeurd, wat de actuele stand is, en wat de eigenaar (Jeroen) nu concreet van je verwacht.
+Lees hoofdstuk 0 als eerste — dat is de actuele stand. De hoofdstukken daarna beschrijven de architectuur, de visie van de eigenaar en de geschiedenis; die blijven geldig, maar zijn geschreven vóór Epic 4.
+
+---
+
+# 0. Actuele stand — augustus 2026
+
+**De laatste sessie stond volledig in het teken van Epic 4: Intelligent Work Preparation.** Dat is de koppeling tussen ClickUp en NMZ GO, plus de intelligentielaag daarbovenop.
+
+## Het architectuurdocument
+
+De volledige architectuur van Epic 4 is uitgewerkt en staat hier:
+**https://claude.ai/code/artifact/68edd097-0c39-4c48-9789-dad233cf8e64**
+
+Lees dat vóór je aan Epic 4 werkt. Alles erin is geverifieerd tegen de echte ClickUp-werkruimte, een echte werkopdracht en een echt opleverrapport — niet tegen aannames.
+
+## Drie kernbesluiten van de eigenaar
+
+1. **Serverlaag: Supabase Edge Functions.** De huidige client-only opzet kan Epic 4 niet dragen — een ClickUp-token hoort niet in browsercode, een webhook heeft een altijd bereikbare URL nodig. Blijft bij de bestaande leverancier.
+2. **Multi-tenancy nu inbouwen.** De ambitie is SaaS en white label; tenant-isolatie achteraf toevoegen betekent elke RLS-policy herschrijven. Uitgevoerd in migratie 002.
+3. **ClickUp is leidend, NMZ GO schrijft direct terug.** ClickUp blijft de bron van waarheid voor alles wat het kan uitdrukken. Elke wijziging in NMZ GO gaat *direct* terug, niet pas bij afronding — anders overschrijft een synchronisatie het werk van de monteur. Gevolg voor de planning: de synchronisatie mag niet in productie vóór de terugkoppeling er is.
+
+## Wat er van ClickUp geverifieerd is
+
+- Alleen Space **Werkvoorbereiding** doet mee (niet de 98 "Project Management X"-spaces). Folder *Planning overzicht - 2026*, lijst *Uitvoering 2026 Diemen*. Eén taak = één adres = één werkbon.
+- **`volgende week` betekent "klaar voor uitvoering"** — dat is de synchronisatietrigger. Elk weekend wordt die status handmatig omgezet naar `deze week`; die omzetting ís de vrijgavebeslissing, dus NMZ GO heeft geen eigen vrijgaveknop nodig.
+- Terugkoppeling bij oplevering: `opgeleverd` als de foto's compleet zijn, anders `wacht op foto's`.
+- Van de 30 custom fields doen er drie mee: **Kluiscode**, **Werkopdracht (PDF)**, **Werktekening**. De rest staat al op de werkopdracht zelf.
+- De werkopdracht is een vast sjabloon met labels en opsommingstekens. De uit te voeren punten zijn daarom **met een deterministische parser** uit te lezen — geen taalmodel nodig, en dus geen hallucinatierisico.
+- Foto's: "voor" komt van de inspecteur, "na" van de monteur. Het rapport combineert beide.
+
+## Fase 0 is afgerond
+
+| Wat | Waar | Status |
+|---|---|---|
+| Migratie 002 — tenants, projecten, rapportvelden | `supabase/migrations/002_projecten_tenants_rapportvelden.sql` | Gedraaid door de eigenaar |
+| `useProjecten.ts` van mock naar echte queries | commit `587ba30` | Gepusht, build groen |
+
+Concreet toegevoegd: een `tenants`-tabel met `tenant_id` op alle tabellen, `get_mijn_tenant()` in dezelfde `SECURITY DEFINER`-stijl als `get_mijn_rol()`, de `projecten`-tabel met `project_id` op werkbonnen, en de velden die het opleverrapport vereist (postcode/plaats, opdrachtnummer, opleverdatum, vier vrije tekstblokken, `fase` op foto's).
+
+**De projectenschermen tonen nu een lege lijst. Dat is correct** — de tabel bestaat, er staat alleen nog niets in. De vulling komt via de ClickUp-synchronisatie in fase 2.
+
+## Openstaand — eerst afmaken
+
+- **Verificatiequery** na migratie 002 is nog niet door een sessie gecontroleerd.
+- **Rollentest** (beheerder + medewerker) na de RLS-wijziging is nog niet gedaan. `GIT_WORKFLOW.md` schrijft die voor bij elke RLS-wijziging; sla hem niet over.
+- **Twee vragen liggen bij de eigenaar:** welk veld leidend is (`Werktekening` óf `Werktekening (PDF)` — er zijn er twee), en of het opleverrapport de fotopagina's apart exporteert.
+
+## Volgende stap
+
+**Fase 1: serverlaag en verwerkingswachtrij.** Eerste Edge Function, takenwachtrij in Postgres, periodieke starter, en een beheerdersscherm dat toont wat er draait — bewust nog zonder ClickUp, om het patroon te bewijzen op iets ongevaarlijks.
+
+## Beperkingen van de ontwikkelomgeving
+
+- **`supabase.co` is geblokkeerd** vanuit de Claude-container (netwerkpolicy). De app kan daar dus niet ingelogd getest worden. Database-toegang loopt via de **Supabase-connector**, die buiten die blokkade om werkt — als die connector wegvalt, is een nieuwe sessie starten de betrouwbaarste oplossing.
+- Om ingelogde schermen te bekijken is er een truc: zet tijdelijk een mock-profiel in `AuthInitializer` (`App.tsx`) achter een env-vlag. Dashboard, Projecten en Planning draaien op data die geen echte login vereist. **Draai die wijziging altijd terug voor je commit.**
 
 ---
 
@@ -17,7 +70,8 @@ Lees dit document volledig vóór je iets anders doet. Het vervangt geen van de 
 - **Gebruikersrollen** (hard gescheiden in UI én database via RLS):
   - **Beheerder** — maakt projecten/werkbonnen aan, plant medewerkers in, beheert medewerkers, bekijkt dashboard/rapportages. Werkt vaker op desktop, moet ook op tablet werken.
   - **Medewerker** — ziet uitsluitend eigen werkbonnen, vinkt taken af, uploadt foto's als bewijs. Werkt vrijwel altijd op een telefoon, vaak buiten, met wisselende connectiviteit.
-- **Huidige ontwikkelfase:** post-MVP, sprintgewijze doorontwikkeling. Sprint 2.1 is de laatste gecommitte, werkende versie. Sprint 3 (projecten & planning, zie hoofdstuk 3) is deze sessie afgerond op mock data maar **nog niet gecommit** — zie hoofdstuk 4 voor de exacte git-status. Er is een duidelijke, expliciet vastgelegde eigenaarsvisie (hoofdstuk 6) richting een premium, enterprise-achtige visuele stijl die **nog niet is doorgevoerd** in de UI (hoofdstuk 7).
+- **Huidige ontwikkelfase:** post-MVP, sprintgewijze doorontwikkeling. Zie hoofdstuk 0 voor de actuele stand — de tekst hieronder in dit hoofdstuk beschrijft de situatie van vóór Epic 4 en is op onderdelen achterhaald.
+- **Let op — de scope is verbreed.** Dit hoofdstuk en `PROJECT.md` beschrijven NMZ GO als intern gereedschap dat niet verkocht wordt. Dat is niet langer het uitgangspunt: de eigenaar wil het platform later als **SaaS en white label** aanbieden. Daarom is multi-tenancy al ingebouwd (migratie 002) en is "configuratie boven code" een leidend principe geworden. Zie het architectuurdocument in hoofdstuk 0.
 
 ---
 
