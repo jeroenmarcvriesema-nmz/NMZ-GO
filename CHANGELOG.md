@@ -1,5 +1,32 @@
 # NMZ GO — Changelog
 
+## Authentication recovery — de eerste echte ingebruikname
+
+Bij het voor het eerst live zetten bleek de authenticatieketen op vijf plekken te breken. Losse oorzaken, maar ze verscholen zich achter elkaar: elke fix legde de volgende bloot.
+
+### Database / RLS fixes
+- **[CRITICAL FIX]** Er kon geen beheerder meer ontstaan. Migratie 005 zette de rol bij registratie terecht vast op `medewerker` — die kwam uit client-metadata en was dus te sturen — maar liet geen weg naar een eerste beheerder over. Toen alle accounts verwijderd werden zat het systeem op slot: rolwijziging mag alleen een beheerder doen, en die was er niet meer. Migratie 007 maakt de eerste gebruiker in een tenant zónder beheerder wél beheerder; daarna geldt 005 onverkort.
+- **[CRITICAL FIX]** De opslagbucket `werkbon-fotos` bestond niet, terwijl de app er wel naartoe uploadt. Elke foto-upload zou mislukt zijn — en dat zou pas in het veld zijn ontdekt. Aangemaakt in migratie 007, bewust **besloten en niet publiek**: dit zijn foto's van de woningen van bewoners, en een publieke link blijft voor altijd voor iedereen werken. Rechten volgen dezelfde regel als de tabel `fotos`; verwijderen is beheerderswerk.
+
+### Verbeteringen
+- **[FEATURE]** Wachtwoord-resetflow toegevoegd — die bestond niet. Geen aanvraagpagina, geen link op het inlogscherm, en vooral geen scherm om een nieuw wachtwoord te zetten. De herstellink logde de gebruiker stilzwijgend in zonder ooit om een wachtwoord te vragen. Twee pagina's plus routes; `resetPasswordForEmail` geeft overal een `redirectTo` mee.
+- **[FIX]** `AuthInitializer` vangt het `PASSWORD_RECOVERY`-event af, zodat ook een link zonder bestemming (uit het Supabase-dashboard) op het herstelscherm landt in plaats van op het dashboard.
+- **[CRITICAL FIX]** Inloggen faalde met *"String contains non ISO-8859-1 code point"*. De anon-key gaat als HTTP-header mee, en headers accepteren alleen ASCII; bij het instellen in Netlify was een onzichtbaar teken meegekomen. De client schoont beide waarden nu op en waarschuwt in de console als er iets verwijderd moest worden.
+- **[FIX]** De inlogpagina gaf op élke fout dezelfde tekst. Een onbevestigd e-mailadres zag er precies zo uit als een verkeerd wachtwoord, wat het opsporen van al het bovenstaande onnodig lang maakte. Zowel Login als de resetpagina benoemen nu de werkelijke oorzaak.
+- **[FIX]** Uitnodigingstokens kwamen uit `Math.random()` terwijl zo'n token toegang tot de tenant geeft — nu `crypto.randomUUID`. Een mislukte uitnodiging leverde bovendien toch een link op.
+
+### Geverifieerd
+- ✅ Profiel volgt automatisch bij een nieuwe gebruiker uit het dashboard
+- ✅ Rol uit metadata (`rol: beheerder`) wordt genegeerd
+- ✅ Eerste gebruiker in een lege tenant wordt beheerder
+- ✅ Tenant komt uit de uitnodiging; token is eenmalig bruikbaar
+- ✅ Opslagrechten laten alleen de eigen werkbon door
+- ✅ Inloggen, wachtwoord vergeten en herstellen: end-to-end getest in productie
+- ✅ `npm run build` groen
+
+### Les
+Vijf storingen achter één symptoom, en de tijd ging vooral op aan het feit dat de foutmeldingen niets prijsgaven. Een generieke melding als "E-mail of wachtwoord onjuist" voelt netjes, maar kost uren zodra de oorzaak ergens anders ligt. Toon wat er werkelijk misgaat.
+
 ## Mock data eruit — dashboard en werkdag op echte data
 
 ### Database
