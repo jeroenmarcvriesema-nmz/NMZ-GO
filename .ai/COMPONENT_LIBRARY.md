@@ -177,8 +177,41 @@ Deze componenten ontbreken nog als gedeelde, herbruikbare bouwsteen. Bij de eers
 | `Select` | Dropdown-selectie, zelfde visuele taal als `Input` | Zie `UI_GUIDELINES.md` → Forms |
 | `Table` (generiek) | Herbruikbare tabel-primitive | `ProjectTabel` als referentiepatroon (zie hierboven) |
 | `Dialog` | Lichte bevestigingsvraag (ja/nee), geen volledige `Modal` | Zie `UI_GUIDELINES.md` → Modals & dialogs |
-| `Toast` | Non-blocking actiefeedback | Zie `UI_GUIDELINES.md` → Toasts |
-| `EmptyState` | Gedeelde lege-staat-weergave voor lijsten/overzichten | Zie `UI_GUIDELINES.md` → Empty states |
-| `ErrorState` | Gedeelde foutweergave bij mislukte data-load | Bouwt voort op het bestaande foutscherm in `App.tsx` → `AuthGuard` |
 
 Het bouwen van deze componenten is een eigen, geplande taak (zie `FEATURE_BACKLOG.md`) — niet iets dat terloops als bijproduct van een feature-taak wordt geïntroduceerd.
+
+**Waarom deze drie nog wachten.** Er is op dit moment geen scherm dat ze nodig heeft: nergens staat een `<select>`, de drie bestaande tabellen verschillen te veel om nu al een gemene deler uit te destilleren, en er is geen enkele verwijder- of andere onomkeerbare actie in de UI. Een `Dialog` is tijdens deze sprint gebouwd en weer verwijderd toen bleek dat hij geen afnemer had — bouw hem op het moment dat de eerste destructieve actie landt, niet eerder.
+
+---
+
+## Toegevoegd in de designsprint
+
+### `EmptyState` — `components/ui/EmptyState.tsx`
+
+**Doel:** één vorm voor "er is hier nog niets", op elk overzicht.
+
+**Props:** `icon` (verplicht, Tabler-icoon — **nooit** een emoji), `titel`, `uitleg?`, `actie?`, `className?`.
+
+**Regels:** neutraal vlak, geen rood en geen uitroepteken — een lege lijst is geen fout. Hoogstens één actie, en alleen als die actie de leegte ook echt oplost ("Nieuwe werkbon" wél, "Filters wissen" alleen wanneer er filters actief zijn).
+
+**Gebruikt in:** `Werkbonnen`, `Projecten`, `Medewerkers`, `Rapporten`, `Registreer` (ongeldige uitnodigingslink).
+
+### `ErrorState` — `components/ui/ErrorState.tsx`
+
+**Doel:** tegenhanger van `EmptyState` voor wanneer het laden mislukt. Zonder dit component was een mislukte load niet te onderscheiden van een lege lijst.
+
+**Props:** `titel?` (standaard "Er ging iets mis"), `melding`, `onOpnieuw?`, `className?`.
+
+**Regels:** `melding` is mensentaal, nooit een ruwe servermelding — die hoort in de console, niet op het scherm van een monteur. Toon `onOpnieuw` alleen als opnieuw proberen ook echt kan helpen.
+
+**Gebruikt in:** `Werkbonnen`, `Projecten`, en het foutscherm van `AuthGuard` in `App.tsx`.
+
+### `Toaster` + `toastStore` — `components/ui/Toaster.tsx`, `store/toastStore.ts`
+
+**Doel:** actiefeedback die het scherm niet blokkeert. Vervangt alle zes `alert()`-aanroepen.
+
+**Gebruik:** importeer `toast` uit `@/store/toastStore` en roep `toast.goed(...)`, `toast.fout(...)` of `toast.info(...)` aan. De `Toaster` zelf staat één keer in `App.tsx` en hoort nergens anders gerenderd te worden.
+
+**Regels:** een fout blijft 7 seconden staan, de rest 4 — een monteur haalt zijn telefoon soms net uit zijn zak. Kleur zit alleen in het icoon en de rand; het vlak blijft neutraal zodat een melding niet met de merkkleur concurreert. Op mobiel staat de toast bóven de tabbalk, binnen duimbereik.
+
+**Let op:** dit is een derde Zustand-store, naast `authStore` en `themeStore`. Bewust dezelfde vorm — geen nieuw state-systeem, wel een eigen kleine store per zorg.

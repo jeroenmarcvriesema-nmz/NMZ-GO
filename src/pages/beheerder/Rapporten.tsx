@@ -6,7 +6,9 @@ import { StatusBadge } from '@/components/ui/Badge'
 import { useWerkbonnen } from '@/hooks/useWerkbonnen'
 import { Spinner } from '@/components/ui/Spinner'
 import { formatDatum } from '@/lib/utils'
-import { IconDownload } from '@tabler/icons-react'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { toast } from '@/store/toastStore'
+import { IconDownload, IconFileText } from '@tabler/icons-react'
 
 export default function Rapporten() {
   const { werkbonnen, loading } = useWerkbonnen()
@@ -19,10 +21,11 @@ export default function Rapporten() {
           <SectionHeading title={`Voltooide werkbonnen (${voltooid.length})`} />
           {loading ? <div className="flex justify-center py-8"><Spinner /></div>
             : voltooid.length === 0 ? (
-              <div className="text-center py-12 text-gray-400 dark:text-white/40">
-                <div className="text-4xl mb-3">📄</div>
-                <div className="font-medium">Nog geen voltooide werkbonnen</div>
-              </div>
+              <EmptyState
+                icon={<IconFileText />}
+                titel="Nog geen voltooide werkbonnen"
+                uitleg="Zodra een monteur een werkbon afrondt, verschijnt het rapport hier."
+              />
             ) : (
               <div className="divide-y divide-gray-50 dark:divide-white/5">
                 {voltooid.map((w) => (
@@ -35,7 +38,7 @@ export default function Rapporten() {
                     </div>
                     <div className="flex items-center gap-2">
                       <StatusBadge status={w.status} />
-                      <Button variant="secondary" size="sm" onClick={() => alert('PDF export volgt in volgende versie.')}>
+                      <Button variant="secondary" size="sm" onClick={() => toast.info('PDF-export volgt in een volgende versie.')}>
                         <IconDownload className="w-3.5 h-3.5" />
                       </Button>
                     </div>

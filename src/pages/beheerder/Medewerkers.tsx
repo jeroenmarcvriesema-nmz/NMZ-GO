@@ -9,7 +9,9 @@ import { Modal } from '@/components/ui/Modal'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import type { Profile } from '@/types'
-import { IconLink, IconCopy, IconKey, IconCheck } from '@tabler/icons-react'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { toast } from '@/store/toastStore'
+import { IconLink, IconCopy, IconKey, IconCheck, IconUsers } from '@tabler/icons-react'
 
 export default function Medewerkers() {
   const { profile } = useAuth()
@@ -42,8 +44,9 @@ export default function Medewerkers() {
   }
 
   const resetWachtwoord = async (email: string) => {
-    await supabase.auth.resetPasswordForEmail(email)
-    alert(`Reset-mail verstuurd naar ${email}`)
+    const { error } = await supabase.auth.resetPasswordForEmail(email)
+    if (error) toast.fout('De reset-mail kon niet worden verstuurd. Probeer het opnieuw.')
+    else toast.goed(`Reset-mail verstuurd naar ${email}`)
   }
 
   return (
@@ -56,10 +59,12 @@ export default function Medewerkers() {
           {loading ? (
             <div className="text-center py-8 text-gray-400 dark:text-white/40">Laden…</div>
           ) : medewerkers.length === 0 ? (
-            <div className="text-center py-12 text-gray-400 dark:text-white/40">
-              <div className="text-4xl mb-3">👥</div>
-              <div className="font-medium">Nog geen medewerkers</div>
-            </div>
+            <EmptyState
+              icon={<IconUsers />}
+              titel="Nog geen medewerkers"
+              uitleg="Maak een uitnodigingslink aan en stuur die naar je monteurs."
+              actie={<Button variant="primary" size="sm" onClick={genereerLink}><IconLink className="w-4 h-4" /> Uitnodigingslink</Button>}
+            />
           ) : (
             <div className="divide-y divide-gray-50 dark:divide-white/5">
               {medewerkers.map((m) => (

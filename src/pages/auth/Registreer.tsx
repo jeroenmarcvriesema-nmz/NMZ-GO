@@ -3,7 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { IconClipboardCheck, IconAlertCircle } from '@tabler/icons-react'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { IconClipboardCheck, IconAlertCircle, IconLock } from '@tabler/icons-react'
 
 export default function Registreer() {
   const navigate = useNavigate()
@@ -19,8 +20,10 @@ export default function Registreer() {
 
   useEffect(() => {
     if (!token) { setTokenGeldig(false); return }
-    supabase.from('uitnodigingen').select('*').eq('token', token).eq('gebruikt', false).single()
-      .then(({ data }) => setTokenGeldig(!!data))
+    // Gaat bewust via een functie en niet via de tabel: uitnodigingen
+    // staat dicht, zodat tokens niet op te vragen zijn zonder login.
+    supabase.rpc('uitnodiging_controleren', { p_token: token })
+      .then(({ data, error }) => setTokenGeldig(!error && data === true))
   }, [token])
 
   const handleRegistreer = async (e: React.FormEvent) => {
@@ -30,22 +33,27 @@ export default function Registreer() {
     if (password.length < 6) { setError('Wachtwoord minimaal 6 tekens.'); return }
     setLoading(true)
 
+    // Het token gaat mee als metadata. De database leest het uit,
+    // haalt de tenant uit de uitnodiging en zet die op het profiel —
+    // in dezelfde transactie, zodat een token niet twee keer werkt.
+    // De rol wordt serverzijde vastgezet en is hier niet te sturen.
     const { error: signUpError } = await supabase.auth.signUp({
       email, password,
-      options: { data: { naam, rol: 'medewerker' } },
+      options: { data: { naam, uitnodiging_token: token } },
     })
 
     if (signUpError) { setError(signUpError.message); setLoading(false); return }
-    if (token) await supabase.from('uitnodigingen').update({ gebruikt: true }).eq('token', token)
     navigate('/mijn-werkbonnen')
   }
 
   if (tokenGeldig === false) return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-6">
-      <div className="bg-white dark:bg-surface-dark-2 rounded-lg p-8 max-w-sm w-full text-center">
-        <div className="text-4xl mb-4">🔒</div>
-        <h2 className="text-lg font-bold mb-2 text-gray-900 dark:text-white">Ongeldige uitnodigingslink</h2>
-        <p className="text-sm text-gray-500 dark:text-white/60">Neem contact op met de beheerder.</p>
+      <div className="bg-white dark:bg-surface-dark-2 rounded-lg max-w-sm w-full">
+        <EmptyState
+          icon={<IconLock />}
+          titel="Ongeldige uitnodigingslink"
+          uitleg="Deze link is verlopen of al gebruikt. Vraag de beheerder om een nieuwe."
+        />
       </div>
     </div>
   )

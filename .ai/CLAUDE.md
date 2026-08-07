@@ -53,7 +53,7 @@ Verplichte werkwijze voor elke AI-sessie (zoals Claude Code) op dit project:
 8. **Controleer routing** na elke wijziging aan pagina's, routes of guards: klopt `App.tsx`, juiste guard-type, geen dode/dubbele route.
 9. **Controleer imports**: geen ongebruikte imports, geen gebroken `@/`-paden.
 10. **Controleer responsiveness** van elk gewijzigd scherm, op mobiele én desktop-breedte (`DESIGN_SYSTEM.md`).
-11. **Controleer dark en light mode**: er is momenteel geen uitgerold dark-mode-systeem (zie `DESIGN_SYSTEM.md`). Concreet betekent dit: geen onbedoelde `dark:`-variants introduceren, en het bestaande lichte thema blijft consistent en leesbaar.
+11. **Controleer dark en light mode**: beide thema's zijn uitgerold en gelijkwaardig (`themeStore` + `class`-strategie, voorkeur opgeslagen, no-flash-script in `index.html`). Light is het standaardthema. Concreet betekent dit: elke nieuwe kleur krijgt óók een `dark:`-variant, en je controleert een gewijzigd scherm in beide thema's — niet alleen in het thema dat je toevallig aan had staan.
 12. **Controleer TypeScript**: geen nieuwe `any`-lekken, `strict`-modus blijft groen, gedeelde types blijven in `types/index.ts`.
 13. **Controleer de volledige gebruikersflow**, niet alleen het gewijzigde component — loop het scenario end-to-end door zoals een echte gebruiker (zie testprocedure in `GIT_WORKFLOW.md`).
 14. **Wees expliciet over wat een wijziging niet doet**, als dat relevant is (bv. "PDF-export blijft buiten scope").

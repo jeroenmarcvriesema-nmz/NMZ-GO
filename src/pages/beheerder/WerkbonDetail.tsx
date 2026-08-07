@@ -13,7 +13,7 @@ import { useWerkbon } from '@/hooks/useWerkbonnen'
 import { useTaken } from '@/hooks/useTaken'
 import { berekenVoortgang, formatDatum } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
-import { IconArrowLeft, IconPlus, IconCalendar, IconMapPin, IconUsers, IconFileText } from '@tabler/icons-react'
+import { IconArrowLeft, IconPlus, IconCalendar, IconMapPin, IconUsers, IconFileText, IconAlertCircle } from '@tabler/icons-react'
 
 export default function WerkbonDetail() {
   const { id } = useParams<{ id: string }>()
@@ -23,6 +23,7 @@ export default function WerkbonDetail() {
   const [puntModal, setPuntModal] = useState(false)
   const [nieuwPunt, setNieuwPunt] = useState({ titel: '', omschrijving: '' })
   const [opslaan, setOpslaan] = useState(false)
+  const [statusFout, setStatusFout] = useState<string | null>(null)
 
   if (loading) return <PageWrapper title="Werkbon"><div className="flex justify-center py-20"><Spinner className="w-8 h-8" /></div></PageWrapper>
   if (!werkbon) return <PageWrapper title="Werkbon"><div className="text-center py-16 text-gray-400 dark:text-white/40">Werkbon niet gevonden.</div></PageWrapper>
@@ -40,7 +41,16 @@ export default function WerkbonDetail() {
   }
 
   const handleStatus = async (status: 'open' | 'bezig' | 'voltooid') => {
-    await supabase.from('werkbonnen').update({ status }).eq('id', werkbon.id)
+    setStatusFout(null)
+    const { data, error } = await supabase
+      .from('werkbonnen')
+      .update({ status })
+      .eq('id', werkbon.id)
+      .select('id')
+    if (error || !data || data.length === 0) {
+      setStatusFout('De status kon niet worden gewijzigd.')
+      return
+    }
     await refetch()
   }
 
@@ -79,6 +89,11 @@ export default function WerkbonDetail() {
               </button>
             ))}
           </div>
+          {statusFout && (
+            <div className="flex items-start gap-2 text-xs text-brand-red dark:text-red-400 bg-brand-red-light dark:bg-brand-red/10 border border-brand-red rounded-sm p-3 mt-3">
+              <IconAlertCircle className="w-4 h-4 flex-shrink-0" />{statusFout}
+            </div>
+          )}
         </Card>
 
         <Card>

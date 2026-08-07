@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/Button'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { Spinner } from '@/components/ui/Spinner'
 import { Avatar } from '@/components/ui/Avatar'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
 import { useProjecten, statusLabel, statusKleur } from '@/hooks/useProjecten'
 import { cn, formatDatumKort } from '@/lib/utils'
 import type { ProjectStatus } from '@/types'
@@ -24,7 +26,7 @@ const STATUS_FILTERS: { label: string; value: ProjectStatus | 'alle' }[] = [
 
 export default function Projecten() {
   const navigate = useNavigate()
-  const { projecten, loading } = useProjecten()
+  const { projecten, loading, error, refetch } = useProjecten()
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | 'alle'>('alle')
   const [zoek, setZoek] = useState('')
 
@@ -81,28 +83,22 @@ export default function Projecten() {
         <div className="flex justify-center py-24">
           <Spinner className="w-8 h-8" />
         </div>
+      ) : error ? (
+        <ErrorState
+          melding="De projecten konden niet worden geladen. Controleer je verbinding."
+          onOpnieuw={refetch}
+        />
       ) : gefilterd.length === 0 ? (
-        <div className="flex flex-col items-center text-center py-20">
-          <div className="w-14 h-14 rounded-full bg-surface-2 dark:bg-white/5 flex items-center justify-center mb-4">
-            <IconFolderOpen className="w-6 h-6 text-gray-400 dark:text-white/40" />
-          </div>
-          <div className="font-semibold text-gray-600 dark:text-white/70">Geen projecten gevonden</div>
-          <p className="text-sm text-gray-400 dark:text-white/40 mt-1 max-w-xs">
-            {statusFilter !== 'alle' || zoek
-              ? 'Er zijn geen projecten die aan je filters voldoen.'
-              : 'Er zijn nog geen projecten aangemaakt.'}
-          </p>
-          {(statusFilter !== 'alle' || zoek) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="mt-4"
-              onClick={() => { setStatusFilter('alle'); setZoek('') }}
-            >
-              Filters wissen
-            </Button>
-          )}
-        </div>
+        <EmptyState
+          icon={<IconFolderOpen />}
+          titel="Geen projecten gevonden"
+          uitleg={statusFilter !== 'alle' || zoek
+            ? 'Er zijn geen projecten die aan je filters voldoen.'
+            : 'Er zijn nog geen projecten aangemaakt.'}
+          actie={(statusFilter !== 'alle' || zoek)
+            ? <Button variant="ghost" size="sm" onClick={() => { setStatusFilter('alle'); setZoek('') }}>Filters wissen</Button>
+            : undefined}
+        />
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
           {gefilterd.map((project) => (

@@ -83,7 +83,7 @@ De test bootst een rol na met `set local role authenticated` plus een JWT-claim,
 
 **Niet ingelogd:** nul rijen op werkbonnen, profielen, taken, projecten en tenants — zie bevinding 2 voor de uitzondering.
 
-### Bevinding 1 — medewerker kan zijn werkbon niet afronden (functioneel, blokkeert de flow)
+### Bevinding 1 — medewerker kan zijn werkbon niet afronden — *opgelost in 005*
 
 `src/pages/medewerker/WerkbonUitvoeren.tsx:26` zet de werkbon op `voltooid`:
 
@@ -93,17 +93,15 @@ await supabase.from('werkbonnen').update({ status: 'voltooid' }).eq('id', werkbo
 
 `werkbonnen_update` staat alleen een beheerder toe. De update raakt dus 0 rijen. PostgREST geeft daar geen fout op — een update die niets raakt is een geldige lege respons — en de code kijkt niet naar `error` of naar het aantal geraakte rijen. **De monteur krijgt te zien dat de bon is afgerond terwijl er niets is opgeslagen.** Dit staat los van 002/003/004; de policy is zo sinds 001.
 
-Twee dingen nodig, allebei een beslissing van de eigenaar:
-- Een RLS-policy die een toegewezen medewerker `status` van de eigen werkbon laat zetten — bij voorkeur alleen die kolom, en alleen naar `bezig`/`voltooid`. Een kolom afbakenen kan een policy niet; dat vraagt dezelfde triggeraanpak als in 003, of een `security definer`-functie `werkbon_afronden(id)`.
-- Foutafhandeling op de call zelf, zodat een geblokkeerde update zichtbaar wordt in plaats van stil te falen. Datzelfde geldt voor de andere plekken zonder `error`-check: `WerkbonDetail.tsx:43`, `useTaken.ts:8`, `Registreer.tsx:39`.
+Opgelost in migratie 005 met dezelfde tweetrapsopzet als 003: een extra update-policy voor wie op de bon staat, plus een trigger die zo iemand beperkt tot de kolom `status` en tot de waarden `bezig`/`voltooid`. Aan de clientkant checkt `WerkbonUitvoeren.tsx` nu `error` én het aantal geraakte rijen, zodat een geblokkeerde update niet meer als succes wordt gemeld. Datzelfde is gedaan op `WerkbonDetail.tsx`, `TaakItem.tsx` (afvinken én foto-upload).
 
-### Bevinding 2 — uitnodigingstokens zijn publiek leesbaar (beveiliging)
+### Bevinding 2 — uitnodigingstokens zijn publiek leesbaar — *opgelost in 005*
 
 `uitnodigingen_select` heeft als voorwaarde letterlijk `true`. Aangetoond met een testrij: een **niet-ingelogde** bezoeker leest alle uitnodigingen van alle tenants op, inclusief `token`. De anon-key staat in de browserbundel, dus dit is voor iedereen te doen. Wie een ongebruikt token opvraagt, kan zich met `Registreer.tsx` in de bijbehorende tenant inschrijven.
 
 `uitnodigingen_update` is vergelijkbaar ruim (`get_mijn_rol() = 'beheerder' or auth.uid() is not null`, zonder `with check`): elke ingelogde gebruiker kan de uitnodiging van een willekeurige andere tenant op `gebruikt` zetten.
 
-De select-policy staat er waarschijnlijk omdat `Registreer.tsx` het token vóór de login moet kunnen opzoeken. Dat kan zonder de tabel open te zetten: een `security definer`-functie die één token als argument neemt en alleen "geldig ja/nee" plus de `tenant_id` teruggeeft, en de policy zelf dicht. Dit is een aparte migratie 005 en een wijziging in `Registreer.tsx` — nog niet gebouwd, want het raakt de registratieflow en vraagt eerst akkoord.
+De select-policy stond er omdat `Registreer.tsx` het token vóór de login moet kunnen opzoeken. Migratie 005 zet de tabel dicht voor iedereen behalve de beheerder van de eigen tenant, en zet daar `uitnodiging_controleren(token)` naast: een `security definer`-functie die één token als argument neemt en alleen `true`/`false` teruggeeft — geen rij, geen tenant, geen lijst. `Registreer.tsx` gebruikt die functie nu.
 
 ### Bevinding 3 — de verwerker draait nog niet periodiek (afmaken vóór fase 1)
 
@@ -117,6 +115,58 @@ select vault.create_secret('https://<ref>.supabase.co', 'project_url');
 ```
 
 Daarna blok G uit `004_verwerkingswachtrij.sql` uitvoeren. Controleer met `select jobname, schedule, active from cron.job;` dat `nmzgo-verwerker` er staat.
+
+### Bevinding 4 — iedereen kon zich als beheerder registreren — *opgelost in 005*
+
+Dit kwam boven tijdens het schrijven van de fix voor bevinding 2, en weegt zwaarder dan de rest. De rollentest kon het niet vinden, want het gaat volledig buiten RLS om.
+
+`handle_new_user()` is de trigger die bij een registratie het profiel aanmaakt. Die las de rol uit `new.raw_user_meta_data->>'rol'`. Die metadata komt rechtstreeks uit de client:
+
+```ts
+supabase.auth.signUp({ email, password, options: { data: { rol: 'beheerder' } } })
+```
+
+Eén registratie volstond om beheerder te worden. De `with check` op `profiles_insert_own` uit migratie 003 hielp hier niet: `handle_new_user()` draait als `security definer` en gaat dus langs RLS heen. Migratie 005 zet de rol vast op `'medewerker'`; promoveren doet een bestaande beheerder, en dat loopt langs de trigger uit 003.
+
+**Let op:** dit gat stond open zolang zelfregistratie mogelijk was. Als je in Supabase Auth zelfregistratie aan hebt staan, is het de moeite waard de bestaande accounts één keer na te lopen: `select id, naam, rol from profiles where rol = 'beheerder';` — op dit moment is dat er één, jouw eigen account, dus er is niets misgegaan.
+
+### Bevinding 5 — uitgenodigde belandde in de verkeerde tenant — *opgelost in 005*
+
+`handle_new_user()` zette geen `tenant_id`, waardoor de kolomdefault greep: `get_mijn_tenant()`. Tijdens een registratie is er nog geen JWT, dus die functie viel terug op haar laatste redmiddel — de oudste tenant. Met één tenant valt dat niet op; met twee komt iedere uitgenodigde bij de verkeerde klant binnen.
+
+De uitnodiging draagt de tenant al. Migratie 005 leest het token uit de metadata, haalt de tenant uit de uitnodiging en verzilvert die in dezelfde transactie. Daarmee is een token ook niet meer twee keer te gebruiken — dat was voorheen een aparte call vanuit de client, met de race die daarbij hoort.
+
+## Migratie 005 — wat er is gewijzigd
+
+`supabase/migrations/005_uitnodigingen_en_werkbonstatus.sql`, **al toegepast op de database.** Dicht bevinding 1, 2, 4 en 5. Raakt geen data.
+
+Na afloop opnieuw getest met `supabase/tests/rollentest.sql`, uitgebreid met de nieuwe gevallen: 8 controles op de medewerker (afronden lukt nu, terugzetten naar `open` niet, een andere kolom wijzigen niet, de bon van een collega niet), 4 op de niet-ingelogde bezoeker (geen tokens meer zichtbaar, de controlefunctie werkt wel) en 5 regressiecontroles op de beheerder (status, adres, tenant-grens, uitnodiging aanmaken). Alle 17 zoals verwacht, geen regressie. De testrijen zijn opgeruimd; de database staat weer op 1 tenant, 1 werkbon met status `open`, 3 taken, 0 uitnodigingen, 2 profielen.
+
+Aan de clientkant: `Registreer.tsx` (via de functie, token als metadata mee), `WerkbonUitvoeren.tsx`, `WerkbonDetail.tsx` en `TaakItem.tsx` (foutafhandeling, `alert()` eruit). `npm run build` groen.
+
+## Mock data — eruit
+
+`useDashboard` en `useWerkdag` waren de laatste twee hooks op verzonnen data. Beide draaien nu op echte tabellen; migratie 006 voegde `werkdag_logs` toe. Daarmee is er **geen mock data meer in de app**.
+
+Wat dat praktisch betekent voor de testfase: het dashboard toont nu wat er werkelijk staat. Met één werkbon in de database die niet op de datum van vandaag staat, zie je een lege staat — dat is correct, geen bug. Wil je het dashboard gevuld zien, maak dan een werkbon aan met de datum van vandaag, koppel er een monteur aan, en laat die zijn werkdag starten.
+
+De drempels waarop het dashboard alarm slaat staan als benoemde constanten bovenin `useDashboard.ts`: verwachte starttijd 08:00, één uur bezig zonder foto is een melding, en na twee uur bezig met minder dan de helft van de taken klaar geldt een bon als "achter op schema". Dat zijn keuzes, geen natuurwetten — verstel ze als de praktijk anders blijkt.
+
+**Nog wel op mock/afwezig:** niets in de hooks. Wat resteert zijn features die simpelweg nog niet bestaan (PDF-export, foto-annotaties) — zie de backlog.
+
+## Designfase — afgerond
+
+**De overdracht hieronder (hoofdstuk 7, 10 en 11) is op dit punt achterhaald.** Die stelt dat de premium redesign nog volledig moet gebeuren. Dat klopt niet meer: in Sprint 3.1 en 3.1b is die grotendeels uitgevoerd, ná het schrijven van dat hoofdstuk. Wat er nu staat:
+
+- Themasysteem compleet — `themeStore` met opgeslagen voorkeur, `class`-strategie, no-flash-script in `index.html`, toggle in zowel `Sidebar` als `Topbar`. `dark:`-varianten zitten in vrijwel elk bestand.
+- Merktokens, radius-/schaduwschaal, `ease-brand`-curve en `animate-page-in` staan in `tailwind.config.ts` en worden overal gebruikt.
+- `SectionHeading` vervangt alle losse sectiekoppen.
+
+Wat de fase openhield was niet het uiterlijk maar de **samenhang**: zes `alert()`-popups, acht verschillende lege staten, zeven emoji als icoon, geen enkele foutstaat, en een `Modal` met een permanent donkere kop. Dat is nu opgelost — zie het bovenste blok in `CHANGELOG.md` en de nieuwe componenten in `.ai/COMPONENT_LIBRARY.md`.
+
+**Eén beslissing die expliciet blijft staan:** het thema is light-primair, niet dark-primair. `PRODUCT_VISION.md` schrijft dark-primair voor, maar in 3.1b is bewust omgedraaid naar light. Dat is de latere beslissing en die is aangehouden. Wil je alsnog dark-primair, dan is dat één regel in `themeStore` plus het script in `index.html` — maar het is een keuze van de eigenaar, geen achterstallig werk.
+
+**Nog open, bewust:** `Select`, generieke `Table` en `Dialog`. Geen enkel scherm heeft ze nodig. Bouw ze op het moment dat het eerste scherm ze vraagt.
 
 ## Volgende stap
 

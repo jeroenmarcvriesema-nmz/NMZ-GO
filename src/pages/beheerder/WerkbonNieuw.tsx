@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { genereerBonnummer } from '@/lib/utils'
+import { toast } from '@/store/toastStore'
 import type { Profile } from '@/types'
 import { IconPlus, IconTrash, IconArrowLeft, IconWand } from '@tabler/icons-react'
 
@@ -40,30 +41,46 @@ export default function WerkbonNieuw() {
       const match = s.match(/^(?:\d+[.)\s]|[-\u2022*\u2192]\s*)(.+)/)
       if (match) gevonden.push({ titel: match[1].trim(), omschrijving: '' })
     })
-    if (gevonden.length) { setTaken(gevonden); setActiveTab('handmatig') }
-    else alert('Geen checkpunten herkend. Gebruik genummerde punten of streepjes.')
+    if (gevonden.length) {
+      setTaken(gevonden)
+      setActiveTab('handmatig')
+      toast.goed(`${gevonden.length} ${gevonden.length === 1 ? 'punt' : 'punten'} overgenomen`)
+    } else {
+      toast.fout('Geen checkpunten herkend. Gebruik genummerde punten of streepjes.')
+    }
   }
 
   const handleSave = async () => {
-    if (!adres || !projectnaam || !datum) { alert('Vul adres, projectnaam en datum in.'); return }
+    if (!adres || !projectnaam || !datum) { toast.fout('Vul adres, projectnaam en datum in.'); return }
     const geldig = taken.filter((t) => t.titel.trim())
-    if (!geldig.length) { alert('Voeg minimaal één taak toe.'); return }
+    if (!geldig.length) { toast.fout('Voeg minimaal één taak toe.'); return }
     setLoading(true)
 
     const { data: wb, error: wbErr } = await supabase
       .from('werkbonnen').insert({ bonnummer, projectnaam, adres, opdrachtgever, datum, aangemaakt_door: profile?.id })
       .select().single()
 
-    if (wbErr || !wb) { alert('Fout bij aanmaken werkbon: ' + wbErr?.message); setLoading(false); return }
+    if (wbErr || !wb) {
+      toast.fout('De werkbon kon niet worden aangemaakt. Controleer je verbinding en probeer het opnieuw.')
+      setLoading(false)
+      return
+    }
 
-    await supabase.from('taken').insert(
+    // De bon staat er al; taken en toewijzing mogen niet stil mislukken,
+    // anders krijgt de monteur een lege werkbon te zien.
+    const { error: taakErr } = await supabase.from('taken').insert(
       geldig.map((t, i) => ({ werkbon_id: wb.id, titel: t.titel, omschrijving: t.omschrijving, volgorde: i }))
     )
+    if (taakErr) toast.fout('De werkbon is aangemaakt, maar de taken zijn niet opgeslagen. Vul ze aan op de werkbon.')
+
     if (medewerkers.length) {
-      await supabase.from('werkbon_medewerkers').insert(
+      const { error: koppelErr } = await supabase.from('werkbon_medewerkers').insert(
         medewerkers.map((id) => ({ werkbon_id: wb.id, medewerker_id: id }))
       )
+      if (koppelErr) toast.fout('De werkbon is aangemaakt, maar de monteurs zijn niet gekoppeld.')
     }
+
+    if (!taakErr) toast.goed('Werkbon aangemaakt')
     navigate(`/werkbonnen/${wb.id}`)
   }
 

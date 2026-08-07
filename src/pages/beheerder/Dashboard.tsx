@@ -8,8 +8,9 @@ import { ActivityFeed } from '@/components/dashboard/ActivityFeed'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { useDashboard } from '@/hooks/useDashboard'
-import { useProjecten } from '@/hooks/useProjecten'
 import { useAuth } from '@/hooks/useAuth'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
 import {
   IconPlus,
   IconFolderOpen,
@@ -40,11 +41,8 @@ function formatDatumLang(): string {
 export default function Dashboard() {
   const navigate = useNavigate()
   const { profile } = useAuth()
-  const { data, loading: loadingDash } = useDashboard()
-  const { projecten, loading: loadingProj } = useProjecten()
+  const { data, loading, error, refetch } = useDashboard()
   const voornaam = (profile?.naam ?? '').split(' ')[0]
-
-  const loading = loadingDash || loadingProj
 
   if (loading) {
     return (
@@ -54,13 +52,29 @@ export default function Dashboard() {
     )
   }
 
-  // Bereken KPI's uit projecten mock data
-  const lopend       = projecten.filter((p) => p.status === 'actief' || p.status === 'op_schema' || p.status === 'vertraging').length
+  if (error) {
+    return (
+      <PageWrapper title="Dashboard">
+        <ErrorState
+          melding="Het dashboard kon niet worden geladen. Controleer je verbinding."
+          onOpnieuw={refetch}
+        />
+      </PageWrapper>
+    )
+  }
+
+  // KPI's komen uit de werkbonnen van vandaag, niet uit de
+  // projecten-tabel: die vult zich pas met de ClickUp-synchronisatie
+  // (fase 2) en zou tot die tijd zes nullen tonen boven een tabel die
+  // wél werk laat zien.
+  const lopend        = data.actieveProjecten
   const vandaagActief = data.vandaagGestart
-  const nietGestart  = projecten.filter((p) => p.status === 'niet_gestart').length
-  const opSchema     = projecten.filter((p) => p.status === 'op_schema').length
-  const vertraging   = projecten.filter((p) => p.status === 'vertraging').length
-  const opleveringen = projecten.filter((p) => p.status === 'afgerond').length
+  const nietGestart   = data.nogNietGestart
+  const achter        = data.achterOpSchema
+  const opleveringen  = data.vandaagAfgerond
+  const gemVoortgang  = data.projecten.length
+    ? Math.round(data.projecten.reduce((n, p) => n + p.voortgang, 0) / data.projecten.length)
+    : 0
 
   const urgenteMeldingen = data.meldingen.filter(
     (m) => m.type === 'niet_gestart' || m.type === 'controle' || m.type === 'geen_fotos'
@@ -91,12 +105,12 @@ export default function Dashboard() {
 
       {/* KPI's — 6 stuks Sprint 3 */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-10">
-        <KpiCard label="Lopende projecten" value={lopend}        icon={<IconFolderOpen />}    variant="neutral" />
-        <KpiCard label="Vandaag actief"    value={vandaagActief} icon={<IconPlayerPlay />}    variant="blue" />
-        <KpiCard label="Niet gestart"      value={nietGestart}   icon={<IconClock />}         variant={nietGestart > 0 ? 'yellow' : 'neutral'} />
-        <KpiCard label="Op schema"         value={opSchema}      icon={<IconTrendingUp />}    variant="green" />
-        <KpiCard label="Vertraging"        value={vertraging}    icon={<IconAlertTriangle />} variant={vertraging > 0 ? 'red' : 'neutral'} />
-        <KpiCard label="Opleveringen"      value={opleveringen}  icon={<IconCircleCheck />}   variant="green" />
+        <KpiCard label="Lopend vandaag"  value={lopend}        icon={<IconFolderOpen />}    variant="neutral" />
+        <KpiCard label="Gestart"         value={vandaagActief} icon={<IconPlayerPlay />}    variant="blue" />
+        <KpiCard label="Niet gestart"    value={nietGestart}   icon={<IconClock />}         variant={nietGestart > 0 ? 'yellow' : 'neutral'} />
+        <KpiCard label="Achter op schema" value={achter}       icon={<IconAlertTriangle />} variant={achter > 0 ? 'red' : 'neutral'} />
+        <KpiCard label="Afgerond"        value={opleveringen}  icon={<IconCircleCheck />}   variant="green" />
+        <KpiCard label="Gem. voortgang"  value={`${gemVoortgang}%`} icon={<IconTrendingUp />} variant="neutral" />
       </div>
 
       {/* Operationele meldingen */}
@@ -127,7 +141,16 @@ export default function Dashboard() {
               </>
             }
           />
-          <ProjectTabel projecten={data.projecten} />
+          {data.projecten.length === 0 ? (
+            <EmptyState
+              icon={<IconCalendar />}
+              titel="Vandaag staat er niets gepland"
+              uitleg="Werkbonnen met de datum van vandaag verschijnen hier zodra ze zijn aangemaakt."
+              actie={<Button variant="primary" size="sm" onClick={() => navigate('/werkbonnen/nieuw')}><IconPlus className="w-4 h-4" /> Nieuwe werkbon</Button>}
+            />
+          ) : (
+            <ProjectTabel projecten={data.projecten} />
+          )}
         </div>
         <div className="bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-xl shadow-sm p-6">
           <SectionHeading title="Activiteit vandaag" />
