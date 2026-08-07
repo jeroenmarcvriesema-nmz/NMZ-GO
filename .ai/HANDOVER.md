@@ -47,6 +47,7 @@ Concreet toegevoegd: een `tenants`-tabel met `tenant_id` op alle tabellen, `get_
 
 - ~~**Verificatiequery** na migratie 002~~ — **gedaan.** Rollen kloppen (`jeroenmarcvriesema@gmail.com` = beheerder), `get_mijn_rol()` en `get_mijn_tenant()` staan als `SECURITY DEFINER` met vaste `search_path`, geen `42P17` recursie.
 - ~~**Rollentest** (beheerder + medewerker)~~ — **gedaan, en die vond een kritiek lek.** Zie hieronder; opgelost in migratie 003.
+- ~~**Volledige rollentest na 002/003/004**~~ — **gedaan.** 16 van 17 schemacontroles groen, 45 rolcontroles waarvan 44 groen. Drie bevindingen, waarvan één beveiligingslek. Zie "Rollentest — volledige uitslag" hieronder.
 - **Twee vragen liggen bij de eigenaar:** welk veld leidend is (`Werktekening` óf `Werktekening (PDF)` — er zijn er twee), en of het opleverrapport de fotopagina's apart exporteert.
 
 ## Migratie 003 — rol-escalatie gedicht
@@ -67,6 +68,55 @@ Daarmee vielen de rolscheiding én de tenant-isolatie uit 002 tegelijk om: de me
 Blijvend aandachtspunt: een tenant-verhuizing kan nu bewust alleen nog via `service_role`, niet via de app — ook niet door een beheerder.
 
 Twee losse eindjes die geen blokkade vormen: `tenants` heeft RLS aan met nul policies (alles dicht — veilig, maar zodra een scherm de tenantnaam wil tonen is een select-policy nodig), en leaked-password-protection staat uit in Supabase Auth.
+
+## Rollentest — volledige uitslag
+
+De schemaverificatie van 002/003/004 (17 controles) en de rollentest voor beide rollen plus een niet-ingelogde bezoeker (45 controles) zijn uitgevoerd op de echte database. Het testscript staat in **`supabase/tests/rollentest.sql`** en is herbruikbaar — draai het opnieuw na elke RLS-wijziging, zoals `GIT_WORKFLOW.md` voorschrijft.
+
+De test bootst een rol na met `set local role authenticated` plus een JWT-claim, precies zoals PostgREST dat voor de app doet. Elke schrijfpoging eindigt met een opzettelijke fout die het subtransactieblok terugdraait, dus er is geen productiedata gewijzigd. De testrijen (tweede tenant, twee werkbonnen, een project, een taak, een uitnodiging) zijn na afloop verwijderd; de database staat weer op 1 tenant, 1 werkbon, 3 taken, 0 projecten, 2 profielen.
+
+**Schema (16 van 17 goed):** tenants-tabel gevuld, `tenant_id` op alle zes tabellen `not null` met `get_mijn_tenant()` als default en geen enkele rij zonder tenant, `projecten` met FK vanaf `werkbonnen` en RLS aan, alle acht rapportvelden en `fotos.fase` aanwezig, de trigger en `with check` uit 003 actief, en de wachtrij uit 004 met RLS aan en nul schrijfpolicies. De zeventiende controle is de periodieke starter — zie bevinding 3.
+
+**Medewerker (21/21 goed):** ziet uitsluitend de eigen werkbon en de taken daarvan — niet een werkbon van de eigen tenant waaraan hij niet is toegewezen, en niets uit een andere tenant. Geen projecten, geen andere profielen, geen verwerkingswachtrij. Schrijven: rol-escalatie geweigerd door de trigger, tenant-hop geweigerd, werkbon/project/verwerkingstaak aanmaken geweigerd door RLS, `taak_aanmaken()` geweigerd, een taak van een vreemde bon raakt 0 rijen, een eigen taak naar een andere tenant verplaatsen wordt geweigerd. Taken van de eigen werkbon afvinken werkt.
+
+**Beheerder (17/17 goed):** ziet de hele eigen tenant en niets daarbuiten. Een werkbon van een andere tenant is onzichtbaar, niet te wijzigen (0 rijen) en niet te verwijderen (0 rijen); aanmaken mét een vreemde `tenant_id` wordt geweigerd, en een eigen werkbon naar een andere tenant verplaatsen ook. Rollen zetten binnen de eigen tenant mag, een profiel verhuizen niet. `taak_aanmaken()` werkt, direct in `verwerkingstaken` schrijven niet.
+
+**Niet ingelogd:** nul rijen op werkbonnen, profielen, taken, projecten en tenants — zie bevinding 2 voor de uitzondering.
+
+### Bevinding 1 — medewerker kan zijn werkbon niet afronden (functioneel, blokkeert de flow)
+
+`src/pages/medewerker/WerkbonUitvoeren.tsx:26` zet de werkbon op `voltooid`:
+
+```ts
+await supabase.from('werkbonnen').update({ status: 'voltooid' }).eq('id', werkbon.id)
+```
+
+`werkbonnen_update` staat alleen een beheerder toe. De update raakt dus 0 rijen. PostgREST geeft daar geen fout op — een update die niets raakt is een geldige lege respons — en de code kijkt niet naar `error` of naar het aantal geraakte rijen. **De monteur krijgt te zien dat de bon is afgerond terwijl er niets is opgeslagen.** Dit staat los van 002/003/004; de policy is zo sinds 001.
+
+Twee dingen nodig, allebei een beslissing van de eigenaar:
+- Een RLS-policy die een toegewezen medewerker `status` van de eigen werkbon laat zetten — bij voorkeur alleen die kolom, en alleen naar `bezig`/`voltooid`. Een kolom afbakenen kan een policy niet; dat vraagt dezelfde triggeraanpak als in 003, of een `security definer`-functie `werkbon_afronden(id)`.
+- Foutafhandeling op de call zelf, zodat een geblokkeerde update zichtbaar wordt in plaats van stil te falen. Datzelfde geldt voor de andere plekken zonder `error`-check: `WerkbonDetail.tsx:43`, `useTaken.ts:8`, `Registreer.tsx:39`.
+
+### Bevinding 2 — uitnodigingstokens zijn publiek leesbaar (beveiliging)
+
+`uitnodigingen_select` heeft als voorwaarde letterlijk `true`. Aangetoond met een testrij: een **niet-ingelogde** bezoeker leest alle uitnodigingen van alle tenants op, inclusief `token`. De anon-key staat in de browserbundel, dus dit is voor iedereen te doen. Wie een ongebruikt token opvraagt, kan zich met `Registreer.tsx` in de bijbehorende tenant inschrijven.
+
+`uitnodigingen_update` is vergelijkbaar ruim (`get_mijn_rol() = 'beheerder' or auth.uid() is not null`, zonder `with check`): elke ingelogde gebruiker kan de uitnodiging van een willekeurige andere tenant op `gebruikt` zetten.
+
+De select-policy staat er waarschijnlijk omdat `Registreer.tsx` het token vóór de login moet kunnen opzoeken. Dat kan zonder de tabel open te zetten: een `security definer`-functie die één token als argument neemt en alleen "geldig ja/nee" plus de `tenant_id` teruggeeft, en de policy zelf dicht. Dit is een aparte migratie 005 en een wijziging in `Registreer.tsx` — nog niet gebouwd, want het raakt de registratieflow en vraagt eerst akkoord.
+
+### Bevinding 3 — de verwerker draait nog niet periodiek (afmaken vóór fase 1)
+
+Blok A t/m F van `004_verwerkingswachtrij.sql` staan op de database: de tabellen, de RLS, `taak_aanmaken()`. **Blok G niet.** `start_verwerker()` bestaat niet, er staat geen job in `cron.job`, en de Vault bevat geen `project_url` of `service_role_key`. De wachtrij vult zich dus wel, maar niets start de Edge Function.
+
+Dat is geen fout in de migratie — blok G staat er bewust buiten de transactie, want het heeft twee secrets nodig die niet in git horen. Het moet eenmalig door de eigenaar gedraaid worden, in de SQL-editor van Supabase:
+
+```sql
+select vault.create_secret('<service-role-key>', 'service_role_key');
+select vault.create_secret('https://<ref>.supabase.co', 'project_url');
+```
+
+Daarna blok G uit `004_verwerkingswachtrij.sql` uitvoeren. Controleer met `select jobname, schedule, active from cron.job;` dat `nmzgo-verwerker` er staat.
 
 ## Volgende stap
 
