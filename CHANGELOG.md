@@ -1,5 +1,24 @@
 # NMZ GO — Changelog
 
+## Migratie 003 — rol-escalatie op profiles
+
+### Database / RLS fixes
+- **[CRITICAL FIX]** Privilege escalation gedicht op `public.profiles`. `profiles_update_own` had een `using`- maar geen `with check`-clausule; Postgres valt dan terug op de `using`-expressie (`auth.uid() = id`), en `id` verandert niet bij een update. Elke medewerker kon daardoor met één PostgREST-call zijn eigen `rol` op `beheerder` zetten én zijn `tenant_id` naar een andere klant wijzigen — waarmee zowel de rolscheiding als de tenant-isolatie uit migratie 002 wegviel. Gevonden met de rollentest die `GIT_WORKFLOW.md` voorschrijft na elke RLS-wijziging.
+- **[FIX]** Trigger `profiles_guard_rol_tenant` toegevoegd: houdt wijzigingen aan `rol` (tenzij beheerder) en aan `tenant_id` (altijd) tegen. Een trigger ziet `OLD`/`NEW` en kan daarom zien of een kolom verandert; een RLS-policy kan dat niet. Een tenant-verhuizing loopt vanaf nu bewust alleen nog via `service_role`.
+- **[FIX]** `with check` toegevoegd op `profiles_update_own` en `profiles_update_beheerder` als tweede beveiligingslaag. De `using`-expressies zijn ongewijzigd, dus de rolscheiding blijft exact zoals in 002.
+- **[FIX]** `profiles_insert_own` beperkt tot `rol = 'medewerker'` — hetzelfde gat bestond bij het aanmaken van een profiel, en de trigger dekt alleen updates af.
+- **[FIX]** Vaste `search_path` op `update_updated_at()` (melding `function_search_path_mutable` van de Supabase-linter).
+
+### Geverifieerd
+- ✅ Verificatiequery na migratie 002: rollen, `SECURITY DEFINER`-functies en policies kloppen, geen `42P17` recursie
+- ✅ Medewerker kan zichzelf niet promoveren (`42501`)
+- ✅ Medewerker kan niet naar een andere tenant springen (`42501`)
+- ✅ Medewerker kan geen profiel als beheerder aanmaken (`42501`)
+- ✅ Medewerker kan nog wel eigen naam wijzigen en eigen taken afvinken
+- ✅ Beheerder kan nog wel medewerkers promoveren/degraderen en werkbonnen aanmaken
+- ✅ Beheerder kan een profiel niet naar een andere tenant verhuizen
+- ✅ `npm run build` groen
+
 ## Sprint 3.1b — Premium Redesign v2 (light-primair, meer merkkleur, groter, meer animatie)
 
 ### Nieuw

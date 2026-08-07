@@ -45,9 +45,28 @@ Concreet toegevoegd: een `tenants`-tabel met `tenant_id` op alle tabellen, `get_
 
 ## Openstaand — eerst afmaken
 
-- **Verificatiequery** na migratie 002 is nog niet door een sessie gecontroleerd.
-- **Rollentest** (beheerder + medewerker) na de RLS-wijziging is nog niet gedaan. `GIT_WORKFLOW.md` schrijft die voor bij elke RLS-wijziging; sla hem niet over.
+- ~~**Verificatiequery** na migratie 002~~ — **gedaan.** Rollen kloppen (`jeroenmarcvriesema@gmail.com` = beheerder), `get_mijn_rol()` en `get_mijn_tenant()` staan als `SECURITY DEFINER` met vaste `search_path`, geen `42P17` recursie.
+- ~~**Rollentest** (beheerder + medewerker)~~ — **gedaan, en die vond een kritiek lek.** Zie hieronder; opgelost in migratie 003.
 - **Twee vragen liggen bij de eigenaar:** welk veld leidend is (`Werktekening` óf `Werktekening (PDF)` — er zijn er twee), en of het opleverrapport de fotopagina's apart exporteert.
+
+## Migratie 003 — rol-escalatie gedicht
+
+De voorgeschreven rollentest heeft een privilege escalation aangetoond die al sinds migratie 001 in het schema zat en in 002 is meegekopieerd. `profiles_update_own` had wel een `using`- maar geen `with check`-clausule. Postgres valt dan voor de controle op de nieuwe rij terug op `using ( auth.uid() = id )`, en `id` verandert niet bij een update — dus elke kolom van de eigen rij was vrij bewerkbaar.
+
+Eén PostgREST-call als gewone medewerker volstond:
+
+```
+PATCH /rest/v1/profiles?id=eq.<eigen-id>
+{ "rol": "beheerder", "tenant_id": "<andere-tenant>" }
+```
+
+Daarmee vielen de rolscheiding én de tenant-isolatie uit 002 tegelijk om: de medewerker werd beheerder in de tenant van een andere klant en kon diens werkbonnen lezen. Dit is aangetoond in een transactie met `rollback`; er is geen productiedata gewijzigd.
+
+`003_fix_rolescalatie_profiles.sql` zet er twee sloten op: een `before update`-trigger die rol- en `tenant_id`-wijzigingen tegenhoudt (een trigger ziet `OLD`/`NEW`, een policy niet), plus `with check` op beide update-policies als tweede laag. `profiles_insert_own` had hetzelfde gat bij het aanmaken en is meegenomen. **Deze migratie is al toegepast op de database.**
+
+Blijvend aandachtspunt: een tenant-verhuizing kan nu bewust alleen nog via `service_role`, niet via de app — ook niet door een beheerder.
+
+Twee losse eindjes die geen blokkade vormen: `tenants` heeft RLS aan met nul policies (alles dicht — veilig, maar zodra een scherm de tenantnaam wil tonen is een select-policy nodig), en leaked-password-protection staat uit in Supabase Auth.
 
 ## Volgende stap
 
