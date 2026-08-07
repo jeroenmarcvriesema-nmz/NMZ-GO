@@ -26,7 +26,17 @@ export default function WachtwoordVergeten() {
     setLoading(false)
 
     if (resetError) {
-      setError('De e-mail kon niet worden verstuurd. Controleer je verbinding en probeer het opnieuw.')
+      // Benoem de oorzaak. De twee die in de praktijk voorkomen zijn
+      // een niet-toegestane redirect-URL (configuratie) en de
+      // verstuurlimiet van Supabase' ingebouwde mailer (geduld of SMTP).
+      const melding = resetError.message.toLowerCase()
+      if (melding.includes('redirect')) {
+        setError('Deze omgeving is nog niet volledig ingesteld: het herstel-adres staat niet in de lijst met toegestane adressen in Supabase. Neem contact op met de beheerder.')
+      } else if (melding.includes('rate limit') || melding.includes('too many')) {
+        setError('Er zijn te veel aanvragen gedaan. Wacht een uur en probeer het opnieuw.')
+      } else {
+        setError(`De e-mail kon niet worden verstuurd: ${resetError.message}`)
+      }
       return
     }
     setVerstuurd(true)
