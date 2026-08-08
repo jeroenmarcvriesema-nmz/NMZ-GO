@@ -41,6 +41,8 @@ export interface Taak {
   titel: string
   omschrijving: string | null
   voltooid: boolean
+  /** Standaard aan. Alleen een uitvoerder of hoger kan hem uitzetten. */
+  foto_vereist: boolean
   opmerking: string | null
   volgorde: number
   created_at: string

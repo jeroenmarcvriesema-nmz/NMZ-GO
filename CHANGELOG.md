@@ -1,5 +1,27 @@
 # NMZ GO — Changelog
 
+## Fotoplicht per punt + werkopdracht-parser beproefd
+
+### Database
+- **[FEATURE]** Migratie 011: `foto_vereist` per punt, standaard aan. De afrondcontrole telt alleen punten mét fotoplicht — een punt zonder fotoplicht moet nog steeds afgevinkt worden, maar blokkeert het afronden niet.
+- **[FEATURE]** Alleen een uitvoerder of hoger kan de fotoplicht omzetten. Zonder die grens kon een zwamsaneerder de fotoplicht van zijn eigen punten uitzetten en daarmee het hele bewijs omzeilen.
+- **[FEATURE]** De tekst van een punt ligt vast: die komt uit de offerte. Afvinken en een opmerking achterlaten mag, herschrijven niet.
+- **[FEATURE]** `uitgesloten_punten` als instelling — parkeerkosten, brandstoftoeslag en klein materiaal komen nooit op een werkbon.
+
+### Verkenning ClickUp
+- De werkopdracht blijkt níet in de ClickUp-beschrijving te staan (dat is een samenvatting) maar in de bijgevoegde PDF. De parser is daarop gebouwd en beproefd tegen twee echte opdrachten: 17 en 22 punten, afgebroken zinnen correct samengevoegd over paginagrenzen heen, kop- en inspecteursgegevens eruit.
+- De ankers `Uit te voeren werkzaamheden … :` en `Datum oplevering:` liggen vast in het sjabloon. De kopjes daarboven (Compartiment, Rechterkant, Linkerkant) verschillen per inspecteur en worden daarom als één blok naslagtekst bewaard in plaats van ontleed.
+- Geen taalmodel in de parser: puur ankers en opsommingstekens, zodat er niets verzonnen kan worden.
+
+### Geverifieerd
+- ✅ Punt zonder fotoplicht blokkeert het afronden niet
+- ✅ Punt mét fotoplicht zonder foto blokkeert het afronden wél
+- ✅ Zwamsaneerder kan de fotoplicht niet uitzetten (`42501`)
+- ✅ Zwamsaneerder kan de tekst van een punt niet herschrijven (`42501`)
+- ✅ Parser getest tegen twee echte werkopdrachten
+- ✅ `npm run build` groen
+
+
 ## Zwamsaneerdersscherm — zelfde taal als kantoor
 
 ### Verbeteringen

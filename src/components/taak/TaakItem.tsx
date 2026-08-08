@@ -5,7 +5,7 @@ import { useTaken } from '@/hooks/useTaken'
 import { useFotos } from '@/hooks/useFotos'
 import { useAuth } from '@/hooks/useAuth'
 import type { Taak } from '@/types'
-import { IconCamera, IconCheck, IconSquare, IconPhoto, IconAlertCircle } from '@tabler/icons-react'
+import { IconCamera, IconCameraOff, IconCheck, IconSquare, IconPhoto, IconAlertCircle } from '@tabler/icons-react'
 
 interface TaakItemProps {
   taak: Taak
@@ -15,14 +15,18 @@ interface TaakItemProps {
 }
 
 export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps) {
-  const { toggleVoltooid } = useTaken()
+  const { toggleVoltooid, zetFotoVereist } = useTaken()
   const { upload, getUrl } = useFotos()
-  const { profile } = useAuth()
+  const { profile, magWerkBeheren } = useAuth()
   const [uploading, setUploading] = useState(false)
   const [toggling, setToggling] = useState(false)
   const [fout, setFout] = useState<string | null>(null)
+  const [fotoplichtBezig, setFotoplichtBezig] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const heeftFoto = (taak.fotos?.length ?? 0) > 0
+  // Fotoplicht kan per punt uit staan — bijvoorbeeld bij een regel uit
+  // de offerte waar niets van te fotograferen valt.
+  const magAfvinken = heeftFoto || !taak.foto_vereist
 
   const handleFotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -49,8 +53,18 @@ export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps
     if (venster) venster.location.href = url
   }
 
+  const wisselFotoplicht = async () => {
+    if (fotoplichtBezig) return
+    setFout(null)
+    setFotoplichtBezig(true)
+    const { error } = await zetFotoVereist(taak.id, !taak.foto_vereist)
+    setFotoplichtBezig(false)
+    if (error) { setFout('De fotoplicht kon niet worden gewijzigd.'); return }
+    await onRefresh()
+  }
+
   const handleToggle = async () => {
-    if (!heeftFoto || readOnly || toggling) return
+    if (!magAfvinken || readOnly || toggling) return
     setFout(null)
     setToggling(true)
     const { error } = await toggleVoltooid(taak)
@@ -105,18 +119,38 @@ export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps
             variant={taak.voltooid ? 'secondary' : 'primary'}
             size="sm"
             loading={toggling}
-            disabled={!heeftFoto}
+            disabled={!magAfvinken}
             onClick={handleToggle}
-            className={cn(!heeftFoto && 'opacity-40 cursor-not-allowed')}
-            title={!heeftFoto ? 'Maak eerst een foto' : undefined}
+            className={cn(!magAfvinken && 'opacity-40 cursor-not-allowed')}
+            title={!magAfvinken ? 'Maak eerst een foto' : undefined}
           >
             {taak.voltooid ? <><IconCheck className="w-4 h-4" /> Afgevinkt</> : <><IconSquare className="w-4 h-4" /> Afvinken</>}
           </Button>
 
-          {!heeftFoto && (
+          {!heeftFoto && taak.foto_vereist && (
             <span className="text-xs text-gray-400 dark:text-white/40 italic flex items-center gap-1">
               <IconCamera className="w-3.5 h-3.5" /> Foto vereist
             </span>
+          )}
+
+          {magWerkBeheren && (
+            <button
+              onClick={wisselFotoplicht}
+              disabled={fotoplichtBezig}
+              className={cn(
+                'text-xs font-semibold flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border transition-all duration-150 ease-brand disabled:opacity-50',
+                taak.foto_vereist
+                  ? 'border-brand-yellow bg-brand-yellow-light dark:bg-brand-yellow/10 text-brand-yellow-dark dark:text-brand-yellow'
+                  : 'border-gray-200 dark:border-white/10 text-gray-400 dark:text-white/40'
+              )}
+              title={taak.foto_vereist
+                ? 'Fotoplicht uitzetten voor dit punt'
+                : 'Fotoplicht weer aanzetten'}
+            >
+              {taak.foto_vereist
+                ? <><IconCamera className="w-3.5 h-3.5" /> Foto verplicht</>
+                : <><IconCameraOff className="w-3.5 h-3.5" /> Geen foto nodig</>}
+            </button>
           )}
 
           {fout && (
