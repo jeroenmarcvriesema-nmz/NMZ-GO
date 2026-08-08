@@ -117,7 +117,7 @@ export default function Planning() {
                   dagItems.map((item) => (
                     <div
                       key={item.id}
-                      onClick={() => navigate(`/projecten/${item.projectId}`)}
+                      onClick={() => navigate(`/werkbonnen/${item.id}`)}
                       className="rounded-lg p-2.5 cursor-pointer hover:opacity-90 transition-all duration-150 border bg-white dark:bg-white/5 border-gray-100 dark:border-white/10 hover:border-gray-200 dark:hover:border-white/20"
                     >
                       <div className="flex items-start justify-between gap-1 mb-1.5">
@@ -175,7 +175,7 @@ export default function Planning() {
                 dagItems.map((item) => (
                   <div
                     key={item.id}
-                    onClick={() => navigate(`/projecten/${item.projectId}`)}
+                    onClick={() => navigate(`/werkbonnen/${item.id}`)}
                     className="px-4 py-3 border-b border-gray-50 dark:border-white/5 last:border-0 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors duration-150"
                   >
                     <div className="flex items-center justify-between gap-2 mb-1">
