@@ -36,6 +36,7 @@ interface Instellingen {
   tenant_id: string
   lijst_ids: string[]
   trigger_status: string
+  trigger_statussen: string[] | null
   veld_medewerkers: string | null
   veld_startdatum: string | null
   veld_opleverdatum: string | null
@@ -213,10 +214,19 @@ export async function synchroniseer(
   const overgeslagen: Bevinding[] = []
   const ongekoppeldeNamen = new Set<string>()
 
+  // Meerdere statussen, want een taak schuift in het weekend van
+  // "volgende week" naar "deze week". Alleen op de eerste filteren
+  // betekent dat hij daarna uit beeld verdwijnt: bestaande bonnen
+  // blijven staan, maar een wijziging in de ploeg komt niet meer binnen.
+  const statussen = (i.trigger_statussen?.length ? i.trigger_statussen : [i.trigger_status])
+    .filter(Boolean)
+
   for (const lijst of i.lijst_ids) {
-    const status = encodeURIComponent(i.trigger_status)
+    const vraag = statussen
+      .map((st) => `statuses[]=${encodeURIComponent(st)}`)
+      .join('&')
     const resultaat = await haal(
-      `/list/${lijst}/task?statuses[]=${status}&subtasks=false&include_closed=false`,
+      `/list/${lijst}/task?${vraag}&subtasks=false&include_closed=false`,
       token,
     )
 

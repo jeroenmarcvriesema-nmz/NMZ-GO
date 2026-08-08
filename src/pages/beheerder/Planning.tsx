@@ -4,7 +4,7 @@ import { PageWrapper } from '@/components/layout/PageWrapper'
 import { Spinner } from '@/components/ui/Spinner'
 import { usePlanning, statusLabel, statusKleur } from '@/hooks/useProjecten'
 import { cn, formatDatumKort } from '@/lib/utils'
-import { IconUsers, IconMapPin, IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
+import { IconUsers, IconMapPin, IconChevronLeft, IconChevronRight, IconAlertTriangle } from '@tabler/icons-react'
 
 function weekDagen(verschuiving = 0): Date[] {
   const vandaag = new Date()
@@ -31,6 +31,28 @@ export default function Planning() {
   const dagen = weekDagen(week)
   const vandaag = new Date()
   vandaag.setHours(0, 0, 0, 0)
+
+  /**
+   * Wie staat er op deze dag op meer dan één klus?
+   *
+   * ClickUp kent alleen een start- en een einddatum, dus een klus van
+   * drie weken vult alle dagen ertussen — ook de dagen waarop de ploeg
+   * ergens anders is. Dat kunnen we niet weten en niet oplossen.
+   *
+   * Wat we wél kunnen: het zichtbaar maken. Staat iemand op één dag op
+   * twee klussen, dan is dat óf een fout in de planning, óf een klus
+   * die feitelijk even stilligt. In beide gevallen wil je het maandag
+   * zien en niet donderdag horen.
+   */
+  const dubbelOpDag = (items: typeof planning): Set<string> => {
+    const geteld = new Map<string, number>()
+    for (const item of items) {
+      for (const naam of item.medewerkers) {
+        geteld.set(naam, (geteld.get(naam) ?? 0) + 1)
+      }
+    }
+    return new Set([...geteld].filter(([, n]) => n > 1).map(([naam]) => naam))
+  }
 
   if (loading) {
     return (
@@ -109,6 +131,18 @@ export default function Planning() {
 
               {/* Items */}
               <div className="flex-1 bg-white dark:bg-surface-dark-2 border border-t-0 border-gray-100 dark:border-white/10 rounded-b-xl p-2 space-y-2 min-h-[120px]">
+                {(() => {
+                  const dubbel = dubbelOpDag(dagItems)
+                  return dubbel.size > 0 ? (
+                    <div className="flex items-start gap-1.5 px-2 py-1.5 rounded-sm bg-orange-50 dark:bg-orange-500/10 border border-orange-300 dark:border-orange-500/30">
+                      <IconAlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-orange-600 dark:text-orange-400" />
+                      <span className="text-[11px] leading-snug text-orange-800 dark:text-orange-300">
+                        {[...dubbel].join(', ')} op meerdere klussen
+                      </span>
+                    </div>
+                  ) : null
+                })()}
+
                 {dagItems.length === 0 ? (
                   <div className="flex items-center justify-center h-full py-6">
                     <span className="text-xs text-gray-300 dark:text-white/30">Vrij</span>
