@@ -165,7 +165,7 @@ export default function Medewerkers() {
 
   return (
     <PageWrapper title="Medewerkers">
-      <div className="max-w-5xl space-y-4">
+      <div className="max-w-6xl space-y-4">
         <Card>
           <SectionHeading
             title={`Accounts (${medewerkers.length})`}
@@ -269,9 +269,12 @@ export default function Medewerkers() {
               </span>
             }
           />
-          <div className="divide-y divide-gray-50 dark:divide-white/5">
+          {/* Twee kolommen op een breed scherm: drieëndertig namen in
+              één smalle kolom is veel scrollen met een half leeg
+              scherm ernaast. */}
+          <div className="grid grid-cols-1 2xl:grid-cols-2 2xl:gap-x-8 divide-y 2xl:divide-y-0 divide-gray-50 dark:divide-white/5">
             {ploeg.map((p) => (
-              <div key={p.id} className="flex flex-col sm:flex-row sm:items-center gap-3 py-3">
+              <div key={p.id} className="flex flex-col sm:flex-row sm:items-center gap-3 py-3 2xl:border-b 2xl:border-gray-50 dark:2xl:border-white/5">
                 <div className="flex items-center gap-3 flex-1 min-w-[10rem]">
                   <Avatar naam={p.naam} size="sm" />
                   <div className="min-w-0">

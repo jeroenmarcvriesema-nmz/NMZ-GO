@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PageWrapper } from '@/components/layout/PageWrapper'
 import { Card } from '@/components/ui/Card'
@@ -10,7 +11,7 @@ import { berekenVoortgang, cn } from '@/lib/utils'
 import type { Werkbon } from '@/types'
 import {
   IconCalendarWeek, IconMapPin, IconListCheck,
-  IconChevronRight, IconAlertTriangle, IconKey,
+  IconChevronRight, IconChevronLeft, IconAlertTriangle, IconKey,
 } from '@tabler/icons-react'
 
 const DAGEN = ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag']
@@ -44,7 +45,14 @@ export default function MijnWeek() {
   const { werkbonnen, loading } = useWerkbonnen()
   const navigate = useNavigate()
 
+  // Vooruit kijken mag. Starten kan alleen in de week zelf — dat zit
+  // in de werkdag en niet hier — maar wéten wat er aankomt hoort geen
+  // voorrecht van kantoor te zijn. Wie maandag al ziet dat hij
+  // donderdag in Haarlem staat, regelt zijn eigen vervoer.
+  const [week, setWeek] = useState(0)
+
   const maandag = maandagVan(new Date())
+  maandag.setDate(maandag.getDate() + week * 7)
   const dagen = Array.from({ length: 5 }, (_, n) => {
     const d = new Date(maandag)
     d.setDate(maandag.getDate() + n)
@@ -81,6 +89,35 @@ export default function MijnWeek() {
   return (
     <PageWrapper title="Mijn week">
       <div className="max-w-6xl space-y-6">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setWeek(week - 1)}
+            title="Vorige week"
+            className="flex items-center justify-center w-11 h-11 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-surface-dark-2 text-gray-500 dark:text-white/50 hover:border-brand-yellow transition-colors"
+          >
+            <IconChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setWeek(week + 1)}
+            title="Volgende week"
+            className="flex items-center justify-center w-11 h-11 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-surface-dark-2 text-gray-500 dark:text-white/50 hover:border-brand-yellow transition-colors"
+          >
+            <IconChevronRight className="w-4 h-4" />
+          </button>
+          <span className="text-sm font-semibold text-gray-700 dark:text-white/80">
+            {week === 0 ? 'Deze week' : week === 1 ? 'Volgende week'
+              : week === -1 ? 'Vorige week' : `${dagen[0].getDate()}/${dagen[0].getMonth() + 1}`}
+          </span>
+          {week !== 0 && (
+            <button
+              onClick={() => setWeek(0)}
+              className="min-h-[44px] px-3 rounded-sm text-sm font-semibold text-gray-500 dark:text-white/50 hover:text-gray-900 dark:hover:text-white hover:bg-surface-2 dark:hover:bg-white/5 transition-colors"
+            >
+              Naar deze week
+            </button>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
           {dagen.map((dag) => {
             const d = iso(dag)
