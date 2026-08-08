@@ -123,6 +123,38 @@ function bijlage(taak: any, id: string | null, patroon: RegExp): { url: string; 
 const OPDRACHT_VELD = /werkopdracht/i
 const TEKENING_VELD = /tekening/i
 
+/**
+ * Zet de ploeg op een werkbon zoals ClickUp hem kent.
+ *
+ * Eerst weg, dan opnieuw — ClickUp is leidend. Maar alleen over zijn
+ * eigen toewijzingen: wie hier handmatig iemand aan een klus hangt,
+ * doet dat omdat er iets is gebeurd wat ClickUp nog niet weet. Die
+ * keuze wegvegen bij de volgende ronde is stil en onvindbaar.
+ */
+async function zetPloeg(
+  db: SupabaseClient,
+  tenantId: string,
+  bonId: string,
+  ploeg: { id: string }[],
+): Promise<void> {
+  await db.from('werkbon_medewerkers')
+    .delete()
+    .eq('werkbon_id', bonId)
+    .eq('handmatig', false)
+
+  if (ploeg.length === 0) return
+
+  // upsert en niet insert: een handmatige toewijzing van iemand die
+  // inmiddels óók in ClickUp staat, botst anders op de primaire sleutel
+  // en laat de hele bon mislukken.
+  await db.from('werkbon_medewerkers').upsert(
+    ploeg.map((p) => ({
+      tenant_id: tenantId, werkbon_id: bonId, persoon_id: p.id, handmatig: false,
+    })),
+    { onConflict: 'werkbon_id,persoon_id', ignoreDuplicates: true },
+  )
+}
+
 export async function synchroniseer(
   db: SupabaseClient,
   tenantId: string,
@@ -176,6 +208,7 @@ export async function synchroniseer(
   let gezien = 0
   let nieuw = 0
   let bijgewerkt = 0
+  let ongewijzigd = 0
   const proef: Record<string, unknown>[] = []
   const overgeslagen: Bevinding[] = []
   const ongekoppeldeNamen = new Set<string>()
@@ -192,6 +225,44 @@ export async function synchroniseer(
       const adres = taak.name ?? '(zonder naam)'
 
       try {
+        const namenVooraf = labelNamen(taak, i.veld_medewerkers)
+        const ploegVooraf = namenVooraf
+          .map((n) => perLabel.get(n))
+          .filter(Boolean) as { id: string; naam: string; heeftAccount: boolean }[]
+        for (const n of namenVooraf) if (!perLabel.has(n)) ongekoppeldeNamen.add(n)
+
+        // Bestaat de bon al en heeft hij zijn documenten, dan is hij
+        // klaar. Een werkbon verandert niet meer nadat hij er eenmaal
+        // in staat — meerwerk wordt een aparte ClickUp-taak en dus een
+        // aparte bon. Opnieuw de PDF ophalen, ontleden en wegschrijven
+        // levert precies hetzelfde op en kost bij tweeëntwintig klussen
+        // tweeëntwintig downloads per ronde. Dat was de reden dat de
+        // hartslag op een half uur stond.
+        //
+        // Wat wél verandert is wie er op staat: iemand valt uit, er
+        // wordt iemand bijgezet. Dat is één veld uit de taak die we
+        // toch al binnen hebben, dus dat werken we altijd bij.
+        if (!droogloop) {
+          const { data: alKlaar } = await db
+            .from('werkbonnen')
+            .select('id, opdracht_pad')
+            .eq('tenant_id', tenantId)
+            .eq('clickup_taak_id', taak.id)
+            .maybeSingle()
+
+          if (alKlaar?.opdracht_pad) {
+            await zetPloeg(db, tenantId, alKlaar.id, ploegVooraf)
+            await db.from('werkbonnen')
+              .update({
+                clickup_status: taak.status?.status ?? null,
+                laatst_gesynct: new Date().toISOString(),
+              })
+              .eq('id', alKlaar.id)
+            ongewijzigd++
+            continue
+          }
+        }
+
         const opdracht = bijlage(taak, i.veld_werkopdracht, OPDRACHT_VELD)
         if (!opdracht) {
           overgeslagen.push({ taak: taak.id, adres, reden: 'geen werkopdracht-PDF op de taak' })
@@ -207,11 +278,7 @@ export async function synchroniseer(
         const tekst = await leesPdf(pdfBytes)
         const w = ontleed(tekst, i.uitgesloten_punten)
 
-        const namen = labelNamen(taak, i.veld_medewerkers)
-        const gekoppeld = namen
-          .map((n) => perLabel.get(n))
-          .filter(Boolean) as { id: string; naam: string; heeftAccount: boolean }[]
-        for (const n of namen) if (!perLabel.has(n)) ongekoppeldeNamen.add(n)
+        const gekoppeld = ploegVooraf
 
         const bon = {
           tenant_id: tenantId,
@@ -341,6 +408,7 @@ export async function synchroniseer(
     gezien,
     nieuw,
     bijgewerkt,
+    ongewijzigd,
     overgeslagen,
     namen_zonder_persoon: [...ongekoppeldeNamen],
     zonder_account: [...new Set(
