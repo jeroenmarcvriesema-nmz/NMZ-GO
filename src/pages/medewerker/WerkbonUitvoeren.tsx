@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { TaakItem } from '@/components/taak/TaakItem'
+import { Klusinfo } from '@/components/werkbon/Klusinfo'
 import { Spinner } from '@/components/ui/Spinner'
 import { useWerkbon } from '@/hooks/useWerkbonnen'
 import { berekenVoortgang, formatDatum, cn } from '@/lib/utils'
@@ -71,6 +72,19 @@ export default function WerkbonUitvoeren() {
           </div>
           <div className="mt-3"><ProgressBar value={voortgang} size="md" variant={voortgang === 100 ? 'green' : 'yellow'} /></div>
         </Card>
+
+        {werkbon.stilgelegd_op && (
+          <div className="bg-orange-50 dark:bg-orange-500/10 border border-orange-300 dark:border-orange-500/30 rounded-lg p-4">
+            <div className="flex items-center gap-2 font-bold text-sm text-orange-800 dark:text-orange-300">
+              <IconAlertCircle className="w-4 h-4 flex-shrink-0" /> Deze klus ligt stil
+            </div>
+            <div className="text-sm text-orange-700 dark:text-orange-200/80 mt-1">
+              {werkbon.stilleg_reden}
+            </div>
+          </div>
+        )}
+
+        <Klusinfo werkbon={werkbon} />
 
         {allesAfgevinkt && werkbon.status !== 'voltooid' && (
           <div className="bg-brand-yellow-light dark:bg-brand-yellow/10 border border-brand-yellow rounded-lg p-4">

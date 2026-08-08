@@ -9,7 +9,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { genereerBonnummer } from '@/lib/utils'
 import { toast } from '@/store/toastStore'
-import type { Profile } from '@/types'
+import type { Persoon } from '@/types'
 import { IconPlus, IconTrash, IconArrowLeft, IconWand } from '@tabler/icons-react'
 
 interface TaakInput { titel: string; omschrijving: string }
@@ -25,13 +25,15 @@ export default function WerkbonNieuw() {
   const [medewerkers, setMedewerkers] = useState<string[]>([])
   const [taken, setTaken] = useState<TaakInput[]>([{ titel: '', omschrijving: '' }])
   const [grippTekst, setGrippTekst] = useState('')
-  const [alleProfielen, setAlleProfielen] = useState<Profile[]>([])
+  const [alleProfielen, setAlleProfielen] = useState<Persoon[]>([])
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<'handmatig' | 'gripp'>('handmatig')
 
   useEffect(() => {
-    supabase.from('profiles').select('*').eq('rol', 'medewerker').eq('actief', true)
-      .then(({ data }) => setAlleProfielen((data as Profile[]) || []))
+    // Personen en niet profiles: toewijzen moet kunnen aan iemand die
+    // nog geen account heeft. Dat is bij ons de normale toestand.
+    supabase.from('personen').select('*').eq('actief', true).order('naam')
+      .then(({ data }) => setAlleProfielen((data as Persoon[]) || []))
   }, [])
 
   const parseerGripp = () => {
@@ -75,7 +77,7 @@ export default function WerkbonNieuw() {
 
     if (medewerkers.length) {
       const { error: koppelErr } = await supabase.from('werkbon_medewerkers').insert(
-        medewerkers.map((id) => ({ werkbon_id: wb.id, medewerker_id: id }))
+        medewerkers.map((id) => ({ werkbon_id: wb.id, persoon_id: id }))
       )
       if (koppelErr) toast.fout('De werkbon is aangemaakt, maar de monteurs zijn niet gekoppeld.')
     }

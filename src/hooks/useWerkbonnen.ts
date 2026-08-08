@@ -14,7 +14,7 @@ export function useWerkbonnen() {
       .select(`
         *,
         taken(*),
-        medewerkers:werkbon_medewerkers(medewerker:profiles(*))
+        medewerkers:werkbon_medewerkers(persoon:personen(*))
       `)
       .order('datum', { ascending: false })
 
@@ -23,7 +23,7 @@ export function useWerkbonnen() {
     } else {
       const mapped = (data || []).map((w: any) => ({
         ...w,
-        medewerkers: (w.medewerkers || []).map((m: any) => m.medewerker).filter(Boolean),
+        medewerkers: (w.medewerkers || []).map((m: any) => m.persoon).filter(Boolean),
       }))
       setWerkbonnen(mapped)
     }
@@ -53,7 +53,7 @@ export function useWerkbon(id: string) {
       .select(`
         *,
         taken(*, fotos(*)),
-        medewerkers:werkbon_medewerkers(medewerker:profiles(*))
+        medewerkers:werkbon_medewerkers(persoon:personen(*))
       `)
       .eq('id', id)
       .single()
@@ -61,7 +61,7 @@ export function useWerkbon(id: string) {
     if (!error && data) {
       setWerkbon({
         ...data,
-        medewerkers: (data.medewerkers || []).map((m: any) => m.medewerker).filter(Boolean),
+        medewerkers: (data.medewerkers || []).map((m: any) => m.persoon).filter(Boolean),
         taken: (data.taken || []).sort((a: any, b: any) => a.volgorde - b.volgorde),
       })
     }

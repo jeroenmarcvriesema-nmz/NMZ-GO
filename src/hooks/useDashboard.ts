@@ -82,7 +82,7 @@ const SELECT = `
   id, projectnaam, adres, status, datum, updated_at,
   taken ( id, voltooid ),
   fotos!fotos_werkbon_id_fkey ( id, created_at ),
-  werkbon_medewerkers ( medewerker:profiles ( id, naam ) )
+  werkbon_medewerkers ( persoon:personen ( id, naam ) )
 `
 
 function tijdKort(iso: string): string {
@@ -159,7 +159,7 @@ export function useDashboard(): { data: DashboardData; loading: boolean; error: 
         projectnaam: b.projectnaam || '',
         adres: b.adres || '',
         team: (b.werkbon_medewerkers || [])
-          .map((wm: any) => wm.medewerker?.naam)
+          .map((wm: any) => wm.persoon?.naam)
           .filter(Boolean),
         status,
         voortgang,

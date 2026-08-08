@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import type { Project, PlanningItem, Profile, ProjectStatus } from '@/types'
+import type { Project, PlanningItem, Persoon, Profile, ProjectStatus } from '@/types'
 
 // Eén genest select levert alles wat een projectkaart nodig heeft.
 // De aggregaties (voortgang, aantallen) worden client-side berekend:
@@ -12,7 +12,7 @@ const PROJECT_SELECT = `
     id, datum, adres, status,
     taken ( id, voltooid ),
     fotos!fotos_werkbon_id_fkey ( id ),
-    werkbon_medewerkers ( medewerker:profiles(*) )
+    werkbon_medewerkers ( persoon:personen(*) )
   )
 `
 
@@ -28,7 +28,7 @@ function mapProject(row: any): Project {
   const medewerkers: Profile[] = Object.values(
     werkbonnen
       .flatMap((w) => w.werkbon_medewerkers || [])
-      .map((wm: any) => wm.medewerker)
+      .map((wm: any) => wm.persoon)
       .filter(Boolean)
       .reduce((acc: Record<string, Profile>, m: Profile) => {
         acc[m.id] = m
@@ -128,15 +128,15 @@ export function useProject(id: string) {
     const rijen = werkbonnen.flatMap((w) =>
       medewerkerIds.map((medewerkerId) => ({
         werkbon_id: w.id,
-        medewerker_id: medewerkerId,
+        persoon_id: medewerkerId,
       }))
     )
 
     // Bestaande koppelingen negeren in plaats van als fout behandelen —
-    // de primary key op (werkbon_id, medewerker_id) vangt duplicaten af.
+    // de primary key op (werkbon_id, persoon_id) vangt duplicaten af.
     const { error: insertError } = await supabase
       .from('werkbon_medewerkers')
-      .upsert(rijen, { onConflict: 'werkbon_id,medewerker_id', ignoreDuplicates: true })
+      .upsert(rijen, { onConflict: 'werkbon_id,persoon_id', ignoreDuplicates: true })
 
     if (insertError) return { error: insertError.message }
 
@@ -147,18 +147,24 @@ export function useProject(id: string) {
   return { project, loading, error, refetch: fetch, koppelMedewerkers }
 }
 
-// Vervangt de vroegere MOCK_MEDEWERKERS-constante.
-// Alleen actieve medewerkers — een uit dienst gemelde collega hoort
-// niet meer in een koppellijst te staan.
+// De ploeg om uit te kiezen bij het toewijzen.
+//
+// Dit leest personen en niet profiles: een naam kan op een klus staan
+// zonder dat er een account bij hoort. Dat is bij ons de normale
+// toestand — van de tweeëndertig namen in ClickUp heeft de meerderheid
+// nog nooit ingelogd, en ze moeten wél ingepland kunnen worden.
+//
+// Alleen actieve mensen: wie uit dienst is hoort niet in een
+// koppellijst te staan.
 export function useMedewerkers() {
-  const [medewerkers, setMedewerkers] = useState<Profile[]>([])
+  const [medewerkers, setMedewerkers] = useState<Persoon[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetch = async () => {
       const { data, error } = await supabase
-        .from('profiles')
+        .from('personen')
         .select('*')
         .eq('actief', true)
         .order('naam')
@@ -187,7 +193,7 @@ export function usePlanning() {
         .select(`
           id, datum, adres,
           project:projecten ( id, naam, status ),
-          werkbon_medewerkers ( medewerker:profiles(naam) )
+          werkbon_medewerkers ( persoon:personen(naam) )
         `)
         .not('project_id', 'is', null)
         .order('datum', { ascending: true })
@@ -206,7 +212,7 @@ export function usePlanning() {
               projectnaam: w.project.naam ?? '',
               adres: w.adres ?? '',
               medewerkers: (w.werkbon_medewerkers || [])
-                .map((wm: any) => wm.medewerker?.naam)
+                .map((wm: any) => wm.persoon?.naam)
                 .filter(Boolean),
               status: w.project.status as ProjectStatus,
             }))

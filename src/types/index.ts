@@ -33,6 +33,43 @@ export interface Werkbon {
   updated_at: string
   taken?: Taak[]
   medewerkers?: Profile[]
+
+  // ── Uit ClickUp en de werkopdracht (migraties 012 en 015) ──
+  // Alles wat iemand nodig heeft die voor de deur staat: hoe kom ik
+  // binnen, wie bel ik, en wat staat er in de opdracht.
+  clickup_taak_id?: string | null
+  geplande_start?: string | null
+  geplande_eind?: string | null
+  uitloopdatum?: string | null
+  kluiscode?: string | null
+  inspecteur?: string | null
+  inspecteur_telefoon?: string | null
+  /** Alles boven "Uit te voeren werkzaamheden": compartimenten, preparaten, bijzonderheden. */
+  werkvoorbereiding?: string | null
+  /** Pad in de besloten bucket werkbon-documenten. */
+  opdracht_pad?: string | null
+  tekening_pad?: string | null
+
+  stilgelegd_op?: string | null
+  stilleg_reden?: string | null
+  opgeleverd_op?: string | null
+}
+
+/**
+ * Iemand uit de ploeg. Bestaat los van een account: de planning in
+ * ClickUp kent alleen namen, en of daar al iemand bij ingelogd heeft is
+ * een aparte vraag. Zolang profile_id leeg is kan hij wél ingepland
+ * worden, maar nog niet inloggen.
+ */
+export interface Persoon {
+  id: string
+  naam: string
+  clickup_label: string | null
+  profile_id: string | null
+  actief: boolean
+  pilot: boolean
+  /** Wie op locatie de kar trekt. Puur informatief: geen verschil in scherm of rechten. */
+  koppelrol: 'eerste man' | 'tweede man' | null
 }
 
 export interface Taak {
