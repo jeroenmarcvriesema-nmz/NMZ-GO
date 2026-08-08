@@ -6,6 +6,7 @@ import { useMijnPrestaties } from '@/hooks/useMijnPrestaties'
 import { usePlanningDoorkijk } from '@/hooks/usePlanningDoorkijk'
 import { useThemeStore } from '@/store/themeStore'
 import { TaakItem } from '@/components/taak/TaakItem'
+import { Klusinfo } from '@/components/werkbon/Klusinfo'
 import { KpiCard } from '@/components/dashboard/KpiCard'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { SectionHeading } from '@/components/ui/SectionHeading'
@@ -18,6 +19,7 @@ import {
   IconListCheck, IconPhoto, IconClock, IconTrophy, IconChevronRight,
   IconLogout, IconSun, IconMoon, IconUsers, IconCircleCheck,
 } from '@tabler/icons-react'
+import type { Werkbon } from '@/types'
 
 function groet(): string {
   const h = new Date().getHours()
@@ -34,6 +36,43 @@ function vandaagISO(): string {
   return new Date().toISOString().split('T')[0]
 }
 
+/**
+ * Welke klus is vandaag aan de beurt?
+ *
+ * Iemand kan op meerdere werkbonnen staan — de planning loopt weken
+ * vooruit. "De eerste open bon" was hier ooit goed genoeg omdat er één
+ * bon was; met de echte planning erin pakte dat de bon met de láátste
+ * datum, dus de klus die het verst weg ligt. Iemand kreeg dan 's
+ * ochtends het verkeerde adres te zien.
+ *
+ * De volgorde die klopt:
+ *   1. Een klus die vandaag loopt (vandaag valt binnen start en eind).
+ *   2. Anders de eerstvolgende die nog moet beginnen.
+ *   3. Anders de laatste die nog niet af is — dan is hij uitgelopen en
+ *      moet hij juist bovenaan staan.
+ */
+function kiesVandaag(bonnen: Werkbon[]): Werkbon | null {
+  const open = bonnen.filter((w) => w.status !== 'voltooid' && !w.opgeleverd_op)
+  if (open.length === 0) return null
+
+  const nu = vandaagISO()
+  const start = (w: Werkbon) => w.geplande_start ?? w.datum
+  const eind = (w: Werkbon) => w.geplande_eind ?? w.geplande_start ?? w.datum
+
+  const loopt = open
+    .filter((w) => start(w) <= nu && eind(w) >= nu)
+    .sort((a, b) => start(a).localeCompare(start(b)))
+  if (loopt.length > 0) return loopt[0]
+
+  const komt = open
+    .filter((w) => start(w) > nu)
+    .sort((a, b) => start(a).localeCompare(start(b)))
+  if (komt.length > 0) return komt[0]
+
+  // Alles ligt in het verleden en is niet af: uitgelopen werk.
+  return [...open].sort((a, b) => eind(b).localeCompare(eind(a)))[0]
+}
+
 export default function MijnWerkbonnen() {
   const { profile, signOut } = useAuth()
   const { werkbonnen, loading, refetch } = useWerkbonnen()
@@ -41,7 +80,7 @@ export default function MijnWerkbonnen() {
   const navigate = useNavigate()
 
   const voornaam = (profile?.naam ?? '').split(' ')[0]
-  const vandaag = werkbonnen.find((w) => w.status !== 'voltooid') ?? null
+  const vandaag = kiesVandaag(werkbonnen)
   const { state: werkdag, bezig: werkdagBezig, startWerkdag, stopWerkdag } = useWerkdag(vandaag?.id ?? null)
 
   const handleSignOut = async () => { await signOut(); navigate('/login') }
@@ -81,16 +120,16 @@ export default function MijnWerkbonnen() {
           <button
             onClick={toggleTheme}
             title={theme === 'dark' ? 'Licht thema' : 'Donker thema'}
-            className="p-2 text-gray-400 dark:text-white/40 hover:text-gray-900 dark:hover:text-white transition-colors"
+            className="flex items-center justify-center w-11 h-11 rounded-lg text-gray-400 dark:text-white/40 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
           >
-            {theme === 'dark' ? <IconSun className="w-4 h-4" /> : <IconMoon className="w-4 h-4" />}
+            {theme === 'dark' ? <IconSun className="w-5 h-5" /> : <IconMoon className="w-5 h-5" />}
           </button>
           <button
             onClick={handleSignOut}
             title="Uitloggen"
-            className="p-2 text-gray-400 dark:text-white/40 hover:text-gray-900 dark:hover:text-white transition-colors"
+            className="flex items-center justify-center w-11 h-11 rounded-lg text-gray-400 dark:text-white/40 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
           >
-            <IconLogout className="w-4 h-4" />
+            <IconLogout className="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -143,6 +182,10 @@ export default function MijnWerkbonnen() {
       <Schil>
         <WerkbonKop werkbon={vandaag} aantalTaken={aantalTaken} />
 
+        {/* Vóór de startknop: op dit moment sta je voor de deur en
+            zoek je de kluiscode, niet de urenregistratie. */}
+        <Klusinfo werkbon={vandaag} />
+
         <button
           onClick={startWerkdag}
           disabled={werkdagBezig}
@@ -190,6 +233,8 @@ export default function MijnWerkbonnen() {
       <div className="flex-1 p-4 space-y-4 pb-32 animate-page-in">
         <Tegels aantalKlaar={aantalKlaar} aantalTaken={aantalTaken} aantalFotos={aantalFotos}
                 voortgang={voortgang} uren={geefUren(werkdag.startTijd, null)} />
+
+        <Klusinfo werkbon={vandaag} />
 
         <div className="bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-lg shadow-sm p-5">
           <div className="flex items-center justify-between mb-3">
