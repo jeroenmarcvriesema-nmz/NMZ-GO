@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/Button'
 import { StatusBadge } from '@/components/ui/Badge'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { TaakItem } from '@/components/taak/TaakItem'
+import { Klusacties } from '@/components/werkbon/Klusacties'
+import { Klusinfo } from '@/components/werkbon/Klusinfo'
 import { Spinner } from '@/components/ui/Spinner'
 import { Modal } from '@/components/ui/Modal'
 import { useWerkbon } from '@/hooks/useWerkbonnen'
@@ -95,6 +97,15 @@ export default function WerkbonDetail() {
             </div>
           )}
         </Card>
+
+        {/* Wat kantoor met deze klus kan: stilleggen, hervatten,
+            opleveren. Zat al in de database maar had geen knop. */}
+        <Klusacties werkbon={werkbon} onKlaar={refetch} />
+
+        {/* Dezelfde kaart die de zwamsaneerder ziet: kluiscode,
+            documenten, werkvoorbereiding. Kantoor moet kunnen
+            controleren wat de ploeg voor zich krijgt. */}
+        <Klusinfo werkbon={werkbon} />
 
         <Card>
           <SectionHeading
