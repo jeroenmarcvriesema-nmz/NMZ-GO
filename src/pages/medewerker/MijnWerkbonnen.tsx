@@ -81,7 +81,7 @@ export default function MijnWerkbonnen() {
 
   const voornaam = (profile?.naam ?? '').split(' ')[0]
   const vandaag = kiesVandaag(werkbonnen)
-  const { state: werkdag, bezig: werkdagBezig, startWerkdag, stopWerkdag } = useWerkdag(vandaag?.id ?? null)
+  const { state: werkdag, bezig: werkdagBezig, startWerkdag, stopWerkdag, hervatWerkdag } = useWerkdag(vandaag?.id ?? null)
 
   const handleSignOut = async () => { await signOut(); navigate('/login') }
 
@@ -195,6 +195,13 @@ export default function MijnWerkbonnen() {
           {werkdagBezig ? 'BEZIG…' : 'START WERKDAG'}
         </button>
 
+        {/* De punten lezen mag altijd; afvinken pas na het starten.
+            Wie voor de deur staat wil weten wát hij gaat doen voordat
+            hij zijn dag begint — dat achter een knop verstoppen maakt
+            het scherm leeg zonder reden. */}
+        <PuntenKaart taken={taken} werkbonId={vandaag.id} readOnly onRefresh={refetch}
+                     bijschrift="Lezen kan nu al — afvinken zodra je bent gestart" />
+
         <Tegels aantalKlaar={aantalKlaar} aantalTaken={aantalTaken}
                 aantalFotos={aantalFotos} voortgang={voortgang} uren="—" />
         <Prestaties />
@@ -217,6 +224,23 @@ export default function MijnWerkbonnen() {
             {geefUren(werkdag.startTijd, werkdag.stopTijd)} uur
           </p>
         </div>
+
+        {/* Stoppen was een doodlopende weg: geen bon, geen punten,
+            geen weg terug. Wie te vroeg op stop drukt moet gewoon
+            verder kunnen. */}
+        <button
+          onClick={hervatWerkdag}
+          disabled={werkdagBezig}
+          className="w-full min-h-[56px] rounded-lg bg-white dark:bg-surface-dark-2 border-2 border-gray-900 dark:border-white text-gray-900 dark:text-white font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-60"
+        >
+          <IconPlayerPlay className="w-5 h-5" />
+          {werkdagBezig ? 'BEZIG…' : 'Werkdag hervatten'}
+        </button>
+
+        <WerkbonKop werkbon={vandaag} aantalTaken={aantalTaken} />
+        <Klusinfo werkbon={vandaag} />
+        <PuntenKaart taken={taken} werkbonId={vandaag.id} readOnly onRefresh={refetch}
+                     bijschrift="Hervat je werkdag om weer af te vinken" />
 
         <Tegels aantalKlaar={aantalKlaar} aantalTaken={aantalTaken} aantalFotos={aantalFotos}
                 voortgang={voortgang} uren={geefUren(werkdag.startTijd, werkdag.stopTijd)} />
@@ -377,6 +401,37 @@ function WaarWerktWie() {
             </div>
           ))}
         </div>
+      )}
+    </div>
+  )
+}
+
+/**
+ * De uit te voeren punten. Lezen mag altijd, afvinken alleen als de
+ * werkdag loopt — dat verschil staat er ook bij, zodat niemand denkt
+ * dat de app kapot is als er niets gebeurt bij aantikken.
+ */
+function PuntenKaart({ taken, werkbonId, readOnly, onRefresh, bijschrift }: {
+  taken: any[]; werkbonId: string; readOnly?: boolean
+  onRefresh: () => void; bijschrift?: string
+}) {
+  return (
+    <div className="bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-lg shadow-sm p-5">
+      <SectionHeading
+        title={`Uit te voeren punten (${taken.length})`}
+        actions={bijschrift
+          ? <span className="text-xs text-gray-400 dark:text-white/40">{bijschrift}</span>
+          : undefined}
+      />
+      {taken.length === 0 ? (
+        <p className="text-sm text-gray-400 dark:text-white/40 text-center py-4">
+          Geen punten op deze bon.
+        </p>
+      ) : (
+        taken.map((t) => (
+          <TaakItem key={t.id} taak={t} werkbonId={werkbonId}
+                    readOnly={readOnly} onRefresh={onRefresh} />
+        ))
       )}
     </div>
   )

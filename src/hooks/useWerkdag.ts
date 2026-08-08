@@ -128,7 +128,36 @@ export function useWerkdag(werkbonId: string | null) {
     setState((s) => ({ ...s, fase: 'gestopt', stopTijd: nu }))
   }
 
-  return { state, loading, bezig, startWerkdag, stopWerkdag }
+  /**
+   * Werkdag weer oppakken.
+   *
+   * Stoppen was eenrichtingsverkeer: wie te vroeg op stop drukte — en
+   * dat gebeurt, met een telefoon in een werkhandschoen — kwam nergens
+   * meer. Geen bon, geen punten, geen weg terug. De uren staan al vast
+   * in de log, dus terugdraaien kost niets; wat telt is dat je verder
+   * kunt.
+   */
+  const hervatWerkdag = async () => {
+    if (!state.werkdagLogId || bezig) return
+    setBezig(true)
+
+    const { data, error } = await supabase
+      .from('werkdag_logs')
+      .update({ stop_tijd: null })
+      .eq('id', state.werkdagLogId)
+      .select('id')
+
+    setBezig(false)
+
+    if (error || !data || data.length === 0) {
+      toast.fout('Hervatten lukte niet. Controleer je verbinding en probeer het opnieuw.')
+      return
+    }
+
+    setState((s) => ({ ...s, fase: 'actief', stopTijd: null }))
+  }
+
+  return { state, loading, bezig, startWerkdag, stopWerkdag, hervatWerkdag }
 }
 
 export function formatTijd(d: Date | null): string {
