@@ -1,12 +1,9 @@
 // ============================================================
 // NMZ GO — Edge Function: verwerker
 // ============================================================
-// Fase 1 van Epic 4. Haalt een batch taken uit de wachtrij, voert
-// ze uit en schrijft het resultaat terug. Aangeroepen door pg_cron
-// (elke minuut) of handmatig vanaf het beheerdersscherm.
-//
-// Bewust nog zonder ClickUp. Fase 2 hoeft alleen een handler aan
-// HANDLERS toe te voegen; aan de lus hieronder verandert niets.
+// Haalt een batch taken uit de wachtrij, voert ze uit en schrijft het
+// resultaat terug. Aangeroepen door pg_cron (elke minuut) of handmatig
+// vanaf het beheerdersscherm.
 //
 // Twee regels die uit het architectuurdocument komen en die elke
 // nieuwe handler moet aanhouden:
@@ -19,7 +16,7 @@
 // ============================================================
 
 import { createClient, SupabaseClient } from 'jsr:@supabase/supabase-js@2'
-import { synchroniseer, tekstproef } from './clickup.ts'
+import { statusBijwerken, synchroniseer, tekstproef } from './clickup.ts'
 
 // Een fout die niet opnieuw geprobeerd moet worden.
 class OnverwerkbaarError extends Error {
@@ -82,7 +79,7 @@ const HANDLERS: Record<string, Handler> = {
     return { opgeschoond: data?.length ?? 0 }
   },
 
-  // Fase 2: taken uit ClickUp omzetten naar werkbonnen.
+  // Taken uit ClickUp omzetten naar werkbonnen.
   //
   // Staat de synchronisatie op niet-actief, dan draait deze handler
   // droog: hij rapporteert wat hij zou doen en schrijft niets weg.
@@ -107,6 +104,25 @@ const HANDLERS: Record<string, Handler> = {
       throw new OnverwerkbaarError('tenant_id en clickup_taak_id zijn allebei nodig')
     }
     return await tekstproef(db, tenantId, clickupTaakId)
+  },
+
+  // Terugkoppeling naar ClickUp: stilgelegd, hervat of opgeleverd.
+  //
+  // Via de wachtrij en niet rechtstreeks vanuit de database, zodat een
+  // storing bij ClickUp het stilleggen zelf nooit tegenhoudt. Ligt
+  // ClickUp eruit, dan blijft de taak staan en volgt hij later.
+  'clickup.status_bijwerken': async (taak, db) => {
+    const tenantId = String(taak.payload.tenant_id ?? '')
+    const werkbonId = String(taak.payload.werkbon_id ?? '')
+    const soort = String(taak.payload.soort ?? '')
+
+    if (!tenantId || !werkbonId) {
+      throw new OnverwerkbaarError('tenant_id en werkbon_id zijn allebei nodig')
+    }
+    if (soort !== 'stilgelegd' && soort !== 'hervat' && soort !== 'opgeleverd') {
+      throw new OnverwerkbaarError(`onbekende soort statuswijziging: ${soort}`)
+    }
+    return await statusBijwerken(db, tenantId, werkbonId, soort)
   },
 }
 

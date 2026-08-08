@@ -400,3 +400,132 @@ async function bewaarDocument(
   if (error) throw new Error(`${naam} opslaan mislukt: ${error.message}`)
   await db.from('werkbonnen').update({ [kolom]: pad }).eq('id', bonId)
 }
+
+// ============================================================
+// Terugkoppeling naar ClickUp
+// ============================================================
+// NMZ GO is de uitvoeringskant, ClickUp is waar de planning leeft. Wat
+// hier gebeurt moet daar zichtbaar worden, anders kijkt de planner naar
+// een bord dat niet klopt.
+//
+// Dit loopt via de wachtrij en niet rechtstreeks vanuit de database:
+// ligt ClickUp er even uit, dan blijft de taak staan en wordt hij
+// opnieuw geprobeerd. Een zwamsaneerder die een klus stillegt hoort
+// daar nooit op te wachten.
+
+interface Statussen {
+  status_opgeleverd: string | null
+  status_wacht_op_fotos: string | null
+  status_stilgelegd: string | null
+  status_asbest: string | null
+  status_opnieuw_inplannen: string | null
+}
+
+/**
+ * Welke ClickUp-status hoort bij een stilgelegde klus?
+ *
+ * Geen keuzelijst in het scherm — wie een klus stillegt heeft haast en
+ * moet kunnen opschrijven wat er is. De status volgt uit de tekst.
+ * Herkent de tekst niets bijzonders, dan is het gewoon "on hold"; dat
+ * is de eerlijke uitkomst en niet een gok.
+ */
+export function statusUitReden(reden: string, s: Statussen): string {
+  const tekst = reden.toLowerCase()
+  if (tekst.includes('asbest')) {
+    return s.status_asbest ?? s.status_stilgelegd ?? 'on hold'
+  }
+  if (tekst.includes('opnieuw inplannen') || tekst.includes('opnieuw plannen')) {
+    return s.status_opnieuw_inplannen ?? s.status_stilgelegd ?? 'on hold'
+  }
+  return s.status_stilgelegd ?? 'on hold'
+}
+
+async function schrijf(pad: string, token: string, body: unknown): Promise<void> {
+  const res = await fetch(`${API}${pad}`, {
+    method: 'PUT',
+    headers: { Authorization: token, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (res.status === 401) {
+    throw new Error(
+      'ClickUp weigert het token (401). Werk clickup_token bij in Vault ' +
+      'met vault.update_secret().',
+    )
+  }
+  if (!res.ok) {
+    throw new Error(`ClickUp gaf ${res.status} op ${pad}: ${await res.text()}`)
+  }
+}
+
+async function opmerking(taakId: string, token: string, tekst: string): Promise<void> {
+  const res = await fetch(`${API}/task/${taakId}/comment`, {
+    method: 'POST',
+    headers: { Authorization: token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ comment_text: tekst, notify_all: true }),
+  })
+  // Een mislukte opmerking mag de statuswijziging niet ongedaan maken;
+  // de status is het belangrijke deel.
+  if (!res.ok) console.warn(`opmerking plaatsen mislukt (${res.status})`)
+}
+
+export async function statusBijwerken(
+  db: SupabaseClient,
+  tenantId: string,
+  werkbonId: string,
+  soort: 'stilgelegd' | 'hervat' | 'opgeleverd',
+): Promise<Record<string, unknown>> {
+  const { data: inst } = await db
+    .from('clickup_instellingen')
+    .select('*')
+    .eq('tenant_id', tenantId)
+    .maybeSingle()
+  if (!inst) throw new Error(`geen ClickUp-instellingen voor tenant ${tenantId}`)
+  const i = inst as Instellingen & Statussen
+
+  const { data: bon } = await db
+    .from('werkbonnen')
+    .select('id, adres, clickup_taak_id, stilleg_reden, geplande_eind')
+    .eq('id', werkbonId)
+    .maybeSingle()
+  if (!bon) throw new Error(`werkbon ${werkbonId} bestaat niet`)
+
+  // Een handmatig aangemaakte bon hangt aan geen ClickUp-taak. Dat is
+  // geen fout — er valt alleen niets terug te koppelen.
+  if (!bon.clickup_taak_id) {
+    return { overgeslagen: 'deze werkbon komt niet uit ClickUp' }
+  }
+
+  const { data: token } = await db.rpc('geef_clickup_token')
+  if (!token) throw new Error('geen clickup_token in Vault')
+
+  let status: string
+  let tekst: string
+
+  if (soort === 'stilgelegd') {
+    const reden = bon.stilleg_reden ?? 'geen reden vastgelegd'
+    status = statusUitReden(reden, i)
+    tekst = `Stilgelegd in NMZ GO: ${reden}\nNieuwe opleverdatum: ${bon.geplande_eind ?? 'onbekend'}`
+  } else if (soort === 'hervat') {
+    status = i.trigger_status
+    tekst = 'Weer hervat in NMZ GO.'
+  } else {
+    status = i.status_opgeleverd ?? 'opgeleverd'
+    tekst = 'Opgeleverd en door kantoor bevestigd in NMZ GO.'
+  }
+
+  if (i.actief) {
+    await schrijf(`/task/${bon.clickup_taak_id}`, token, { status })
+    await opmerking(bon.clickup_taak_id, token, tekst)
+    await db.from('werkbonnen')
+      .update({ clickup_status: status, laatst_gesynct: new Date().toISOString() })
+      .eq('id', werkbonId)
+  }
+
+  return {
+    droogloop: !i.actief,
+    adres: bon.adres,
+    clickup_taak: bon.clickup_taak_id,
+    nieuwe_status: status,
+    opmerking: tekst,
+  }
+}

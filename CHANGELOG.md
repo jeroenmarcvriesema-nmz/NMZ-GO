@@ -1,5 +1,30 @@
 # NMZ GO — Changelog
 
+## Stilleggen, opleveren en terugkoppeling naar ClickUp
+
+### Database
+- **[FEATURE]** Migratie 015: `werkbon_stilleggen()`, `werkbon_hervatten()` en `werkbon_opleveren()`. Alleen een uitvoerder of hoger; een zwamsaneerder komt er niet bij.
+- **[FEATURE]** De reden bij stilleggen is vrije tekst en verplicht — afgedwongen in de database, niet in het scherm, zodat het ook geldt voor een aanroep die het scherm overslaat. Géén keuzelijst: wie een klus stillegt heeft haast en moet kunnen opschrijven wat er is.
+- **[FEATURE]** De ClickUp-status volgt uit de tekst. Staat er "asbest" in, dan gaat de taak naar de asbeststatus; "opnieuw inplannen" naar die status; verder is het gewoon "on hold". De statusnamen staan in de instellingen en niet in de code.
+- **[FEATURE]** Stilleggen schuift de opleverdatum één dag op — de regel is dat ze de volgende dag terugkomen om op te leveren. **Alleen de bon die je stillegt.** De klus erna schuift niet automatisch mee; die overlap wordt gedetecteerd en gemeld, zodat een mens beslist.
+- **[FEATURE]** Hervatten draait de datum bewust **niet** terug. Die dag is echt kwijt — dat was de reden om stil te leggen. Terugdraaien zou de planning laten liegen over wat er gebeurd is.
+- **[FEATURE]** `meldingen`: overlapmeldingen voor de eigenaar en voor wie `planningsmeldingen` aanstaat. Je ziet alleen je eigen meldingen.
+- **[FEATURE]** `werkbon_gebeurtenissen`: de volledige geschiedenis. Een bon die drie keer stillag vertelt iets anders dan een bon die één keer stillag, en dat verschil is precies wat je wilt zien bij uitloop.
+- **[FEATURE]** Opleveren kan pas als de bon op `voltooid` staat. De zwamsaneerder rondt af (kan alleen met foto's, migratie 011), kantoor bevestigt, en pas dán gaat ClickUp op `opgeleverd`.
+
+### Edge Function
+- **[FEATURE]** Handler `clickup.status_bijwerken`: zet de status in ClickUp en plaatst een opmerking op de taak. Via de wachtrij en niet rechtstreeks vanuit de database — ligt ClickUp eruit, dan blijft de taak staan en volgt hij later. Een zwamsaneerder die een klus stillegt hoort daar nooit op te wachten.
+- **[FEATURE]** Een werkbon zonder ClickUp-taak (handmatig aangemaakt) wordt overgeslagen met een melding, niet als fout behandeld.
+- **[FIX]** Een mislukte opmerking maakt de statuswijziging niet ongedaan; de status is het belangrijke deel.
+
+### Geverifieerd
+- ✅ Medewerker kan niet stilleggen, niet opleveren, geen melding voor de eigenaar maken (`42501`)
+- ✅ Stilleggen zonder reden wordt geweigerd (`23514`)
+- ✅ Opleveren van een bon die nog niet voltooid is wordt geweigerd (`23514`)
+- ✅ Stilleggen mét reden werkt; reden en nieuwe einddatum staan vast
+- ✅ Hervatten werkt
+
+
 ## Personenregister — namen zonder account
 
 ### Database
