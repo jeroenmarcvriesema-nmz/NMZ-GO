@@ -44,10 +44,11 @@ import { getDocumentProxy } from 'npm:unpdf@0.12.1'
 const ANKER_START = /uit te voeren werkzaamheden[^:\n]{0,60}:/gi
 const ANKER_EIND = /(Datum oplevering|Naam en handtekening)/i
 
-// Het opsommingsteken is een losse 'o' aan het begin van de regel,
-// gevolgd door de tekst van het punt. Regels die er niet mee beginnen
-// zijn een vervolg van het punt erboven.
-const PUNT = /^o\s+(?=[A-Za-z])/
+// Een punt begint met een losse 'o' of met een nummer. Beide komen
+// voor: de meeste opdrachten gebruiken het bolletje, de opdrachten voor
+// alleen een bodemafsluiter zijn genummerd. Regels die er niet mee
+// beginnen zijn een vervolg van het punt erboven.
+const PUNT = /^(?:o|\d{1,2}\.)\s+(?=[A-Za-z])/
 
 // Regels op minder dan dit aantal punten hoogteverschil hoorden bij
 // elkaar. Ruim genoeg voor een superscript (m²), krap genoeg om twee
