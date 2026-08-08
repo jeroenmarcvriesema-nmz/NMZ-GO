@@ -91,13 +91,13 @@ export default function Projecten() {
       ) : gefilterd.length === 0 ? (
         <EmptyState
           icon={<IconFolderOpen />}
-          titel="Geen projecten gevonden"
+          titel={statusFilter !== 'alle' || zoek ? 'Geen projecten gevonden' : 'Nog geen projecten'}
           uitleg={statusFilter !== 'alle' || zoek
             ? 'Er zijn geen projecten die aan je filters voldoen.'
-            : 'Er zijn nog geen projecten aangemaakt.'}
+            : 'Bij ons is elke klus een losse werkbon. De synchronisatie maakt daarom geen projecten aan — een ClickUp-taak wordt één werkbon, en meerwerk wordt een aparte bon. Dit scherm is er voor projectmatig werk zodra we dat gaan gebruiken; tot die tijd staat alles bij Werkbonnen.'}
           actie={(statusFilter !== 'alle' || zoek)
             ? <Button variant="ghost" size="sm" onClick={() => { setStatusFilter('alle'); setZoek('') }}>Filters wissen</Button>
-            : undefined}
+            : <Button variant="primary" size="sm" onClick={() => navigate('/werkbonnen')}>Naar werkbonnen</Button>}
         />
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
