@@ -291,10 +291,27 @@ export async function synchroniseer(
         }
 
         // Toewijzing: eerst weg, dan opnieuw — ClickUp is leidend.
-        await db.from('werkbon_medewerkers').delete().eq('werkbon_id', bonId)
+        //
+        // Maar alleen over zijn eigen toewijzingen. Wie hier handmatig
+        // iemand aan een klus hangt, doet dat omdat er iets is gebeurd
+        // wat ClickUp nog niet weet: iemand valt uit, er komt werk
+        // tussendoor. Die keuze wegvegen bij de volgende ronde is stil
+        // en onvindbaar — iemand denkt dat hij is ingepland en staat er
+        // de volgende ochtend niet meer op.
+        await db.from('werkbon_medewerkers')
+          .delete()
+          .eq('werkbon_id', bonId)
+          .eq('handmatig', false)
+
         if (gekoppeld.length > 0) {
-          await db.from('werkbon_medewerkers').insert(
-            gekoppeld.map((g) => ({ tenant_id: tenantId, werkbon_id: bonId, persoon_id: g.id })),
+          // upsert en niet insert: een handmatige toewijzing van
+          // iemand die inmiddels óók in ClickUp staat, botst anders op
+          // de primaire sleutel en laat de hele bon mislukken.
+          await db.from('werkbon_medewerkers').upsert(
+            gekoppeld.map((g) => ({
+              tenant_id: tenantId, werkbon_id: bonId, persoon_id: g.id, handmatig: false,
+            })),
+            { onConflict: 'werkbon_id,persoon_id', ignoreDuplicates: true },
           )
         }
 

@@ -77,7 +77,7 @@ export default function WerkbonNieuw() {
 
     if (medewerkers.length) {
       const { error: koppelErr } = await supabase.from('werkbon_medewerkers').insert(
-        medewerkers.map((id) => ({ werkbon_id: wb.id, persoon_id: id }))
+        medewerkers.map((id) => ({ werkbon_id: wb.id, persoon_id: id, handmatig: true }))
       )
       if (koppelErr) toast.fout('De werkbon is aangemaakt, maar de monteurs zijn niet gekoppeld.')
     }

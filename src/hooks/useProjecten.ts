@@ -129,6 +129,8 @@ export function useProject(id: string) {
       medewerkerIds.map((medewerkerId) => ({
         werkbon_id: w.id,
         persoon_id: medewerkerId,
+        // Door een mens gezet, dus de synchronisatie laat hem staan.
+        handmatig: true,
       }))
     )
 
