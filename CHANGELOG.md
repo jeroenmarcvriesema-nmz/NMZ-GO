@@ -1,5 +1,17 @@
 # NMZ GO — Changelog
 
+## Synchronisatie staat aan — eerste echte ronde
+
+- **[FEATURE]** `clickup_instellingen.actief` op `true`. De droogloop is voorbij: NMZ GO haalt de planning nu echt op.
+- **Eerste ronde:** 25 taken gezien, **22 werkbonnen aangemaakt** met 322 afvinkpunten, 41 toewijzingen en 23 documenten in besloten opslag.
+- **Tweede ronde:** 0 nieuw, 22 bijgewerkt, alle aantallen ongewijzigd. Idempotentie bewezen op echte data — geen dubbele bonnen, geen dubbele punten, geen weggegooid afvinkwerk.
+- De 41 toewijzingen hangen aan personen zonder account. Precies waar het personenregister voor was: de planning klopt al vóórdat er iemand is uitgenodigd.
+
+### Wat er niet in kwam
+- 3 van de 25 taken, alle drie gaten in ClickUp en geen parserfouten: één beschadigde PDF (Dahliastraat 5), één taak zonder werkopdracht (Dahliastraat 6), één opdracht met "Zie bijlage" in plaats van punten (Klaas Katerstraat).
+- Slechts 1 van de 22 bonnen heeft een tekening. Dat is echte data, geen storing — vaak zit de tekening in dezelfde PDF of is er geen.
+
+
 ## Stilleggen, opleveren en terugkoppeling naar ClickUp
 
 ### Database
