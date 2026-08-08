@@ -12,17 +12,17 @@
 -- werkbon, en niemand weet waarom — want er is geen foutmelding, er is
 -- gewoon niets gebeurd.
 --
--- ── Waarom elke dertig minuten en niet elke minuut ───────────
--- Elke ronde haalt van alle taken de werkopdracht-PDF op en schrijft
--- die opnieuw weg. Bij tweeëntwintig klussen is dat tweeëntwintig
--- downloads per ronde. Elke minuut zou dat ruim dertigduizend keer per
--- dag doen voor documenten die nooit veranderen.
+-- ── Waarom elke vijf minuten ─────────────────────────────────
+-- Dit stond eerst op een half uur, omdat elke ronde van alle taken de
+-- werkopdracht-PDF ophaalde en opnieuw wegschreef — tweeëntwintig
+-- downloads per ronde voor documenten die nooit veranderen.
 --
--- Een planning verandert niet per minuut. Een half uur is ruim genoeg
--- om een wijziging van kantoor bij de ploeg te krijgen, en scheelt een
--- factor dertig aan verspild verkeer. Wie sneller wil, duwt handmatig.
+-- Sinds de sync bestaande werkbonnen overslaat kost een ronde drie
+-- seconden en nul downloads. Daarmee vervalt die rem. Vijf minuten
+-- betekent dat een wijziging in de planning bij de ploeg is voordat
+-- iemand in de auto stapt.
 --
--- Het venster loopt van 04:00 tot 19:30 UTC — dat is 06:00 tot 21:30 in
+-- Het venster loopt van 04:00 tot 19:55 UTC — dat is 06:00 tot 21:55 in
 -- Nederlandse zomertijd. Ruim rond de werkdag heen, en 's nachts stil.
 -- ============================================================
 
@@ -82,7 +82,7 @@ where exists (select 1 from cron.job where jobname = 'nmzgo-clickup-hartslag');
 
 select cron.schedule(
   'nmzgo-clickup-hartslag',
-  '0,30 4-19 * * *',
+  '*/5 4-19 * * *',
   $$select public.clickup_hartslag();$$
 );
 
@@ -92,7 +92,7 @@ select cron.schedule(
 select 'de hartslag staat ingepland' as controle,
        (select case when active then schedule else 'NEE — staat uit' end
         from cron.job where jobname = 'nmzgo-clickup-hartslag') as gevonden,
-       '0,30 4-19 * * *' as verwacht
+       '*/5 4-19 * * *' as verwacht
 union all
 select 'de verwerker draait nog steeds',
        (select case when active then schedule else 'NEE' end
