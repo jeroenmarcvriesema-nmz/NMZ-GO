@@ -1,5 +1,34 @@
 # NMZ GO — Changelog
 
+## ClickUp-synchronisatie draait droog
+
+### Edge Function
+- **[FEATURE]** Handler `clickup.synchroniseren`: haalt de taken met status `volgende week` op, leest de werkopdracht-PDF, en maakt daar werkbonnen met afvinkpunten van. Idempotent via een unieke sleutel op (tenant, ClickUp-taak) — een tweede ronde werkt bij in plaats van te verdubbelen.
+- **[FEATURE]** Punten worden alleen aangemaakt bij een nieuwe bon. Bij een bestaande zou opnieuw invoegen het afvinkwerk van een zwamsaneerder wissen.
+- **[FEATURE]** Droogloop zolang `clickup_instellingen.actief` op `false` staat: hij rapporteert per opdracht wat er zóu ontstaan (aantal punten, medewerkers, data, kluiscode, tekening ja/nee) en schrijft niets weg. Dat is geen testgemak maar de afspraak dat er niets naar productie gaat voordat de terugkoppeling naar ClickUp werkt.
+- **[FEATURE]** Handler `clickup.tekstproef`: diagnose van één opdracht — de tekstlaag zoals de parser hem ziet, plus wat eruit komt. Zonder deze ingang is een overgeslagen opdracht niet na te lopen, want de bijlage-URL's van ClickUp zijn kortlevend en alleen de Edge Function komt erbij.
+- **[FEATURE]** Beide PDF's worden gekopieerd naar besloten opslag. De bijlage-URL's van ClickUp verlopen; een zwamsaneerder die om half acht op een dak zijn tekening opent moet hem hebben.
+
+### Parser
+- **[FIX]** `extractText()` levert het hele document als één regel op. Daarmee verdwijnt het verschil tussen "nieuw punt" en "vervolg van de vorige zin" — precies het verschil waar deze parser op draait. De tekstlaag wordt nu zelf uitgelezen en op y-positie gegroepeerd, zodat het document terugkomt zoals de inspecteur het opschreef. Dit was de reden dat de eerste droogloop 25 taken zag en 0 punten vond.
+- **[FIX]** Het opsommingsteken is `o ` mét spatie, niet `o` direct tegen een hoofdletter aan.
+- **[FIX]** De kop `Uit te voeren werkzaamheden … :` wordt op de laatste treffer genomen. Bovenaan de opdracht staat "…foto's maken van alle uit te voeren werkzaamheden", en die zin trok het anker eerst naar voren.
+- **[FIX]** Een leeg kopveld schoof het kopje eronder mee naar binnen: twee bonnen kregen `Werkvoorbereiding:` als kluiscode.
+- **[FEATURE]** De tekening wordt in élk bijlageveld gezocht waarvan de naam past, niet alleen het ingestelde. ClickUp heeft er twee (`Werktekening` en `Werktekening (PDF)`); welke de werkvoorbereider gebruikt wisselt, en dat hoort geen reden te zijn dat een zwamsaneerder zijn tekening mist.
+
+### Database
+- **[FEATURE]** Migratie 012: herkomst- en planningsvelden op de werkbon (`clickup_taak_id`, `geplande_start`, `geplande_eind`, `uitloopdatum`, `kluiscode`, `inspecteur`, `werkvoorbereiding`, `opdracht_pad`, `tekening_pad`) plus de besloten bucket `werkbon-documenten` met dezelfde regel als de foto's: wie bij de werkbon mag, mag bij de documenten.
+- **[FEATURE]** Migratie 013: `geef_clickup_token()` haalt het ClickUp-token uit Vault. Alleen voor `service_role` — `vault.decrypted_secrets` geeft toegang tot élk geheim, inclusief de service-role-sleutel, dus die view gaat niet open.
+
+### Geverifieerd
+- ✅ Parser tegen twee echte opdrachten: 17 en 22 punten, afgebroken zinnen samengevoegd, kopvelden en kluiscode correct
+- ✅ Droogloop tegen de echte lijst Diemen: 25 taken gezien, 21 opdrachten volledig gelezen
+- ✅ De 4 overgeslagen opdrachten komen mét reden en adres terug, niet stil
+- ✅ Labels uit ClickUp worden gelezen; 22 namen zonder account komen als bevinding terug
+- ✅ Er is nog niets weggeschreven — `actief` staat op `false`
+- ✅ `npm run build` groen
+
+
 ## Fotoplicht per punt + werkopdracht-parser beproefd
 
 ### Database

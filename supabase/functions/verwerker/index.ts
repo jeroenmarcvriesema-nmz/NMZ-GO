@@ -19,6 +19,7 @@
 // ============================================================
 
 import { createClient, SupabaseClient } from 'jsr:@supabase/supabase-js@2'
+import { synchroniseer, tekstproef } from './clickup.ts'
 
 // Een fout die niet opnieuw geprobeerd moet worden.
 class OnverwerkbaarError extends Error {
@@ -79,6 +80,33 @@ const HANDLERS: Record<string, Handler> = {
 
     if (error) throw new Error(`opschonen mislukt: ${error.message}`)
     return { opgeschoond: data?.length ?? 0 }
+  },
+
+  // Fase 2: taken uit ClickUp omzetten naar werkbonnen.
+  //
+  // Staat de synchronisatie op niet-actief, dan draait deze handler
+  // droog: hij rapporteert wat hij zou doen en schrijft niets weg.
+  // Dat is de afspraak dat er niets naar productie gaat voordat de
+  // terugkoppeling naar ClickUp werkt.
+  'clickup.synchroniseren': async (taak, db) => {
+    const tenantId = String(taak.payload.tenant_id ?? '')
+    if (!tenantId) {
+      throw new OnverwerkbaarError('tenant_id ontbreekt in de payload')
+    }
+    return await synchroniseer(db, tenantId)
+  },
+
+  // Diagnose van één opdracht: wat leest de parser er precies uit?
+  // Zonder deze ingang is een overgeslagen opdracht niet na te lopen —
+  // de bijlage-URL's van ClickUp zijn kortlevend en alleen deze functie
+  // komt erbij.
+  'clickup.tekstproef': async (taak, db) => {
+    const tenantId = String(taak.payload.tenant_id ?? '')
+    const clickupTaakId = String(taak.payload.clickup_taak_id ?? '')
+    if (!tenantId || !clickupTaakId) {
+      throw new OnverwerkbaarError('tenant_id en clickup_taak_id zijn allebei nodig')
+    }
+    return await tekstproef(db, tenantId, clickupTaakId)
   },
 }
 
