@@ -2,451 +2,337 @@ import { useNavigate } from 'react-router-dom'
 import { useWerkbonnen } from '@/hooks/useWerkbonnen'
 import { useAuth } from '@/hooks/useAuth'
 import { useWerkdag, formatTijd, geefUren } from '@/hooks/useWerkdag'
+import { useMijnPrestaties } from '@/hooks/useMijnPrestaties'
+import { usePlanningDoorkijk } from '@/hooks/usePlanningDoorkijk'
+import { useThemeStore } from '@/store/themeStore'
 import { TaakItem } from '@/components/taak/TaakItem'
+import { KpiCard } from '@/components/dashboard/KpiCard'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { Spinner } from '@/components/ui/Spinner'
-import { berekenVoortgang, formatDatum, cn } from '@/lib/utils'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { Avatar } from '@/components/ui/Avatar'
+import { berekenVoortgang, formatDatum, rolLabel, cn } from '@/lib/utils'
 import {
-  IconMapPin,
-  IconCalendar,
-  IconPlayerPlay,
-  IconPlayerStop,
-  IconListCheck,
-  IconPhoto,
-  IconClock,
-  IconTrophy,
-  IconChevronRight,
-  IconLogout,
+  IconMapPin, IconCalendar, IconPlayerPlay, IconPlayerStop,
+  IconListCheck, IconPhoto, IconClock, IconTrophy, IconChevronRight,
+  IconLogout, IconSun, IconMoon, IconUsers, IconCircleCheck,
 } from '@tabler/icons-react'
 
-// ── Mockdata prestaties — later koppelen aan Supabase werkdag_logs
-// Supabase koppeling:
-//   projectenAfgerond → COUNT werkbonnen WHERE status = voltooid AND medewerker = auth.uid()
-//   werkdagenGewerkt  → COUNT werkdag_logs WHERE medewerker_id = auth.uid()
-//   fotosGeupload     → COUNT fotos WHERE uploader_id = auth.uid()
-const MOCK_PRESTATIES = {
-  projectenAfgerond: 12,
-  werkdagenGewerkt: 34,
-  fotosGeupload: 87,
-}
-
-function greeting(): string {
+function groet(): string {
   const h = new Date().getHours()
   if (h < 12) return 'Goedemorgen'
   if (h < 18) return 'Goedemiddag'
   return 'Goedenavond'
 }
 
-function formatDatumLang(): string {
-  return new Date().toLocaleDateString('nl-NL', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  })
+function datumLang(): string {
+  return new Date().toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })
+}
+
+function vandaagISO(): string {
+  return new Date().toISOString().split('T')[0]
 }
 
 export default function MijnWerkbonnen() {
   const { profile, signOut } = useAuth()
   const { werkbonnen, loading, refetch } = useWerkbonnen()
+  const { theme, toggleTheme } = useThemeStore()
   const navigate = useNavigate()
+
   const voornaam = (profile?.naam ?? '').split(' ')[0]
-  const handleSignOut = async () => { await signOut(); navigate('/login') }
-
-  const LogoutButton = ({ raised }: { raised?: boolean }) => (
-    <button
-      onClick={handleSignOut}
-      title="Uitloggen"
-      className={cn(
-        'fixed left-4 z-50 w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-surface-dark-2 border border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/60 shadow-md hover:text-brand-yellow-dark dark:hover:text-brand-yellow hover:border-brand-yellow transition-colors',
-        raised ? 'bottom-24' : 'bottom-4'
-      )}
-    >
-      <IconLogout className="w-4 h-4" />
-    </button>
-  )
-
   const vandaag = werkbonnen.find((w) => w.status !== 'voltooid') ?? null
   const { state: werkdag, bezig: werkdagBezig, startWerkdag, stopWerkdag } = useWerkdag(vandaag?.id ?? null)
 
+  const handleSignOut = async () => { await signOut(); navigate('/login') }
+
+  // ── Kop — dezelfde opbouw als de Topbar bij kantoor: gele
+  //    bovenrand als merkaccent, en meebewegend met het thema.
+  const Kop = ({ compact }: { compact?: boolean }) => (
+    <header className={cn(
+      'border-t-[3px] border-brand-yellow bg-white dark:bg-surface-dark-2',
+      'border-b border-gray-100 dark:border-white/10 px-5',
+      compact ? 'sticky top-0 z-40 py-3' : 'py-5'
+    )}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          {!compact && (
+            <p className="text-xs text-gray-400 dark:text-white/40 capitalize mb-0.5">{datumLang()}</p>
+          )}
+          <h1 className={cn(
+            'font-extrabold tracking-tight text-gray-900 dark:text-white',
+            compact ? 'text-base leading-tight' : 'text-2xl'
+          )}>
+            {compact ? vandaag?.adres : `${groet()}, ${voornaam}`}
+          </h1>
+          {compact ? (
+            <p className="text-xs text-gray-400 dark:text-white/40">
+              Gestart om {formatTijd(werkdag.startTijd)}
+            </p>
+          ) : (
+            <p className="text-xs text-gray-400 dark:text-white/40 mt-0.5">
+              {profile?.functie || rolLabel(profile?.rol)}
+            </p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {!compact && profile && <Avatar naam={profile.naam} size="sm" />}
+          <button
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Licht thema' : 'Donker thema'}
+            className="p-2 text-gray-400 dark:text-white/40 hover:text-gray-900 dark:hover:text-white transition-colors"
+          >
+            {theme === 'dark' ? <IconSun className="w-4 h-4" /> : <IconMoon className="w-4 h-4" />}
+          </button>
+          <button
+            onClick={handleSignOut}
+            title="Uitloggen"
+            className="p-2 text-gray-400 dark:text-white/40 hover:text-gray-900 dark:hover:text-white transition-colors"
+          >
+            <IconLogout className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </header>
+  )
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F2F0EB] dark:bg-surface-dark">
+      <div className="min-h-screen flex items-center justify-center bg-surface-2 dark:bg-surface-dark">
         <Spinner className="w-8 h-8" />
       </div>
     )
   }
 
-  const voortgang = berekenVoortgang(vandaag?.taken ?? [])
-  const aantalTaken = vandaag?.taken?.length ?? 0
-  const aantalKlaar = vandaag?.taken?.filter((t) => t.voltooid).length ?? 0
-  const aantalFotos = vandaag?.taken?.flatMap((t) => t.fotos ?? []).length ?? 0
+  const taken = vandaag?.taken ?? []
+  const voortgang = berekenVoortgang(taken)
+  const aantalTaken = taken.length
+  const aantalKlaar = taken.filter((t) => t.voltooid).length
+  const aantalFotos = taken.flatMap((t) => t.fotos ?? []).length
 
-  // ── Gedeelde header — altijd zichtbaar ────────────────────────
-  const Header = () => (
-    <div className="bg-gray-900 px-5 py-6">
-      <p className="text-sm text-white/50 mb-1 capitalize">{formatDatumLang()}</p>
-      <h1 className="text-2xl font-extrabold text-white">
-        {greeting()}, {voornaam}
-      </h1>
+  const Schil = ({ children, compact }: { children: React.ReactNode; compact?: boolean }) => (
+    <div className="min-h-screen flex flex-col bg-surface-2 dark:bg-surface-dark">
+      <Kop compact={compact} />
+      <div className={cn('flex-1 p-4 space-y-4 animate-page-in', compact && 'pb-32')}>
+        {children}
+      </div>
     </div>
   )
 
-  // ── Geen werkbon ──────────────────────────────────────────────
+  // ── Geen werkbon vandaag ──────────────────────────────────────
   if (!vandaag) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#F2F0EB] dark:bg-surface-dark">
-        <Header />
-        <div className="flex-1 p-5 space-y-4 animate-page-in">
-          {/* Geen werkbon kaart */}
-          <div className="bg-white dark:bg-surface-dark-2 rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm p-6 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-white/10 flex items-center justify-center mx-auto mb-4">
-              <IconCalendar className="w-7 h-7 text-gray-400 dark:text-white/40" />
-            </div>
-            <h2 className="text-base font-bold text-gray-900 dark:text-white mb-2">
-              Vandaag nog geen werkbon
-            </h2>
-            <p className="text-sm text-gray-500 dark:text-white/60 leading-relaxed">
-              Er is nog geen werkbon aan jou gekoppeld voor vandaag.
-              <br />
-              Neem contact op met je uitvoerder.
-            </p>
-          </div>
-
-          {/* Prestaties — altijd zichtbaar */}
-          <PrestatiesKaart />
+      <Schil>
+        <div className="bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-lg shadow-sm">
+          <EmptyState
+            icon={<IconCalendar />}
+            titel="Vandaag geen werkbon"
+            uitleg="Er staat nog niets voor je klaar. Neem contact op met je uitvoerder als je wél werk verwacht."
+          />
         </div>
-        <LogoutButton />
-      </div>
+        <Prestaties />
+        <WaarWerktWie />
+      </Schil>
     )
   }
 
-  // ── VOOR START ────────────────────────────────────────────────
+  // ── Nog niet gestart ──────────────────────────────────────────
   if (werkdag.fase === 'voor_start') {
     return (
-      <div className="min-h-screen flex flex-col bg-[#F2F0EB] dark:bg-surface-dark">
-        <Header />
+      <Schil>
+        <WerkbonKop werkbon={vandaag} aantalTaken={aantalTaken} />
 
-        <div className="flex-1 p-5 space-y-4 animate-page-in">
-          {/* Werkbon kaart */}
-          <div className="bg-white dark:bg-surface-dark-2 rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm overflow-hidden">
-            <div className="h-1 bg-brand-yellow" />
-            <div className="p-5">
-              <p className="text-xs font-semibold text-gray-400 dark:text-white/40 uppercase tracking-wider mb-3">
-                Vandaag werk je aan
-              </p>
-              <h2 className="text-xl font-extrabold text-gray-900 dark:text-white mb-2">
-                {vandaag.projectnaam}
-              </h2>
-              <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-white/60 mb-1">
-                <IconMapPin className="w-4 h-4 flex-shrink-0 text-gray-400 dark:text-white/40" />
-                {vandaag.adres}
-              </div>
-              <div className="flex items-center gap-1.5 text-sm text-gray-400 dark:text-white/40">
-                <IconCalendar className="w-4 h-4 flex-shrink-0" />
-                {formatDatum(vandaag.datum)}
-              </div>
-              <div className="mt-4 pt-4 border-t border-gray-50 dark:border-white/5 flex items-center gap-4 text-xs text-gray-400 dark:text-white/40">
-                <span className="flex items-center gap-1">
-                  <IconListCheck className="w-3.5 h-3.5" />
-                  {aantalTaken} taken
-                </span>
-              </div>
-            </div>
-          </div>
+        <button
+          onClick={startWerkdag}
+          disabled={werkdagBezig}
+          className="w-full py-5 rounded-lg bg-green-600 hover:bg-green-700 text-white font-extrabold text-lg flex items-center justify-center gap-3 shadow-md active:scale-[0.98] transition-all duration-150 ease-brand disabled:opacity-60 disabled:active:scale-100"
+        >
+          <IconPlayerPlay className="w-6 h-6" />
+          {werkdagBezig ? 'BEZIG…' : 'START WERKDAG'}
+        </button>
 
-          {/* START knop */}
-          <button
-            onClick={startWerkdag}
-            disabled={werkdagBezig}
-            className="w-full py-5 rounded-2xl bg-green-500 text-white font-extrabold text-lg flex items-center justify-center gap-3 shadow-[0_4px_20px_rgba(34,197,94,0.35)] active:scale-[0.98] transition-transform disabled:opacity-60 disabled:active:scale-100"
-          >
-            <IconPlayerPlay className="w-6 h-6" />
-            {werkdagBezig ? 'BEZIG…' : 'START WERKDAG'}
-          </button>
-
-          {/* Status overzicht */}
-          <StatusKaart
-            fase="voor_start"
-            aantalTaken={aantalTaken}
-            aantalKlaar={aantalKlaar}
-            aantalFotos={aantalFotos}
-            startTijd={null}
-          />
-
-          {/* Prestaties */}
-          <PrestatiesKaart />
-
-          {/* Werkbon openen */}
-          <button
-            onClick={() => navigate(`/werkbon/${vandaag.id}`)}
-            className="w-full py-4 rounded-2xl bg-white dark:bg-surface-dark-2 border border-gray-200 dark:border-white/10 text-gray-700 dark:text-white/70 font-semibold text-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
-          >
-            Werkbon openen
-            <IconChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-        <LogoutButton />
-      </div>
+        <Tegels aantalKlaar={aantalKlaar} aantalTaken={aantalTaken}
+                aantalFotos={aantalFotos} voortgang={voortgang} uren="—" />
+        <Prestaties />
+        <WaarWerktWie />
+      </Schil>
     )
   }
 
-  // ── GESTOPT ───────────────────────────────────────────────────
+  // ── Werkdag gestopt ───────────────────────────────────────────
   if (werkdag.fase === 'gestopt') {
     return (
-      <div className="min-h-screen flex flex-col bg-[#F2F0EB] dark:bg-surface-dark">
-        <Header />
-        <div className="flex-1 p-5 space-y-4 animate-page-in">
-          {/* Afsluitkaart */}
-          <div className="bg-white dark:bg-surface-dark-2 rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm p-6 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-green-100 dark:bg-green-500/10 flex items-center justify-center mx-auto mb-4">
-              <IconPlayerStop className="w-7 h-7 text-green-600 dark:text-green-400" />
-            </div>
-            <h2 className="text-base font-bold text-gray-900 dark:text-white mb-1">Werkdag gestopt</h2>
-            <p className="text-sm text-gray-500 dark:text-white/60">
-              {formatTijd(werkdag.startTijd)} &mdash; {formatTijd(werkdag.stopTijd)}
-              &nbsp;&middot;&nbsp;
-              {geefUren(werkdag.startTijd, werkdag.stopTijd)} uur
-            </p>
+      <Schil>
+        <div className="bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-lg shadow-sm p-6 text-center">
+          <div className="w-12 h-12 rounded-full bg-green-50 dark:bg-green-500/10 flex items-center justify-center mx-auto mb-4">
+            <IconCircleCheck className="w-6 h-6 text-green-600 dark:text-green-400" />
           </div>
-
-          <StatusKaart
-            fase="gestopt"
-            aantalTaken={aantalTaken}
-            aantalKlaar={aantalKlaar}
-            aantalFotos={aantalFotos}
-            startTijd={werkdag.startTijd}
-          />
-
-          <PrestatiesKaart />
+          <h2 className="font-bold text-gray-900 dark:text-white">Werkdag gestopt</h2>
+          <p className="text-sm text-gray-400 dark:text-white/40 mt-1">
+            {formatTijd(werkdag.startTijd)} — {formatTijd(werkdag.stopTijd)} ·{' '}
+            {geefUren(werkdag.startTijd, werkdag.stopTijd)} uur
+          </p>
         </div>
-        <LogoutButton />
-      </div>
+
+        <Tegels aantalKlaar={aantalKlaar} aantalTaken={aantalTaken} aantalFotos={aantalFotos}
+                voortgang={voortgang} uren={geefUren(werkdag.startTijd, werkdag.stopTijd)} />
+        <Prestaties />
+        <WaarWerktWie />
+      </Schil>
     )
   }
 
-  // ── ACTIEF ────────────────────────────────────────────────────
+  // ── Aan het werk ──────────────────────────────────────────────
   return (
-    <div className="min-h-screen flex flex-col bg-[#F2F0EB] dark:bg-surface-dark">
-      {/* Sticky header met project */}
-      <div className="bg-gray-900 sticky top-0 z-40 px-5 py-3.5">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs text-white/40">Aan het werk</p>
-            <p className="text-base font-bold text-white leading-tight">
-              {vandaag.projectnaam}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-xs text-white/40">Gestart</p>
-            <p className="text-sm font-mono font-bold text-brand-yellow">
-              {formatTijd(werkdag.startTijd)}
-            </p>
-          </div>
-        </div>
-      </div>
-
+    <div className="min-h-screen flex flex-col bg-surface-2 dark:bg-surface-dark">
+      <Kop compact />
       <div className="flex-1 p-4 space-y-4 pb-32 animate-page-in">
-        {/* Voortgangskaart */}
-        <div className="bg-white dark:bg-surface-dark-2 rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-sm font-semibold text-gray-700 dark:text-white/80 mb-0.5">{vandaag.adres}</p>
-              <div className="flex items-center gap-4 text-xs text-gray-400 dark:text-white/40">
-                <span className="flex items-center gap-1">
-                  <IconListCheck className="w-3.5 h-3.5" />
-                  {aantalKlaar}/{aantalTaken} taken
-                </span>
-                <span className="flex items-center gap-1">
-                  <IconPhoto className="w-3.5 h-3.5" />
-                  {aantalFotos} foto&apos;s
-                </span>
-              </div>
-            </div>
-            <span
-              className={cn('text-2xl font-extrabold', voortgang === 100 ? 'text-green-600 dark:text-green-400' : 'text-[#111110] dark:text-white')}
-            >
+        <Tegels aantalKlaar={aantalKlaar} aantalTaken={aantalTaken} aantalFotos={aantalFotos}
+                voortgang={voortgang} uren={geefUren(werkdag.startTijd, null)} />
+
+        <div className="bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-lg shadow-sm p-5">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-semibold text-gray-700 dark:text-white/80">{vandaag.projectnaam}</p>
+            <span className={cn('text-xl font-extrabold tabular-nums',
+              voortgang === 100 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white')}>
               {voortgang}%
             </span>
           </div>
-          <ProgressBar
-            value={voortgang}
-            size="md"
-            variant={voortgang === 100 ? 'green' : 'yellow'}
-          />
+          <ProgressBar value={voortgang} size="md" variant={voortgang === 100 ? 'green' : 'yellow'} />
         </div>
 
-        {/* Checklist */}
-        <div className="bg-white dark:bg-surface-dark-2 rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm p-5">
+        <div className="bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-lg shadow-sm p-5">
           <SectionHeading
             title="Checklist"
-            actions={<span className="text-xs text-gray-400 dark:text-white/40">Foto vereist voor afvinken</span>}
+            actions={<span className="text-xs text-gray-400 dark:text-white/40">Foto vereist per punt</span>}
           />
-          {vandaag.taken && vandaag.taken.length > 0 ? (
-            vandaag.taken.map((taak) => (
-              <TaakItem
-                key={taak.id}
-                taak={taak}
-                werkbonId={vandaag.id}
-                onRefresh={refetch}
-              />
+          {taken.length > 0 ? (
+            taken.map((taak) => (
+              <TaakItem key={taak.id} taak={taak} werkbonId={vandaag.id} onRefresh={refetch} />
             ))
           ) : (
-            <p className="text-sm text-gray-400 dark:text-white/40 text-center py-4">Geen taken gevonden.</p>
+            <p className="text-sm text-gray-400 dark:text-white/40 text-center py-4">Geen punten op deze bon.</p>
           )}
         </div>
 
-        {/* Werkbon openen */}
         <button
           onClick={() => navigate(`/werkbon/${vandaag.id}`)}
-          className="w-full py-4 rounded-2xl bg-white dark:bg-surface-dark-2 border border-gray-200 dark:border-white/10 text-gray-700 dark:text-white/70 font-semibold text-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+          className="w-full py-4 rounded-lg bg-white dark:bg-surface-dark-2 border border-gray-200 dark:border-white/10 text-gray-700 dark:text-white/70 font-semibold text-sm flex items-center justify-center gap-2 hover:border-brand-yellow transition-all duration-150 ease-brand"
         >
-          Werkbon openen
-          <IconChevronRight className="w-4 h-4" />
+          Werkbon openen <IconChevronRight className="w-4 h-4" />
         </button>
       </div>
 
-      {/* STOP knop — fixed onderaan */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/90 dark:bg-surface-dark-2/90 backdrop-blur-sm border-t border-gray-100 dark:border-white/10">
         <button
           onClick={stopWerkdag}
           disabled={werkdagBezig}
-          className="w-full py-4 rounded-xl bg-gray-900 text-white font-bold text-base flex items-center justify-center gap-3 active:scale-[0.98] transition-transform shadow-lg disabled:opacity-60 disabled:active:scale-100"
+          className="w-full py-4 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold flex items-center justify-center gap-3 active:scale-[0.98] transition-transform shadow-lg disabled:opacity-60 disabled:active:scale-100"
         >
           <IconPlayerStop className="w-5 h-5" />
           {werkdagBezig ? 'BEZIG…' : 'STOP WERKDAG'}
         </button>
       </div>
-      <LogoutButton raised />
     </div>
   )
 }
 
-// ── StatusKaart ───────────────────────────────────────────────
-interface StatusKaartProps {
-  fase: 'voor_start' | 'actief' | 'gestopt'
-  aantalTaken: number
-  aantalKlaar: number
-  aantalFotos: number
-  startTijd: Date | null
+// ── Onderdelen ────────────────────────────────────────────────
+
+/** Dezelfde KpiCard als op het kantoordashboard — vandaar de herkenning. */
+function Tegels({ aantalKlaar, aantalTaken, aantalFotos, voortgang, uren }: {
+  aantalKlaar: number; aantalTaken: number; aantalFotos: number; voortgang: number; uren: string
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <KpiCard label="Punten klaar" value={`${aantalKlaar}/${aantalTaken}`}
+               icon={<IconListCheck />} variant={aantalKlaar === aantalTaken && aantalTaken > 0 ? 'green' : 'neutral'} />
+      <KpiCard label="Foto's" value={aantalFotos} icon={<IconPhoto />} variant="neutral" />
+      <KpiCard label="Voortgang" value={`${voortgang}%`} icon={<IconCircleCheck />}
+               variant={voortgang === 100 ? 'green' : 'yellow'} />
+      <KpiCard label="Gewerkt" value={uren} icon={<IconClock />} variant="neutral" />
+    </div>
+  )
 }
 
-function StatusKaart({
-  fase,
-  aantalTaken,
-  aantalKlaar,
-  aantalFotos,
-  startTijd,
-}: StatusKaartProps) {
+function WerkbonKop({ werkbon, aantalTaken }: { werkbon: any; aantalTaken: number }) {
   return (
-    <div className="bg-white dark:bg-surface-dark-2 rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm p-5">
-      <h3 className="text-xs font-semibold text-gray-400 dark:text-white/40 uppercase tracking-wider mb-4">
-        Status vandaag
-      </h3>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="flex items-center gap-3">
-          <div
-            className={[
-              'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0',
-              fase === 'voor_start' ? 'bg-gray-100 dark:bg-white/10' : 'bg-green-100 dark:bg-green-500/10',
-            ].join(' ')}
-          >
-            <IconClock
-              className={[
-                'w-4 h-4',
-                fase === 'voor_start' ? 'text-gray-400 dark:text-white/40' : 'text-green-600 dark:text-green-400',
-              ].join(' ')}
-            />
-          </div>
-          <div>
-            <p className="text-[11px] text-gray-400 dark:text-white/40">Status</p>
-            <p className="text-sm font-bold text-gray-900 dark:text-white">
-              {fase === 'voor_start'
-                ? 'Nog niet gestart'
-                : fase === 'actief'
-                ? 'Gestart'
-                : 'Gestopt'}
-            </p>
-          </div>
-        </div>
-
-        {startTijd && (
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center flex-shrink-0">
-              <IconClock className="w-4 h-4 text-blue-500 dark:text-blue-400" />
-            </div>
-            <div>
-              <p className="text-[11px] text-gray-400 dark:text-white/40">Gestart om</p>
-              <p className="text-sm font-bold text-gray-900 dark:text-white">
-                {startTijd.toLocaleTimeString('nl-NL', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </p>
-            </div>
-          </div>
-        )}
-
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-brand-yellow-light dark:bg-brand-yellow/10 flex items-center justify-center flex-shrink-0">
-            <IconListCheck className="w-4 h-4 text-brand-yellow-dark dark:text-brand-yellow" />
-          </div>
-          <div>
-            <p className="text-[11px] text-gray-400 dark:text-white/40">Taken</p>
-            <p className="text-sm font-bold text-gray-900 dark:text-white">
-              {aantalKlaar}/{aantalTaken}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-500/10 flex items-center justify-center flex-shrink-0">
-            <IconPhoto className="w-4 h-4 text-purple-500 dark:text-purple-400" />
-          </div>
-          <div>
-            <p className="text-[11px] text-gray-400 dark:text-white/40">Foto&apos;s</p>
-            <p className="text-sm font-bold text-gray-900 dark:text-white">{aantalFotos}</p>
-          </div>
-        </div>
+    <div className="bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 border-l-4 border-l-brand-yellow rounded-lg shadow-sm p-5">
+      <p className="text-[11px] font-bold text-gray-400 dark:text-white/40 uppercase tracking-widest mb-2">
+        Vandaag werk je aan
+      </p>
+      <h2 className="text-xl font-extrabold tracking-tight text-gray-900 dark:text-white">{werkbon.projectnaam}</h2>
+      <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-white/60 mt-1.5">
+        <IconMapPin className="w-4 h-4 flex-shrink-0 text-gray-400 dark:text-white/40" />
+        {werkbon.adres}
+      </div>
+      <div className="flex items-center gap-4 mt-4 pt-4 border-t border-gray-50 dark:border-white/5 text-xs text-gray-400 dark:text-white/40">
+        <span className="flex items-center gap-1"><IconCalendar className="w-3.5 h-3.5" />{formatDatum(werkbon.datum)}</span>
+        <span className="flex items-center gap-1"><IconListCheck className="w-3.5 h-3.5" />{aantalTaken} punten</span>
       </div>
     </div>
   )
 }
 
-// ── PrestatiesKaart ───────────────────────────────────────────
-function PrestatiesKaart() {
+/** Stond op verzonnen cijfers; nu geteld uit de echte tabellen. */
+function Prestaties() {
+  const { data, loading } = useMijnPrestaties()
+
   return (
-    <div className="bg-white dark:bg-surface-dark-2 rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm p-5">
-      <div className="flex items-center gap-2 mb-4">
-        <IconTrophy className="w-4 h-4 text-brand-yellow-dark dark:text-brand-yellow" />
-        <h3 className="text-sm font-bold text-gray-900 dark:text-white">Mijn prestaties</h3>
-      </div>
-      <div className="grid grid-cols-3 gap-3">
-        <div className="text-center">
-          <p className="text-2xl font-extrabold text-gray-900 dark:text-white">
-            {MOCK_PRESTATIES.projectenAfgerond}
-          </p>
-          <p className="text-[11px] text-gray-400 dark:text-white/40 mt-0.5 leading-tight">
-            Projecten afgerond
-          </p>
+    <div className="bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-lg shadow-sm p-5">
+      <SectionHeading title="Mijn cijfers" actions={<IconTrophy className="w-4 h-4 text-brand-yellow-dark dark:text-brand-yellow" />} />
+      {loading ? (
+        <div className="flex justify-center py-4"><Spinner className="w-5 h-5" /></div>
+      ) : (
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { waarde: data.werkbonnenAfgerond, label: 'Werkbonnen afgerond' },
+            { waarde: data.werkdagenGewerkt, label: 'Werkdagen gewerkt' },
+            { waarde: data.fotosGemaakt, label: "Foto's gemaakt" },
+          ].map((c, i) => (
+            <div key={c.label} className={cn('text-center', i === 1 && 'border-x border-gray-100 dark:border-white/10')}>
+              <p className="text-2xl font-extrabold text-gray-900 dark:text-white tabular-nums">{c.waarde}</p>
+              <p className="text-[11px] text-gray-400 dark:text-white/40 mt-0.5 leading-tight">{c.label}</p>
+            </div>
+          ))}
         </div>
-        <div className="text-center border-x border-gray-100 dark:border-white/10">
-          <p className="text-2xl font-extrabold text-gray-900 dark:text-white">
-            {MOCK_PRESTATIES.werkdagenGewerkt}
-          </p>
-          <p className="text-[11px] text-gray-400 dark:text-white/40 mt-0.5 leading-tight">
-            Werkdagen gewerkt
-          </p>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Waar zit iedereen vandaag. Toont uitsluitend adres en naam — de
+ * databasefunctie geeft niet meer terug, dus een werkbon van een
+ * collega blijft dicht.
+ */
+function WaarWerktWie() {
+  const dag = vandaagISO()
+  const { regels, loading } = usePlanningDoorkijk(dag, dag)
+
+  if (!loading && regels.length === 0) return null
+
+  return (
+    <div className="bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-lg shadow-sm p-5">
+      <SectionHeading title="Wie werkt waar vandaag" actions={<IconUsers className="w-4 h-4 text-gray-400 dark:text-white/40" />} />
+      {loading ? (
+        <div className="flex justify-center py-4"><Spinner className="w-5 h-5" /></div>
+      ) : (
+        <div className="divide-y divide-gray-50 dark:divide-white/5">
+          {regels.map((r, i) => (
+            <div key={`${r.adres}-${r.medewerker}-${i}`} className="flex items-center gap-3 py-2.5">
+              <Avatar naam={r.medewerker} size="sm" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{r.medewerker}</p>
+                <p className="text-xs text-gray-400 dark:text-white/40 truncate">
+                  {r.adres}{r.plaats ? `, ${r.plaats}` : ''}
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
-        <div className="text-center">
-          <p className="text-2xl font-extrabold text-gray-900 dark:text-white">
-            {MOCK_PRESTATIES.fotosGeupload}
-          </p>
-          <p className="text-[11px] text-gray-400 dark:text-white/40 mt-0.5 leading-tight">
-            Foto&apos;s ge&uuml;pload
-          </p>
-        </div>
-      </div>
+      )}
     </div>
   )
 }

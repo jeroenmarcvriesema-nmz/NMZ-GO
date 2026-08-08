@@ -1,5 +1,15 @@
 # NMZ GO — Changelog
 
+## Zwamsaneerdersscherm — zelfde taal als kantoor
+
+### Verbeteringen
+- **[UI]** Het scherm van de zwamsaneerder gebruikt nu dezelfde bouwstenen als het kantoordashboard: `KpiCard` voor de cijfers, `SectionHeading` voor secties, dezelfde kaartvorm, radius en schaduw. Herkenbaar als dezelfde app, met de inhoud die bij zijn rol hoort.
+- **[UI]** De kop was permanent donker (`bg-gray-900`) en de achtergrond een vaste hexcode. Beide zijn nu theme-reactief en op tokens, met dezelfde gele bovenrand als de `Topbar` bij kantoor.
+- **[UI]** Uitloggen zat in een zwevende knop linksonder; die staat nu in de kop, naast de themawissel — zoals in de zijbalk bij kantoor.
+- **[FEATURE]** "Wie werkt waar vandaag": een zwamsaneerder ziet adres en naam van zijn collega's, via `planning_overzicht()`. Die functie geeft niet meer terug dan datum, adres en naam, dus de werkbon van een collega blijft dicht.
+- **[FIX]** `MOCK_PRESTATIES` was blijven staan toen de rest van de mock data eruit ging. "Mijn cijfers" telt nu echt: afgeronde werkbonnen, gewerkte dagen en gemaakte foto's.
+
+
 ## Rollen en bevoegdheden — vijf niveaus
 
 ### Database
