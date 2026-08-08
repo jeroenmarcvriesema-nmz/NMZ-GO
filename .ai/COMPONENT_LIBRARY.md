@@ -174,13 +174,12 @@ Deze componenten ontbreken nog als gedeelde, herbruikbare bouwsteen. Bij de eers
 
 | Component | Doel | Richtlijn |
 |---|---|---|
-| `Select` | Dropdown-selectie, zelfde visuele taal als `Input` | Zie `UI_GUIDELINES.md` → Forms |
 | `Table` (generiek) | Herbruikbare tabel-primitive | `ProjectTabel` als referentiepatroon (zie hierboven) |
 | `Dialog` | Lichte bevestigingsvraag (ja/nee), geen volledige `Modal` | Zie `UI_GUIDELINES.md` → Modals & dialogs |
 
 Het bouwen van deze componenten is een eigen, geplande taak (zie `FEATURE_BACKLOG.md`) — niet iets dat terloops als bijproduct van een feature-taak wordt geïntroduceerd.
 
-**Waarom deze drie nog wachten.** Er is op dit moment geen scherm dat ze nodig heeft: nergens staat een `<select>`, de drie bestaande tabellen verschillen te veel om nu al een gemene deler uit te destilleren, en er is geen enkele verwijder- of andere onomkeerbare actie in de UI. Een `Dialog` is tijdens deze sprint gebouwd en weer verwijderd toen bleek dat hij geen afnemer had — bouw hem op het moment dat de eerste destructieve actie landt, niet eerder.
+**Waarom deze twee nog wachten.** Er is op dit moment geen scherm dat ze nodig heeft: de drie bestaande tabellen verschillen te veel om nu al een gemene deler uit te destilleren, en er is geen enkele verwijder- of andere onomkeerbare actie in de UI. Een `Dialog` is tijdens deze sprint gebouwd en weer verwijderd toen bleek dat hij geen afnemer had — bouw hem op het moment dat de eerste destructieve actie landt, niet eerder.
 
 ---
 
@@ -215,3 +214,13 @@ Het bouwen van deze componenten is een eigen, geplande taak (zie `FEATURE_BACKLO
 **Regels:** een fout blijft 7 seconden staan, de rest 4 — een monteur haalt zijn telefoon soms net uit zijn zak. Kleur zit alleen in het icoon en de rand; het vlak blijft neutraal zodat een melding niet met de merkkleur concurreert. Op mobiel staat de toast bóven de tabbalk, binnen duimbereik.
 
 **Let op:** dit is een derde Zustand-store, naast `authStore` en `themeStore`. Bewust dezelfde vorm — geen nieuw state-systeem, wel een eigen kleine store per zorg.
+
+### `Select` — `components/ui/Select.tsx`
+
+**Doel:** keuze uit een vaste lijst, in dezelfde visuele taal als `Input`. Gebouwd toen het medewerkersscherm rollen moest kunnen toekennen — precies de afspraak: bouwen zodra een scherm het vraagt, niet eerder.
+
+**Props:** `label?`, `error?`, `opties` (`{ waarde, label }[]`), plus alles wat een `<select>` accepteert.
+
+**Regels:** bewust een echte `<select>` en geen nagebouwde lijst. Op een telefoon krijgt de gebruiker dan het vertrouwde keuzewiel van het toestel, en toetsenbordbediening werkt zonder dat wij iets hoeven te doen. De eigen pijl vervangt die van de browser, die per besturingssysteem anders oogt.
+
+**Gebruikt in:** `Medewerkers` (rol toekennen).

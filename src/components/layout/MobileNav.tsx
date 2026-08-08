@@ -28,10 +28,10 @@ function MobileNavItem({ to, icon, label }: { to: string; icon: React.ReactNode;
 }
 
 export function MobileNav() {
-  const { isBeheerder } = useAuth()
+  const { magWerkBeheren } = useAuth()
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center px-1 py-2 pb-safe bg-white dark:bg-surface-dark border-t border-gray-100 dark:border-white/10">
-      {isBeheerder ? (
+      {magWerkBeheren ? (
         <>
           <MobileNavItem to="/dashboard"   icon={<IconLayoutDashboard />} label="Dashboard" />
           <MobileNavItem to="/projecten"   icon={<IconFolderOpen />}      label="Projecten" />

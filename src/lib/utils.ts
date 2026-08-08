@@ -48,3 +48,19 @@ export function initialen(naam: string): string {
     .slice(0, 2)
     .toUpperCase()
 }
+
+// De rol zoals hij in de database staat, en zoals hij op het scherm
+// hoort te heten. `medewerker` is bewust generiek gehouden in het
+// datamodel; het bedrijf noemt die mensen zwamsaneerders.
+export const ROL_LABEL: Record<string, string> = {
+  eigenaar: 'Eigenaar',
+  beheerder: 'Beheerder',
+  uitvoerder: 'Uitvoerder',
+  werkvoorbereider: 'Werkvoorbereider',
+  medewerker: 'Zwamsaneerder',
+}
+
+export function rolLabel(rol: string | undefined | null): string {
+  if (!rol) return '—'
+  return ROL_LABEL[rol] ?? rol
+}

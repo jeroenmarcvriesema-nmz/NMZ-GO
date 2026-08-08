@@ -1,5 +1,8 @@
 export type Theme = 'light' | 'dark'
-export type Rol = 'beheerder' | 'medewerker'
+// Vijf rollen sinds migratie 008. In de database heet de uitvoerende
+// rol `medewerker` — generiek, zodat er later een ander vak bij kan.
+// Op het scherm staat "Zwamsaneerder"; zie ROL_LABEL in lib/utils.
+export type Rol = 'eigenaar' | 'beheerder' | 'uitvoerder' | 'werkvoorbereider' | 'medewerker'
 export type WerkbonStatus = 'open' | 'bezig' | 'voltooid'
 export type ProjectStatus = 'actief' | 'niet_gestart' | 'op_schema' | 'vertraging' | 'afgerond'
 
@@ -7,6 +10,10 @@ export interface Profile {
   id: string
   naam: string
   rol: Rol
+  /** Functietitel, los van het rechtenniveau. Bijv. "Operationeel Manager". */
+  functie: string | null
+  /** Gelijkgehouden met auth.users; nodig om een wachtwoordreset te kunnen sturen. */
+  email: string | null
   actief: boolean
   created_at: string
 }

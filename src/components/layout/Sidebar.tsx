@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
 import { useAuth } from '@/hooks/useAuth'
 import { useThemeStore } from '@/store/themeStore'
+import { rolLabel } from '@/lib/utils'
 import {
   IconLayoutDashboard,
   IconFolderOpen,
@@ -47,7 +48,7 @@ function NavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label
 }
 
 export function Sidebar() {
-  const { profile, signOut, isBeheerder } = useAuth()
+  const { profile, signOut, magWerkBeheren, magGebruikersBeheren } = useAuth()
   const { theme, toggleTheme } = useThemeStore()
   const navigate = useNavigate()
   const handleSignOut = async () => { await signOut(); navigate('/login') }
@@ -62,14 +63,14 @@ export function Sidebar() {
           <div>
             <div className="text-lg font-extrabold text-gray-900 dark:text-white tracking-tight">NMZ GO</div>
             <div className="text-[11px] text-gray-400 dark:text-white/35">
-              {isBeheerder ? 'Beheerder' : 'Medewerker'}
+              {rolLabel(profile?.rol)}
             </div>
           </div>
         </div>
       </div>
 
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {isBeheerder ? (
+        {magWerkBeheren ? (
           <>
             <NavSection label="Overzicht" />
             <NavItem to="/dashboard" icon={<IconLayoutDashboard />} label="Dashboard" />
@@ -82,7 +83,9 @@ export function Sidebar() {
 
             <NavSection label="Beheer" />
             <NavItem to="/rapporten"   icon={<IconFileExport />} label="Rapporten" />
-            <NavItem to="/medewerkers" icon={<IconUsers />}      label="Medewerkers" />
+            {magGebruikersBeheren && (
+              <NavItem to="/medewerkers" icon={<IconUsers />} label="Medewerkers" />
+            )}
           </>
         ) : (
           <>
@@ -98,8 +101,8 @@ export function Sidebar() {
           {profile && <Avatar naam={profile.naam} size="sm" />}
           <div className="flex-1 min-w-0">
             <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">{profile?.naam ?? '—'}</div>
-            <div className="text-[11px] text-gray-400 dark:text-white/35">
-              {isBeheerder ? 'Beheerder' : 'Monteur'}
+            <div className="text-[11px] text-gray-400 dark:text-white/35 truncate">
+              {profile?.functie || rolLabel(profile?.rol)}
             </div>
           </div>
           <button

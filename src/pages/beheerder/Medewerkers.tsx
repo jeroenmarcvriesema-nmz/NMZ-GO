@@ -8,13 +8,22 @@ import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
-import type { Profile } from '@/types'
+import type { Profile, Rol } from '@/types'
+
 import { EmptyState } from '@/components/ui/EmptyState'
+import { Select } from '@/components/ui/Select'
+import { rolLabel, ROL_LABEL } from '@/lib/utils'
 import { toast } from '@/store/toastStore'
 import { IconLink, IconCopy, IconKey, IconCheck, IconUsers } from '@tabler/icons-react'
 
+// De eigenaarsrol staat er bewust niet bij: die kan alleen een eigenaar
+// toekennen, en de database weigert het van iedereen anders. Hem tonen
+// zou een keuze suggereren die meestal op een foutmelding uitloopt.
+const ROL_OPTIES = (['beheerder', 'uitvoerder', 'werkvoorbereider', 'medewerker'] as const)
+  .map((r) => ({ waarde: r, label: ROL_LABEL[r] }))
+
 export default function Medewerkers() {
-  const { profile } = useAuth()
+  const { profile, magGebruikersBeheren } = useAuth()
   const [medewerkers, setMedewerkers] = useState<Profile[]>([])
   const [loading, setLoading] = useState(true)
   const [uitnodigingLink, setUitnodigingLink] = useState<string | null>(null)
@@ -49,8 +58,23 @@ export default function Medewerkers() {
     setTimeout(() => setGekopieerd(false), 2000)
   }
 
+  const wijzigRol = async (id: string, rol: Rol) => {
+    const vorige = medewerkers
+    setMedewerkers((lijst) => lijst.map((m) => (m.id === id ? { ...m, rol } : m)))
+
+    const { data, error } = await supabase
+      .from('profiles').update({ rol }).eq('id', id).select('id')
+
+    if (error || !data || data.length === 0) {
+      setMedewerkers(vorige)
+      toast.fout(error?.message ?? 'De rol kon niet worden gewijzigd.')
+      return
+    }
+    toast.goed('Rol bijgewerkt')
+  }
+
   const resetWachtwoord = async (email: string) => {
-    // Zonder redirectTo landt de monteur op de voorpagina in plaats van
+    // Zonder redirectTo landt de zwamsaneerder op de voorpagina in plaats van
     // op het scherm waar hij een nieuw wachtwoord kan kiezen.
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/wachtwoord-herstellen`,
@@ -72,7 +96,7 @@ export default function Medewerkers() {
             <EmptyState
               icon={<IconUsers />}
               titel="Nog geen medewerkers"
-              uitleg="Maak een uitnodigingslink aan en stuur die naar je monteurs."
+              uitleg="Maak een uitnodigingslink aan en stuur die naar je zwamsaneerders."
               actie={<Button variant="primary" size="sm" onClick={genereerLink}><IconLink className="w-4 h-4" /> Uitnodigingslink</Button>}
             />
           ) : (
@@ -82,10 +106,30 @@ export default function Medewerkers() {
                   <Avatar naam={m.naam} size="sm" />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-semibold truncate text-gray-900 dark:text-white">{m.naam}</div>
+                    <div className="text-xs text-gray-400 dark:text-white/40 truncate">
+                      {m.functie || m.email || '—'}
+                    </div>
                   </div>
                   <Badge variant={m.actief ? 'green' : 'red'}>{m.actief ? 'Actief' : 'Inactief'}</Badge>
-                  <Badge variant={m.rol === 'beheerder' ? 'yellow' : 'gray'}>{m.rol}</Badge>
-                  <button onClick={() => resetWachtwoord(m.id)} className="p-2 text-gray-400 dark:text-white/40 hover:text-gray-700 dark:hover:text-white/80 transition-colors" title="Wachtwoord resetten">
+
+                  {magGebruikersBeheren && m.id !== profile?.id ? (
+                    <Select
+                      aria-label={`Rol van ${m.naam}`}
+                      className="w-44 py-1.5 text-xs"
+                      value={m.rol}
+                      onChange={(e) => wijzigRol(m.id, e.target.value as Rol)}
+                      opties={ROL_OPTIES}
+                    />
+                  ) : (
+                    <Badge variant={m.rol === 'medewerker' ? 'gray' : 'yellow'}>{rolLabel(m.rol)}</Badge>
+                  )}
+
+                  <button
+                    onClick={() => m.email && resetWachtwoord(m.email)}
+                    disabled={!m.email}
+                    className="p-2 text-gray-400 dark:text-white/40 hover:text-gray-700 dark:hover:text-white/80 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    title={m.email ? 'Wachtwoord resetten' : 'Geen e-mailadres bekend'}
+                  >
                     <IconKey className="w-4 h-4" />
                   </button>
                 </div>

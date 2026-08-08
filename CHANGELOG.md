@@ -1,5 +1,34 @@
 # NMZ GO — Changelog
 
+## Rollen en bevoegdheden — vijf niveaus
+
+### Database
+- **[FEATURE]** Migratie 008: vijf rollen (`eigenaar`, `beheerder`, `uitvoerder`, `werkvoorbereider`, `medewerker`) in plaats van twee. De uitvoerende rol heet in de database bewust `medewerker` — generiek, zodat er later een ander vak bij kan; op het scherm staat "Zwamsaneerder".
+- **[FEATURE]** Policies toetsen niet langer op een rolnaam maar op een **bevoegdheid**: `mag_gebruikers_beheren()` en `mag_werk_beheren()`. Alle 26 policies over 10 tabellen plus de opslag zijn herschreven. Een zesde rol is daarmee één functie aanpassen in plaats van dertig policies — dat was de hele reden om dit vóór de schermen te doen.
+- **[FEATURE]** `functie` op het profiel: een functietitel los van het rechtenniveau ("Operationeel Manager" is een functie, geen bevoegdheid).
+- **[CRITICAL FIX]** Afronden van een werkbon wordt nu in de database afgedwongen: élk punt afgevinkt én elk punt met fotobewijs. Dat stond alleen in de schermcode, dus wie de app omzeilde kon een bon zo op voltooid zetten. De foutmelding benoemt wat er nog mist ("Er is nog 1 punt zonder foto").
+- **[FEATURE]** Een afgeronde werkbon gaat op slot voor de uitvoerende: niets meer wijzigen of afvinken. Foto's toevoegen mag wél — bewijs achteraf aanvullen is legitiem — verwijderen nooit.
+- **[FEATURE]** Het eigenaarsaccount is beschermd. Alleen een eigenaar kan de rol eigenaar toekennen of afnemen, en de laatste eigenaar kan niet worden gedegradeerd of verwijderd — door niemand. Dat is precies de fout die dit systeem eerder heeft platgelegd.
+- **[FEATURE]** `planning_overzicht()`: een zwamsaneerder kan zien wáár een collega werkt (datum, adres, naam) zonder diens werkbon te kunnen openen.
+- **[FIX]** Migratie 009: `email` op het profiel. De knop "wachtwoord resetten" gaf het profiel-id door aan een functie die een e-mailadres verwacht — die kon dus nooit gewerkt hebben. `auth.users` is voor de app terecht niet leesbaar, dus er was geen manier om aan het adres te komen. Het adres staat nu op het profiel en blijft gelijk met Supabase.
+
+### Verbeteringen
+- **[FEATURE]** `Select` toegevoegd — de eerste component uit de "nog te bouwen"-lijst die daadwerkelijk nodig bleek, voor het toekennen van rollen.
+- **[UI]** `BeheerderGuard` is gesplitst in `KantoorGuard` (werk) en `GebruikersbeheerGuard` (medewerkers, uitnodigingen, wachtwoorden). Navigatie toont per bevoegdheid wat mag.
+- **[UI]** "Monteur" heet overal "Zwamsaneerder", ook in de codecommentaren.
+
+### Geverifieerd — rechtenmatrix per rol
+- ✅ Zwamsaneerder ziet alleen eigen werkbon, niet die van een collega
+- ✅ Ziet geen projecten, uitnodigingen of andere profielen
+- ✅ Kan wél zien wáár een collega werkt via `planning_overzicht()`
+- ✅ Kan niet afronden met open punten, en niet zonder fotobewijs
+- ✅ Kan geen werkbon aanmaken en zichzelf niet promoveren
+- ✅ Uitvoerder en werkvoorbereider zien en wijzigen alle werkbonnen, maar geen uitnodigingen en geen rollen
+- ✅ Beheerder maakt uitnodigingen en wijzigt rollen, maar kan niemand eigenaar maken
+- ✅ De laatste eigenaar is niet te degraderen en niet te verwijderen
+- ✅ Nul policies toetsen nog op een rolnaam; 31 op bevoegdheid
+- ✅ `npm run build` groen
+
 ## Authentication recovery — de eerste echte ingebruikname
 
 Bij het voor het eerst live zetten bleek de authenticatieketen op vijf plekken te breken. Losse oorzaken, maar ze verscholen zich achter elkaar: elke fix legde de volgende bloot.

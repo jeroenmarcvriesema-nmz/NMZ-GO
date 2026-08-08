@@ -6,6 +6,7 @@ import { useThemeStore } from '@/store/themeStore'
 import { PageLoader } from '@/components/ui/Spinner'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { Toaster } from '@/components/ui/Toaster'
+import type { Rol } from '@/types'
 
 import Login            from '@/pages/auth/Login'
 import Registreer       from '@/pages/auth/Registreer'
@@ -99,11 +100,27 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-function BeheerderGuard({ children }: { children: React.ReactNode }) {
+// Twee niveaus, gelijk aan de bevoegdheden in de database (migratie 008).
+// Deze guards bepalen wat je te zíen krijgt; de policies bepalen wat je
+// mág. Dat is bewust dubbel: een guard is gemak, geen beveiliging.
+const WERKBEHEER: Rol[] = ['eigenaar', 'beheerder', 'uitvoerder', 'werkvoorbereider']
+const GEBRUIKERSBEHEER: Rol[] = ['eigenaar', 'beheerder']
+
+/** Werkbonnen, projecten, planning, rapporten — alles rond het werk. */
+function KantoorGuard({ children }: { children: React.ReactNode }) {
   const { profile, loading } = useAuthStore()
   if (loading) return <PageLoader />
   if (!profile) return <Navigate to="/login" replace />
-  if (profile.rol !== 'beheerder') return <Navigate to="/mijn-werkbonnen" replace />
+  if (!WERKBEHEER.includes(profile.rol)) return <Navigate to="/mijn-werkbonnen" replace />
+  return <>{children}</>
+}
+
+/** Medewerkers, uitnodigingen, wachtwoorden — strenger. */
+function GebruikersbeheerGuard({ children }: { children: React.ReactNode }) {
+  const { profile, loading } = useAuthStore()
+  if (loading) return <PageLoader />
+  if (!profile) return <Navigate to="/login" replace />
+  if (!GEBRUIKERSBEHEER.includes(profile.rol)) return <Navigate to="/dashboard" replace />
   return <>{children}</>
 }
 
@@ -111,7 +128,7 @@ function RootRedirect() {
   const { profile, loading } = useAuthStore()
   if (loading) return <PageLoader />
   if (!profile) return <Navigate to="/login" replace />
-  return <Navigate to={profile.rol === 'beheerder' ? '/dashboard' : '/mijn-werkbonnen'} replace />
+  return <Navigate to={WERKBEHEER.includes(profile.rol) ? '/dashboard' : '/mijn-werkbonnen'} replace />
 }
 
 export default function App() {
@@ -127,15 +144,15 @@ export default function App() {
         <Route path="/wachtwoord-herstellen"  element={<WachtwoordHerstellen />} />
         <Route path="/"           element={<RootRedirect />} />
 
-        <Route path="/dashboard"        element={<BeheerderGuard><Dashboard /></BeheerderGuard>} />
-        <Route path="/projecten"        element={<BeheerderGuard><Projecten /></BeheerderGuard>} />
-        <Route path="/projecten/:id"    element={<BeheerderGuard><ProjectDetail /></BeheerderGuard>} />
-        <Route path="/planning"         element={<BeheerderGuard><Planning /></BeheerderGuard>} />
-        <Route path="/werkbonnen"       element={<BeheerderGuard><Werkbonnen /></BeheerderGuard>} />
-        <Route path="/werkbonnen/nieuw" element={<BeheerderGuard><WerkbonNieuw /></BeheerderGuard>} />
-        <Route path="/werkbonnen/:id"   element={<BeheerderGuard><WerkbonDetail /></BeheerderGuard>} />
-        <Route path="/medewerkers"      element={<BeheerderGuard><Medewerkers /></BeheerderGuard>} />
-        <Route path="/rapporten"        element={<BeheerderGuard><Rapporten /></BeheerderGuard>} />
+        <Route path="/dashboard"        element={<KantoorGuard><Dashboard /></KantoorGuard>} />
+        <Route path="/projecten"        element={<KantoorGuard><Projecten /></KantoorGuard>} />
+        <Route path="/projecten/:id"    element={<KantoorGuard><ProjectDetail /></KantoorGuard>} />
+        <Route path="/planning"         element={<KantoorGuard><Planning /></KantoorGuard>} />
+        <Route path="/werkbonnen"       element={<KantoorGuard><Werkbonnen /></KantoorGuard>} />
+        <Route path="/werkbonnen/nieuw" element={<KantoorGuard><WerkbonNieuw /></KantoorGuard>} />
+        <Route path="/werkbonnen/:id"   element={<KantoorGuard><WerkbonDetail /></KantoorGuard>} />
+        <Route path="/medewerkers"      element={<GebruikersbeheerGuard><Medewerkers /></GebruikersbeheerGuard>} />
+        <Route path="/rapporten"        element={<KantoorGuard><Rapporten /></KantoorGuard>} />
 
         <Route path="/mijn-werkbonnen" element={<AuthGuard><MijnWerkbonnen /></AuthGuard>} />
         <Route path="/werkbon/:id"     element={<AuthGuard><WerkbonUitvoeren /></AuthGuard>} />
