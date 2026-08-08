@@ -62,7 +62,7 @@ export default function WerkbonDetail() {
         <Button variant="ghost" onClick={() => navigate('/werkbonnen')}><IconArrowLeft className="w-4 h-4" /> Terug</Button>
       </div>
     }>
-      <div className="max-w-2xl space-y-4">
+      <div className="max-w-4xl space-y-4">
         <Card accent="yellow">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>

@@ -57,7 +57,7 @@ export default function WerkbonUitvoeren() {
 
   return (
     <PageWrapper title={werkbon.adres}>
-      <div className="max-w-lg space-y-4">
+      <div className="max-w-3xl space-y-4">
         <Card accent="yellow">
           <div className="flex items-start justify-between gap-3">
             <div>

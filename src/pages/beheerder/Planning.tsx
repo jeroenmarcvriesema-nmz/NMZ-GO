@@ -1,16 +1,17 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PageWrapper } from '@/components/layout/PageWrapper'
 import { Spinner } from '@/components/ui/Spinner'
 import { usePlanning, statusLabel, statusKleur } from '@/hooks/useProjecten'
 import { cn, formatDatumKort } from '@/lib/utils'
-import { IconUsers, IconMapPin } from '@tabler/icons-react'
+import { IconUsers, IconMapPin, IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
 
-function weekDagen(): Date[] {
+function weekDagen(verschuiving = 0): Date[] {
   const vandaag = new Date()
   vandaag.setHours(0, 0, 0, 0)
   const dag = vandaag.getDay()
   const ma = new Date(vandaag)
-  ma.setDate(vandaag.getDate() - (dag === 0 ? 6 : dag - 1))
+  ma.setDate(vandaag.getDate() - (dag === 0 ? 6 : dag - 1) + verschuiving * 7)
   return Array.from({ length: 5 }, (_, i) => {
     const d = new Date(ma)
     d.setDate(ma.getDate() + i)
@@ -23,7 +24,11 @@ const DAG_NAMEN = ['Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag']
 export default function Planning() {
   const { planning, loading } = usePlanning()
   const navigate = useNavigate()
-  const dagen = weekDagen()
+  // Vooruit en achteruit bladeren. De planning liep alleen over de
+  // huidige week, terwijl er werk staat tot ver in de maand — en na een
+  // uitloop wil je juist terugkijken.
+  const [week, setWeek] = useState(0)
+  const dagen = weekDagen(week)
   const vandaag = new Date()
   vandaag.setHours(0, 0, 0, 0)
 
@@ -37,13 +42,43 @@ export default function Planning() {
 
   return (
     <PageWrapper title="Weekplanning">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setWeek(week - 1)}
+            title="Vorige week"
+            className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-surface-dark-2 text-gray-500 dark:text-white/50 hover:border-brand-yellow hover:text-gray-900 dark:hover:text-white transition-colors"
+          >
+            <IconChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setWeek(week + 1)}
+            title="Volgende week"
+            className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-surface-dark-2 text-gray-500 dark:text-white/50 hover:border-brand-yellow hover:text-gray-900 dark:hover:text-white transition-colors"
+          >
+            <IconChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
         <p className="text-sm text-gray-500 dark:text-white/60">
           Week van{' '}
           <span className="font-semibold text-gray-700 dark:text-white/80">
             {formatDatumKort(dagen[0])} &ndash; {formatDatumKort(dagen[4])}
           </span>
         </p>
+
+        {week !== 0 && (
+          <button
+            onClick={() => setWeek(0)}
+            className="min-h-[36px] px-3 rounded-sm text-sm font-semibold text-gray-500 dark:text-white/50 hover:text-gray-900 dark:hover:text-white hover:bg-surface-2 dark:hover:bg-white/5 transition-colors"
+          >
+            Naar deze week
+          </button>
+        )}
+
+        <span className="sm:ml-auto text-sm text-gray-400 dark:text-white/40">
+          {planning.length} klussen ingepland
+        </span>
       </div>
 
       {/* Desktop: 5-kolommen grid */}
@@ -51,7 +86,7 @@ export default function Planning() {
         {dagen.map((dag, i) => {
           const dagStr = dag.toISOString().split('T')[0]
           const isVandaag = dag.getTime() === vandaag.getTime()
-          const dagItems = planning.filter((p) => p.datum === dagStr)
+          const dagItems = planning.filter((p) => p.datum <= dagStr && (p.eind ?? p.datum) >= dagStr)
 
           return (
             <div key={i} className="flex flex-col">
@@ -115,7 +150,7 @@ export default function Planning() {
         {dagen.map((dag, i) => {
           const dagStr = dag.toISOString().split('T')[0]
           const isVandaag = dag.getTime() === vandaag.getTime()
-          const dagItems = planning.filter((p) => p.datum === dagStr)
+          const dagItems = planning.filter((p) => p.datum <= dagStr && (p.eind ?? p.datum) >= dagStr)
 
           return (
             <div key={i} className="bg-white dark:bg-surface-dark-2 rounded-xl border border-gray-100 dark:border-white/10 shadow-sm overflow-hidden">

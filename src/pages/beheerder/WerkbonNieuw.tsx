@@ -93,7 +93,7 @@ export default function WerkbonNieuw() {
         <Button variant="primary" loading={loading} onClick={handleSave}>Opslaan</Button>
       </div>
     }>
-      <div className="max-w-2xl space-y-5">
+      <div className="max-w-4xl space-y-5">
         <Card accent="yellow">
           <SectionHeading title="Werkbon informatie" />
           <div className="space-y-3">

@@ -4,7 +4,7 @@ export type Theme = 'light' | 'dark'
 // Op het scherm staat "Zwamsaneerder"; zie ROL_LABEL in lib/utils.
 export type Rol = 'eigenaar' | 'beheerder' | 'uitvoerder' | 'werkvoorbereider' | 'medewerker'
 export type WerkbonStatus = 'open' | 'bezig' | 'voltooid'
-export type ProjectStatus = 'actief' | 'niet_gestart' | 'op_schema' | 'vertraging' | 'afgerond'
+export type ProjectStatus = 'actief' | 'niet_gestart' | 'op_schema' | 'vertraging' | 'afgerond' | 'stilgelegd'
 
 export interface Profile {
   id: string
@@ -124,8 +124,10 @@ export interface Project {
 
 export interface PlanningItem {
   id: string
+  /** Startdatum; met `eind` erbij beslaat een klus vaak meerdere dagen. */
   datum: string
-  projectId: string
+  eind: string
+  projectId: string | null
   projectnaam: string
   adres: string
   medewerkers: string[]

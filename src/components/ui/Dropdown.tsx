@@ -45,8 +45,11 @@ export function Dropdown({
     }
   }, [open])
 
+  // Geen w-full hier: die won van de breedte die de aanroeper meegeeft
+  // en duwde daarmee alles ernaast weg. De aanroeper bepaalt de breedte,
+  // met w-full als vangnet wanneer hij niets zegt.
   return (
-    <div className={cn('w-full', className)}>
+    <div className={cn(className ?? 'w-full')}>
       {label && (
         <label className="block text-sm font-semibold text-gray-700 dark:text-white/70 mb-1.5">
           {label}

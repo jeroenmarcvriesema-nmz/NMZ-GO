@@ -165,7 +165,7 @@ export default function Medewerkers() {
 
   return (
     <PageWrapper title="Medewerkers">
-      <div className="max-w-2xl space-y-4">
+      <div className="max-w-5xl space-y-4">
         <Card>
           <SectionHeading
             title={`Accounts (${medewerkers.length})`}
@@ -272,20 +272,24 @@ export default function Medewerkers() {
           <div className="divide-y divide-gray-50 dark:divide-white/5">
             {ploeg.map((p) => (
               <div key={p.id} className="flex flex-col sm:flex-row sm:items-center gap-3 py-3">
-                <Avatar naam={p.naam} size="sm" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold truncate text-gray-900 dark:text-white">
-                    {p.naam}
-                  </div>
-                  <div className="text-xs text-gray-400 dark:text-white/40 truncate">
-                    {p.koppelrol ? `${p.koppelrol}${p.pilot ? ' · pilot' : ''}` : 'ClickUp-naam'}
+                <div className="flex items-center gap-3 flex-1 min-w-[10rem]">
+                  <Avatar naam={p.naam} size="sm" />
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold truncate text-gray-900 dark:text-white">
+                      {p.naam}
+                    </div>
+                    <div className="text-xs text-gray-400 dark:text-white/40 truncate">
+                      {p.koppelrol
+                        ? `${p.koppelrol}${p.pilot ? ' · pilot' : ''}`
+                        : p.clickup_label ? `ClickUp "${p.clickup_label}"` : 'geen ClickUp-naam'}
+                    </div>
                   </div>
                 </div>
 
                 {magGebruikersBeheren && clickupLabels.length > 0 && (
                   <Dropdown
                     ariaLabel={`ClickUp-naam van ${p.naam}`}
-                    className="w-52 flex-shrink-0"
+                    className="w-full sm:w-52 flex-shrink-0"
                     waarde={p.clickup_label ?? ''}
                     onKies={(v) => zetClickUpNaam(p.id, v)}
                     opties={[

@@ -16,7 +16,7 @@ export default function Rapporten() {
 
   return (
     <PageWrapper title="Rapporten">
-      <div className="max-w-2xl">
+      <div className="max-w-4xl">
         <Card>
           <SectionHeading title={`Voltooide werkbonnen (${voltooid.length})`} />
           {loading ? <div className="flex justify-center py-8"><Spinner /></div>

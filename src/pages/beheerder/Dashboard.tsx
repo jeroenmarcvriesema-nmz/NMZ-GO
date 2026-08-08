@@ -14,7 +14,6 @@ import { ErrorState } from '@/components/ui/ErrorState'
 import {
   IconPlus,
   IconFolderOpen,
-  IconPlayerPlay,
   IconClock,
   IconAlertTriangle,
   IconCircleCheck,
@@ -103,14 +102,31 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* KPI's — 6 stuks Sprint 3 */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-10">
-        <KpiCard label="Lopend vandaag"  value={lopend}        icon={<IconFolderOpen />}    variant="neutral" />
-        <KpiCard label="Gestart"         value={vandaagActief} icon={<IconPlayerPlay />}    variant="blue" />
-        <KpiCard label="Niet gestart"    value={nietGestart}   icon={<IconClock />}         variant={nietGestart > 0 ? 'yellow' : 'neutral'} />
-        <KpiCard label="Achter op schema" value={achter}       icon={<IconAlertTriangle />} variant={achter > 0 ? 'red' : 'neutral'} />
-        <KpiCard label="Afgerond"        value={opleveringen}  icon={<IconCircleCheck />}   variant="green" />
-        <KpiCard label="Gem. voortgang"  value={`${gemVoortgang}%`} icon={<IconTrendingUp />} variant="neutral" />
+      {/* Vier kaarten in plaats van zes.
+          "Lopend vandaag" en "Gestart" telden bijna hetzelfde en stonden
+          naast elkaar te verschillen, wat vooral verwarring gaf. Ze zijn
+          samengetrokken tot één kaart die het verhaal in één keer
+          vertelt: hoeveel klussen lopen er, en hoeveel daarvan is
+          begonnen.
+
+          Wat aandacht vraagt staat vooraan en niet ergens in het midden.
+          Een rij van zes waarvan er vijf op nul staan leest als een
+          dashboard dat niets weet. */}
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-10">
+        <KpiCard
+          label={nietGestart > 0 ? `Niet gestart · ${lopend} vandaag` : `Vandaag · ${vandaagActief} gestart`}
+          value={nietGestart > 0 ? nietGestart : lopend}
+          icon={nietGestart > 0 ? <IconClock /> : <IconFolderOpen />}
+          variant={nietGestart > 0 ? 'yellow' : 'neutral'}
+        />
+        <KpiCard
+          label="Achter op schema"
+          value={achter}
+          icon={<IconAlertTriangle />}
+          variant={achter > 0 ? 'red' : 'neutral'}
+        />
+        <KpiCard label="Afgerond" value={opleveringen} icon={<IconCircleCheck />} variant="green" />
+        <KpiCard label="Gem. voortgang" value={`${gemVoortgang}%`} icon={<IconTrendingUp />} variant="neutral" />
       </div>
 
       {/* Operationele meldingen */}

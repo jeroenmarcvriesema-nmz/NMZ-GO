@@ -190,14 +190,19 @@ export function usePlanning() {
 
   useEffect(() => {
     const fetch = async () => {
+      // Géén filter op project meer. Die stond er omdat de planning
+      // ooit uit projecten kwam, maar sinds de klussen uit ClickUp komen
+      // hangt er geen enkele werkbon aan een project — elke klus is een
+      // losse bon. Gevolg: de planning was leeg terwijl er
+      // tweeëntwintig klussen stonden.
       const { data, error } = await supabase
         .from('werkbonnen')
         .select(`
-          id, datum, adres,
+          id, datum, adres, status,
+          geplande_start, geplande_eind, stilgelegd_op, opgeleverd_op,
           project:projecten ( id, naam, status ),
           werkbon_medewerkers ( persoon:personen(naam) )
         `)
-        .not('project_id', 'is', null)
         .order('datum', { ascending: true })
 
       if (error) {
@@ -205,19 +210,22 @@ export function usePlanning() {
       } else {
         setError(null)
         setPlanning(
-          (data || [])
-            .filter((w: any) => w.project)
-            .map((w: any) => ({
-              id: w.id,
-              datum: w.datum,
-              projectId: w.project.id,
-              projectnaam: w.project.naam ?? '',
-              adres: w.adres ?? '',
-              medewerkers: (w.werkbon_medewerkers || [])
-                .map((wm: any) => wm.persoon?.naam)
-                .filter(Boolean),
-              status: w.project.status as ProjectStatus,
-            }))
+          (data || []).map((w: any) => ({
+            id: w.id,
+            datum: w.geplande_start ?? w.datum,
+            eind: w.geplande_eind ?? w.geplande_start ?? w.datum,
+            projectId: w.project?.id ?? null,
+            projectnaam: w.project?.naam ?? '',
+            adres: w.adres ?? '',
+            medewerkers: (w.werkbon_medewerkers || [])
+              .map((wm: any) => wm.persoon?.naam)
+              .filter(Boolean),
+            // Zonder project vertelt de bon zelf hoe hij ervoor staat.
+            status: (w.stilgelegd_op ? 'stilgelegd'
+                   : w.opgeleverd_op || w.status === 'voltooid' ? 'afgerond'
+                   : w.status === 'bezig' ? 'actief'
+                   : 'niet_gestart') as ProjectStatus,
+          }))
         )
       }
       setLoading(false)
@@ -231,6 +239,7 @@ export function usePlanning() {
 export function statusLabel(s: ProjectStatus): string {
   const map: Record<ProjectStatus, string> = {
     actief: 'Actief',
+    stilgelegd: 'Ligt stil',
     niet_gestart: 'Niet gestart',
     op_schema: 'Op schema',
     vertraging: 'Vertraging',
@@ -246,6 +255,7 @@ export function statusKleur(s: ProjectStatus): string {
     op_schema: 'bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 border-green-200 dark:border-green-500/30',
     vertraging: 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/30',
     afgerond: 'bg-green-100 dark:bg-green-500/15 text-green-800 dark:text-green-400 border-green-300 dark:border-green-500/30',
+    stilgelegd: 'bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-300 dark:border-orange-500/30',
   }
   return map[s]
 }
