@@ -92,8 +92,12 @@ create temp table zz_uitslag(nr int, test text, resultaat text, verwacht text) o
 do $$
 declare
   v            int;
-  eigen_bon    uuid := (select werkbon_id from public.werkbon_medewerkers
-                        where medewerker_id = auth.uid() limit 1);
+  -- Toewijzing loopt sinds migratie 014 via personen: een naam kan op
+  -- een bon staan zonder dat er een account bij hoort.
+  eigen_bon    uuid := (select wm.werkbon_id
+                        from public.werkbon_medewerkers wm
+                        join public.personen pe on pe.id = wm.persoon_id
+                        where pe.profile_id = auth.uid() limit 1);
   tenant_b     uuid := '00000000-0000-4000-8000-0000000000b2';
   vreemde_taak uuid := '00000000-0000-4000-8000-000000000004';
 begin

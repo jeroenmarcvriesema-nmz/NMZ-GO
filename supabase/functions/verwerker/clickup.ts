@@ -11,10 +11,15 @@
 //      met een unieke sleutel. Een tweede ronde werkt bij in plaats
 //      van te verdubbelen.
 //
-//   2. Nooit stil overslaan. Een naam die niet aan een account hangt,
-//      een opdracht zonder leesbare punten, een ontbrekende PDF — het
-//      komt allemaal terug in het resultaat. Stil overslaan betekent
-//      maandagochtend iemand zonder werkbon.
+//   2. Nooit stil overslaan. Een naam die niet in het personenregister
+//      staat, een opdracht zonder leesbare punten, een ontbrekende PDF
+//      — het komt allemaal terug in het resultaat. Stil overslaan
+//      betekent maandagochtend iemand zonder werkbon.
+//
+//      Let op het onderscheid: een persoon zónder account is normaal en
+//      geen bevinding — de bon wijst gewoon naar hem en hij ziet alles
+//      zodra hij is uitgenodigd. Een naam die hélemaal niet bestaat is
+//      dat wel.
 //
 //   3. Staat de synchronisatie op niet-actief, dan draait hij droog:
 //      hij rapporteert wat hij zou doen en schrijft niets weg. Dat is
@@ -146,17 +151,26 @@ export async function synchroniseer(
     )
   }
 
-  // Koppeling ClickUp-naam → account. Eén keer ophalen; het zijn er
-  // tientallen, niet duizenden.
-  const { data: profielen } = await db
-    .from('profiles')
-    .select('id, naam, clickup_label')
+  // Koppeling ClickUp-naam → persoon. Een persoon bestaat los van een
+  // account: de planning in ClickUp kent alleen namen, en of daar al
+  // iemand bij ingelogd heeft is een aparte vraag. Eén keer ophalen;
+  // het zijn er tientallen, niet duizenden.
+  const { data: personen } = await db
+    .from('personen')
+    .select('id, naam, clickup_label, profile_id')
     .eq('tenant_id', tenantId)
+    .eq('actief', true)
     .not('clickup_label', 'is', null)
 
-  const perLabel = new Map<string, { id: string; naam: string }>()
-  for (const p of profielen ?? []) {
-    if (p.clickup_label) perLabel.set(p.clickup_label, { id: p.id, naam: p.naam })
+  const perLabel = new Map<string, { id: string; naam: string; heeftAccount: boolean }>()
+  for (const p of personen ?? []) {
+    if (p.clickup_label) {
+      perLabel.set(p.clickup_label, {
+        id: p.id,
+        naam: p.naam,
+        heeftAccount: p.profile_id !== null,
+      })
+    }
   }
 
   let gezien = 0
@@ -194,7 +208,9 @@ export async function synchroniseer(
         const w = ontleed(tekst, i.uitgesloten_punten)
 
         const namen = labelNamen(taak, i.veld_medewerkers)
-        const gekoppeld = namen.map((n) => perLabel.get(n)).filter(Boolean) as { id: string; naam: string }[]
+        const gekoppeld = namen
+          .map((n) => perLabel.get(n))
+          .filter(Boolean) as { id: string; naam: string; heeftAccount: boolean }[]
         for (const n of namen) if (!perLabel.has(n)) ongekoppeldeNamen.add(n)
 
         const bon = {
@@ -227,7 +243,7 @@ export async function synchroniseer(
             punten: w.punten.length,
             weggelaten: w.weggelaten.length,
             eerste_punt: w.punten[0]?.slice(0, 80) ?? null,
-            medewerkers: gekoppeld.map((g) => g.naam),
+            medewerkers: gekoppeld.map((g) => g.naam + (g.heeftAccount ? '' : ' (nog geen account)')),
             geplande_start: bon.geplande_start,
             geplande_eind: bon.geplande_eind,
             kluiscode: bon.kluiscode,
@@ -278,7 +294,7 @@ export async function synchroniseer(
         await db.from('werkbon_medewerkers').delete().eq('werkbon_id', bonId)
         if (gekoppeld.length > 0) {
           await db.from('werkbon_medewerkers').insert(
-            gekoppeld.map((g) => ({ tenant_id: tenantId, werkbon_id: bonId, medewerker_id: g.id })),
+            gekoppeld.map((g) => ({ tenant_id: tenantId, werkbon_id: bonId, persoon_id: g.id })),
           )
         }
 
@@ -309,7 +325,10 @@ export async function synchroniseer(
     nieuw,
     bijgewerkt,
     overgeslagen,
-    namen_zonder_account: [...ongekoppeldeNamen],
+    namen_zonder_persoon: [...ongekoppeldeNamen],
+    zonder_account: [...new Set(
+      [...perLabel.values()].filter((p) => !p.heeftAccount).map((p) => p.naam),
+    )],
     ...(droogloop ? { proef } : {}),
   }
 }

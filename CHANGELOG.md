@@ -1,5 +1,30 @@
 # NMZ GO — Changelog
 
+## Personenregister — namen zonder account
+
+### Database
+- **[FEATURE]** Migratie 014: tabel `personen`. Een naam kan bestaan vóórdat er een account bij hoort. De 32 namen uit ClickUp staan nu klaar; koppelen aan een account kan later, per persoon.
+- **[FEATURE]** Toewijzing loopt van `werkbon_medewerkers.medewerker_id` (een profiel, dus een account) naar `persoon_id`. Daarmee kan de synchronisatie een klus toewijzen aan iemand die nog nooit heeft ingelogd — precies wat een pilot met vier man nodig heeft.
+- **[FEATURE]** Wie later een account krijgt, ziet meteen zijn hele geschiedenis. Er valt niets bij te werken, want de werkbonnen wezen al naar hem.
+- **[FEATURE]** `ben_ik_toegewezen()` als enige plek die de vraag "sta ik op deze bon" beantwoordt. Vijf policies stelden die vraag ieder afzonderlijk; nu is een volgende wijziging één functie in plaats van vijf policies.
+- **[FEATURE]** Uitnodigingen dragen een persoon én een rol. Zonder dat moet iemand ná het aanmaken van zijn account alsnog handmatig gekoppeld worden. De rol komt uit de uitnodiging, nooit uit de metadata van de aanmelding — die is door de aanmelder zelf te kiezen.
+- **[SECURITY]** `eigenaar` is niet uit te delen via een uitnodiging.
+- **[SECURITY]** Alleen een beheerder kan een persoon aan een account koppelen. Een uitvoerder mag de ploeg beheren, maar niet bepalen wie welk account is.
+- **[FIX]** `mag_bij_werkbon()` toetste nog op de rolnaam `'beheerder'` — blijven staan bij migratie 008, toen alle policies naar bevoegdheden gingen. Gevolg: een eigenaar, uitvoerder of werkvoorbereider kwam niet bij de foto's en documenten van een bon waar hij zelf niet op stond.
+- **[FIX]** `planning_overzicht()` toont ook collega's zonder account. Bij een pilot is dat de helft van de ploeg, en "wie werkt waar vandaag" zonder die namen is nutteloos.
+
+### Synchronisatie
+- **[FEATURE]** Koppelt op `personen.clickup_label` in plaats van op een profiel. Een persoon zonder account is normaal en geen bevinding meer; een naam die hélemaal niet in het register staat is dat wel. Die twee stonden eerst op één hoop.
+
+### Geverifieerd
+- ✅ Medewerker ziet zijn eigen bon en alleen die
+- ✅ Medewerker ziet de ploeg (33 namen) — nodig voor "wie werkt waar vandaag"
+- ✅ Medewerker kan zichzelf niet aan een andere persoon koppelen (0 rijen)
+- ✅ Medewerker kan geen persoon toevoegen, zichzelf niet promoveren, niemand toewijzen (`42501`)
+- ✅ Eigenaar staat niet op de bon en kan tóch bij de documenten — de reparatie werkt
+- ✅ 32 namen uit ClickUp klaargezet, nul ten onrechte gekoppeld
+
+
 ## ClickUp-synchronisatie draait droog
 
 ### Edge Function
