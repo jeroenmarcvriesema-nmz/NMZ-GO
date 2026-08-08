@@ -93,7 +93,9 @@ export default function MijnWerkbonnen() {
       'border-b border-gray-100 dark:border-white/10 px-5',
       compact ? 'sticky top-0 z-40 py-3' : 'py-5'
     )}>
-      <div className="flex items-start justify-between gap-3">
+      {/* Zelfde leesbreedte als de inhoud eronder. Zonder dit plakt de
+          begroeting linksboven in een leeg vlak van twee meter breed. */}
+      <div className="max-w-5xl mx-auto w-full flex items-start justify-between gap-3">
         <div className="min-w-0">
           {!compact && (
             <p className="text-xs text-gray-400 dark:text-white/40 capitalize mb-0.5">{datumLang()}</p>
@@ -153,7 +155,11 @@ export default function MijnWerkbonnen() {
   const Schil = ({ children, compact }: { children: React.ReactNode; compact?: boolean }) => (
     <div className="min-h-screen flex flex-col bg-surface-2 dark:bg-surface-dark">
       <Kop compact={compact} />
-      <div className={cn('flex-1 p-4 space-y-4 animate-page-in', compact && 'pb-32')}>
+      {/* Op een telefoon vult dit het scherm; op een laptop blijft het
+          leesbaar in plaats van uitgerekt over de volle breedte. Het is
+          dezelfde app op twee formaten, geen twee apps. */}
+      <div className={cn('flex-1 w-full max-w-5xl mx-auto p-4 sm:p-6 space-y-4 animate-page-in',
+                         compact && 'pb-32')}>
         {children}
       </div>
     </div>
@@ -254,7 +260,7 @@ export default function MijnWerkbonnen() {
   return (
     <div className="min-h-screen flex flex-col bg-surface-2 dark:bg-surface-dark">
       <Kop compact />
-      <div className="flex-1 p-4 space-y-4 pb-32 animate-page-in">
+      <div className="flex-1 w-full max-w-5xl mx-auto p-4 sm:p-6 space-y-4 pb-32 animate-page-in">
         <Tegels aantalKlaar={aantalKlaar} aantalTaken={aantalTaken} aantalFotos={aantalFotos}
                 voortgang={voortgang} uren={geefUren(werkdag.startTijd, null)} />
 
@@ -294,6 +300,7 @@ export default function MijnWerkbonnen() {
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/90 dark:bg-surface-dark-2/90 backdrop-blur-sm border-t border-gray-100 dark:border-white/10">
+        <div className="max-w-5xl mx-auto">
         <button
           onClick={stopWerkdag}
           disabled={werkdagBezig}
@@ -302,6 +309,7 @@ export default function MijnWerkbonnen() {
           <IconPlayerStop className="w-5 h-5" />
           {werkdagBezig ? 'BEZIG…' : 'STOP WERKDAG'}
         </button>
+        </div>
       </div>
     </div>
   )
@@ -314,7 +322,7 @@ function Tegels({ aantalKlaar, aantalTaken, aantalFotos, voortgang, uren }: {
   aantalKlaar: number; aantalTaken: number; aantalFotos: number; voortgang: number; uren: string
 }) {
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       <KpiCard label="Punten klaar" value={`${aantalKlaar}/${aantalTaken}`}
                icon={<IconListCheck />} variant={aantalKlaar === aantalTaken && aantalTaken > 0 ? 'green' : 'neutral'} />
       <KpiCard label="Foto's" value={aantalFotos} icon={<IconPhoto />} variant="neutral" />
@@ -328,16 +336,28 @@ function Tegels({ aantalKlaar, aantalTaken, aantalFotos, voortgang, uren }: {
 function WerkbonKop({ werkbon, aantalTaken }: { werkbon: any; aantalTaken: number }) {
   return (
     <div className="bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 border-l-4 border-l-brand-yellow rounded-lg shadow-sm p-5">
+      {/* Het adres is de klus. "Zwamsanering" staat op elke bon en zegt
+          dus niets — dat stond hier als kop en het adres eronder. */}
       <p className="text-[11px] font-bold text-gray-400 dark:text-white/40 uppercase tracking-widest mb-2">
         Vandaag werk je aan
       </p>
-      <h2 className="text-xl font-extrabold tracking-tight text-gray-900 dark:text-white">{werkbon.projectnaam}</h2>
-      <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-white/60 mt-1.5">
-        <IconMapPin className="w-4 h-4 flex-shrink-0 text-gray-400 dark:text-white/40" />
+      <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white leading-tight">
         {werkbon.adres}
+      </h2>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-gray-500 dark:text-white/60">
+        <span>{werkbon.projectnaam}</span>
+        {werkbon.bonnummer && <span className="text-gray-400 dark:text-white/40">Bon {werkbon.bonnummer}</span>}
       </div>
-      <div className="flex items-center gap-4 mt-4 pt-4 border-t border-gray-50 dark:border-white/5 text-xs text-gray-400 dark:text-white/40">
-        <span className="flex items-center gap-1"><IconCalendar className="w-3.5 h-3.5" />{formatDatum(werkbon.datum)}</span>
+      <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-gray-50 dark:border-white/5 text-xs text-gray-400 dark:text-white/40">
+        {/* Met "start" ervoor, anders leest een datum uit het verleden
+            als een fout in plaats van als de startdatum. */}
+        <span className="flex items-center gap-1">
+          <IconCalendar className="w-3.5 h-3.5" />
+          start {formatDatum(werkbon.geplande_start ?? werkbon.datum)}
+        </span>
+        {werkbon.geplande_eind && (
+          <span className="flex items-center gap-1">opleveren {formatDatum(werkbon.geplande_eind)}</span>
+        )}
         <span className="flex items-center gap-1"><IconListCheck className="w-3.5 h-3.5" />{aantalTaken} punten</span>
       </div>
     </div>

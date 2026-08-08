@@ -6,7 +6,7 @@ import { toast } from '@/store/toastStore'
 import type { Werkbon } from '@/types'
 import {
   IconKey, IconPhone, IconFileText, IconMap2,
-  IconChevronDown, IconChevronUp, IconMapPin,
+  IconChevronDown, IconChevronUp, IconMapPin, IconClipboardText,
 } from '@tabler/icons-react'
 
 /**
@@ -116,23 +116,27 @@ export function Klusinfo({ werkbon }: { werkbon: Werkbon }) {
       </div>
 
       {werkbon.werkvoorbereiding && (
-        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/10">
-          {/* Ingeklapt, want het is naslag en geen werk. Wel volledig
-              beschikbaar: er staan compartimenten, preparaten en
-              bijzonderheden in die je onderweg nodig kunt hebben. */}
+        <div className="mt-2">
+          {/* Was een kale tekstregel met een pijltje en las daardoor niet
+              als iets waar je op kunt drukken. Nu dezelfde vorm als de
+              knoppen erboven: omlijnd, even hoog, met een icoon. */}
           <button
             onClick={() => setUitgeklapt(!uitgeklapt)}
-            className="flex items-center justify-between w-full min-h-[44px] text-sm font-semibold text-gray-900 dark:text-white"
+            className="flex items-center gap-2 w-full min-h-[44px] px-4 rounded-sm border border-gray-200 dark:border-white/10 bg-white dark:bg-surface-dark-2 text-sm font-semibold text-gray-900 dark:text-white hover:bg-surface-2 dark:hover:bg-white/5 transition-colors"
           >
+            <IconClipboardText className="w-4 h-4 flex-shrink-0" />
             <span>Werkvoorbereiding</span>
             {uitgeklapt
-              ? <IconChevronUp className="w-4 h-4 flex-shrink-0" />
-              : <IconChevronDown className="w-4 h-4 flex-shrink-0" />}
+              ? <IconChevronUp className="w-4 h-4 flex-shrink-0 ml-auto" />
+              : <IconChevronDown className="w-4 h-4 flex-shrink-0 ml-auto" />}
           </button>
+
           {uitgeklapt && (
-            <pre className="mt-2 whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-gray-600 dark:text-white/60">
-              {werkbon.werkvoorbereiding}
-            </pre>
+            <div className="mt-2 rounded-sm border border-gray-100 dark:border-white/10 bg-surface-2 dark:bg-white/5 p-4">
+              <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-gray-700 dark:text-white/70">
+                {werkbon.werkvoorbereiding}
+              </pre>
+            </div>
           )}
         </div>
       )}
