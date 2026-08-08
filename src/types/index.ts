@@ -14,6 +14,8 @@ export interface Profile {
   functie: string | null
   /** Gelijkgehouden met auth.users; nodig om een wachtwoordreset te kunnen sturen. */
   email: string | null
+  /** De naam waaronder deze persoon in ClickUp staat, bijv. "Mario". */
+  clickup_label: string | null
   actief: boolean
   created_at: string
 }

@@ -29,10 +29,17 @@ export default function Medewerkers() {
   const [uitnodigingLink, setUitnodigingLink] = useState<string | null>(null)
   const [linkModal, setLinkModal] = useState(false)
   const [gekopieerd, setGekopieerd] = useState(false)
+  const [clickupLabels, setClickupLabels] = useState<string[]>([])
 
   useEffect(() => {
     supabase.from('profiles').select('*').order('naam')
       .then(({ data }) => { setMedewerkers((data as Profile[]) || []); setLoading(false) })
+
+    // De namenlijst komt uit de instellingen, niet uit ClickUp zelf:
+    // de browser heeft geen ClickUp-token en hoort dat ook niet te
+    // krijgen. De synchronisatie ververst die lijst.
+    supabase.from('clickup_instellingen').select('medewerker_labels').maybeSingle()
+      .then(({ data }) => setClickupLabels(data?.medewerker_labels ?? []))
   }, [])
 
   const genereerLink = async () => {
@@ -71,6 +78,26 @@ export default function Medewerkers() {
       return
     }
     toast.goed('Rol bijgewerkt')
+  }
+
+  const koppelClickUp = async (id: string, label: string) => {
+    const waarde = label === '' ? null : label
+    const vorige = medewerkers
+    setMedewerkers((lijst) => lijst.map((m) => (m.id === id ? { ...m, clickup_label: waarde } : m)))
+
+    const { data, error } = await supabase
+      .from('profiles').update({ clickup_label: waarde }).eq('id', id).select('id')
+
+    if (error || !data || data.length === 0) {
+      setMedewerkers(vorige)
+      // Een unieke sleutel: twee mensen kunnen niet dezelfde ClickUp-naam
+      // claimen, anders is de toewijzing straks een gok.
+      toast.fout(error?.code === '23505'
+        ? 'Die ClickUp-naam is al aan iemand anders gekoppeld.'
+        : 'De koppeling kon niet worden opgeslagen.')
+      return
+    }
+    toast.goed(waarde ? `Gekoppeld aan ${waarde}` : 'Koppeling verwijderd')
   }
 
   const resetWachtwoord = async (email: string) => {
@@ -122,6 +149,19 @@ export default function Medewerkers() {
                     />
                   ) : (
                     <Badge variant={m.rol === 'medewerker' ? 'gray' : 'yellow'}>{rolLabel(m.rol)}</Badge>
+                  )}
+
+                  {magGebruikersBeheren && clickupLabels.length > 0 && (
+                    <Select
+                      aria-label={`ClickUp-naam van ${m.naam}`}
+                      className="w-40 py-1.5 text-xs"
+                      value={m.clickup_label ?? ''}
+                      onChange={(e) => koppelClickUp(m.id, e.target.value)}
+                      opties={[
+                        { waarde: '', label: 'Geen ClickUp-naam' },
+                        ...clickupLabels.map((l) => ({ waarde: l, label: l })),
+                      ]}
+                    />
                   )}
 
                   <button
