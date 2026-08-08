@@ -90,8 +90,9 @@ export function Sidebar() {
         ) : (
           <>
             <NavSection label="Mijn werk" />
-            <NavItem to="/mijn-werkbonnen" icon={<IconHome />}        label="Mijn werkbonnen" />
-            <NavItem to="/afgerond"        icon={<IconCircleCheck />} label="Afgerond" />
+            <NavItem to="/mijn-werkbonnen" icon={<IconHome />}         label="Vandaag" />
+            <NavItem to="/mijn-week"       icon={<IconCalendarWeek />} label="Mijn week" />
+            <NavItem to="/afgerond"        icon={<IconCircleCheck />}  label="Afgerond" />
           </>
         )}
       </nav>

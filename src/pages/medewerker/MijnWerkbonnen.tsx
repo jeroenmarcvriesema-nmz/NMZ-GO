@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useWerkdag, formatTijd, geefUren } from '@/hooks/useWerkdag'
 import { useMijnPrestaties } from '@/hooks/useMijnPrestaties'
 import { usePlanningDoorkijk } from '@/hooks/usePlanningDoorkijk'
-import { useThemeStore } from '@/store/themeStore'
+import { PageWrapper } from '@/components/layout/PageWrapper'
 import { TaakItem } from '@/components/taak/TaakItem'
 import { Klusinfo } from '@/components/werkbon/Klusinfo'
 import { KpiCard } from '@/components/dashboard/KpiCard'
@@ -13,11 +13,11 @@ import { SectionHeading } from '@/components/ui/SectionHeading'
 import { Spinner } from '@/components/ui/Spinner'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Avatar } from '@/components/ui/Avatar'
-import { berekenVoortgang, formatDatum, rolLabel, cn } from '@/lib/utils'
+import { berekenVoortgang, formatDatum, cn } from '@/lib/utils'
 import {
   IconMapPin, IconCalendar, IconPlayerPlay, IconPlayerStop,
   IconListCheck, IconPhoto, IconClock, IconTrophy, IconChevronRight,
-  IconLogout, IconSun, IconMoon, IconUsers, IconCircleCheck,
+  IconUsers, IconCircleCheck,
 } from '@tabler/icons-react'
 import type { Werkbon } from '@/types'
 
@@ -74,75 +74,19 @@ function kiesVandaag(bonnen: Werkbon[]): Werkbon | null {
 }
 
 export default function MijnWerkbonnen() {
-  const { profile, signOut } = useAuth()
+  const { profile } = useAuth()
   const { werkbonnen, loading, refetch } = useWerkbonnen()
-  const { theme, toggleTheme } = useThemeStore()
   const navigate = useNavigate()
 
   const voornaam = (profile?.naam ?? '').split(' ')[0]
   const vandaag = kiesVandaag(werkbonnen)
   const { state: werkdag, bezig: werkdagBezig, startWerkdag, stopWerkdag, hervatWerkdag } = useWerkdag(vandaag?.id ?? null)
 
-  const handleSignOut = async () => { await signOut(); navigate('/login') }
-
-  // ── Kop — dezelfde opbouw als de Topbar bij kantoor: gele
-  //    bovenrand als merkaccent, en meebewegend met het thema.
-  const Kop = ({ compact }: { compact?: boolean }) => (
-    <header className={cn(
-      'border-t-[3px] border-brand-yellow bg-white dark:bg-surface-dark-2',
-      'border-b border-gray-100 dark:border-white/10 px-5',
-      compact ? 'sticky top-0 z-40 py-3' : 'py-5'
-    )}>
-      {/* Zelfde leesbreedte als de inhoud eronder. Zonder dit plakt de
-          begroeting linksboven in een leeg vlak van twee meter breed. */}
-      <div className="max-w-5xl mx-auto w-full flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          {!compact && (
-            <p className="text-xs text-gray-400 dark:text-white/40 capitalize mb-0.5">{datumLang()}</p>
-          )}
-          <h1 className={cn(
-            'font-extrabold tracking-tight text-gray-900 dark:text-white',
-            compact ? 'text-base leading-tight' : 'text-2xl'
-          )}>
-            {compact ? vandaag?.adres : `${groet()}, ${voornaam}`}
-          </h1>
-          {compact ? (
-            <p className="text-xs text-gray-400 dark:text-white/40">
-              Gestart om {formatTijd(werkdag.startTijd)}
-            </p>
-          ) : (
-            <p className="text-xs text-gray-400 dark:text-white/40 mt-0.5">
-              {profile?.functie || rolLabel(profile?.rol)}
-            </p>
-          )}
-        </div>
-
-        <div className="flex items-center gap-1 flex-shrink-0">
-          {!compact && profile && <Avatar naam={profile.naam} size="sm" />}
-          <button
-            onClick={toggleTheme}
-            title={theme === 'dark' ? 'Licht thema' : 'Donker thema'}
-            className="flex items-center justify-center w-11 h-11 rounded-lg text-gray-400 dark:text-white/40 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
-          >
-            {theme === 'dark' ? <IconSun className="w-5 h-5" /> : <IconMoon className="w-5 h-5" />}
-          </button>
-          <button
-            onClick={handleSignOut}
-            title="Uitloggen"
-            className="flex items-center justify-center w-11 h-11 rounded-lg text-gray-400 dark:text-white/40 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
-          >
-            <IconLogout className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-    </header>
-  )
-
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-surface-2 dark:bg-surface-dark">
-        <Spinner className="w-8 h-8" />
-      </div>
+      <PageWrapper title="Vandaag">
+        <div className="flex justify-center py-20"><Spinner className="w-8 h-8" /></div>
+      </PageWrapper>
     )
   }
 
@@ -152,17 +96,22 @@ export default function MijnWerkbonnen() {
   const aantalKlaar = taken.filter((t) => t.voltooid).length
   const aantalFotos = taken.flatMap((t) => t.fotos ?? []).length
 
+  // Dezelfde schil als kantoor: zijbalk op een laptop, balk onderin op
+  // een telefoon. Dit scherm had een eigen opbouw zonder navigatie —
+  // daardoor was er geen weg naar je andere bonnen en voelde de app
+  // leeg, want er was maar één ding te zien.
   const Schil = ({ children, compact }: { children: React.ReactNode; compact?: boolean }) => (
-    <div className="min-h-screen flex flex-col bg-surface-2 dark:bg-surface-dark">
-      <Kop compact={compact} />
-      {/* Op een telefoon vult dit het scherm; op een laptop blijft het
-          leesbaar in plaats van uitgerekt over de volle breedte. Het is
-          dezelfde app op twee formaten, geen twee apps. */}
-      <div className={cn('flex-1 w-full max-w-5xl mx-auto p-4 sm:p-6 space-y-4 animate-page-in',
-                         compact && 'pb-32')}>
+    <PageWrapper title="Vandaag">
+      <div className={cn('max-w-5xl space-y-4', compact && 'pb-28')}>
+        <div>
+          <p className="text-xs text-gray-400 dark:text-white/40 capitalize">{datumLang()}</p>
+          <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">
+            {groet()}, {voornaam}
+          </h1>
+        </div>
         {children}
       </div>
-    </div>
+    </PageWrapper>
   )
 
   // ── Geen werkbon vandaag ──────────────────────────────────────
@@ -258,9 +207,8 @@ export default function MijnWerkbonnen() {
 
   // ── Aan het werk ──────────────────────────────────────────────
   return (
-    <div className="min-h-screen flex flex-col bg-surface-2 dark:bg-surface-dark">
-      <Kop compact />
-      <div className="flex-1 w-full max-w-5xl mx-auto p-4 sm:p-6 space-y-4 pb-32 animate-page-in">
+    <PageWrapper title={vandaag.adres}>
+      <div className="max-w-5xl space-y-4 pb-28">
         <Tegels aantalKlaar={aantalKlaar} aantalTaken={aantalTaken} aantalFotos={aantalFotos}
                 voortgang={voortgang} uren={geefUren(werkdag.startTijd, null)} />
 
@@ -299,7 +247,8 @@ export default function MijnWerkbonnen() {
         </button>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/90 dark:bg-surface-dark-2/90 backdrop-blur-sm border-t border-gray-100 dark:border-white/10">
+      {/* Boven de navigatiebalk op een telefoon, anders valt hij eronder. */}
+      <div className="fixed bottom-16 md:bottom-0 left-0 md:left-60 right-0 z-40 p-4 bg-white/90 dark:bg-surface-dark-2/90 backdrop-blur-sm border-t border-gray-100 dark:border-white/10">
         <div className="max-w-5xl mx-auto">
         <button
           onClick={stopWerkdag}
@@ -311,7 +260,7 @@ export default function MijnWerkbonnen() {
         </button>
         </div>
       </div>
-    </div>
+    </PageWrapper>
   )
 }
 

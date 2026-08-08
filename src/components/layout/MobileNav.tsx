@@ -40,8 +40,9 @@ export function MobileNav() {
         </>
       ) : (
         <>
-          <MobileNavItem to="/mijn-werkbonnen" icon={<IconHome />}        label="Mijn werk" />
-          <MobileNavItem to="/afgerond"        icon={<IconCircleCheck />} label="Afgerond" />
+          <MobileNavItem to="/mijn-werkbonnen" icon={<IconHome />}         label="Vandaag" />
+          <MobileNavItem to="/mijn-week"       icon={<IconCalendarWeek />} label="Mijn week" />
+          <MobileNavItem to="/afgerond"        icon={<IconCircleCheck />}  label="Afgerond" />
         </>
       )}
     </nav>
