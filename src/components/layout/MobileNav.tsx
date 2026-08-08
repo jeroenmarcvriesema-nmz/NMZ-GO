@@ -7,7 +7,7 @@ import {
   IconCalendarWeek,
   IconUsers,
   IconHome,
-  IconCircleCheck,
+  IconClipboardList,
 } from '@tabler/icons-react'
 
 function MobileNavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) {
@@ -42,7 +42,7 @@ export function MobileNav() {
         <>
           <MobileNavItem to="/mijn-werkbonnen" icon={<IconHome />}         label="Vandaag" />
           <MobileNavItem to="/mijn-week"       icon={<IconCalendarWeek />} label="Mijn week" />
-          <MobileNavItem to="/afgerond"        icon={<IconCircleCheck />}  label="Afgerond" />
+          <MobileNavItem to="/mijn-bonnen"     icon={<IconClipboardList />} label="Mijn bonnen" />
         </>
       )}
     </nav>

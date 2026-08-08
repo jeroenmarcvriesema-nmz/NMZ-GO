@@ -13,7 +13,7 @@ import {
   IconFileExport,
   IconUsers,
   IconHome,
-  IconCircleCheck,
+  IconClipboardList,
   IconClipboardCheck,
   IconLogout,
   IconSun,
@@ -92,7 +92,7 @@ export function Sidebar() {
             <NavSection label="Mijn werk" />
             <NavItem to="/mijn-werkbonnen" icon={<IconHome />}         label="Vandaag" />
             <NavItem to="/mijn-week"       icon={<IconCalendarWeek />} label="Mijn week" />
-            <NavItem to="/afgerond"        icon={<IconCircleCheck />}  label="Afgerond" />
+            <NavItem to="/mijn-bonnen"     icon={<IconClipboardList />} label="Mijn bonnen" />
           </>
         )}
       </nav>

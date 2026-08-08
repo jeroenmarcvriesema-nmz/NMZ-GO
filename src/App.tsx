@@ -23,6 +23,7 @@ import Medewerkers      from '@/pages/beheerder/Medewerkers'
 import Rapporten        from '@/pages/beheerder/Rapporten'
 import MijnWerkbonnen   from '@/pages/medewerker/MijnWerkbonnen'
 import MijnWeek         from '@/pages/medewerker/MijnWeek'
+import MijnBonnen       from '@/pages/medewerker/MijnBonnen'
 import WerkbonUitvoeren from '@/pages/medewerker/WerkbonUitvoeren'
 import Afgerond         from '@/pages/medewerker/Afgerond'
 
@@ -158,6 +159,7 @@ export default function App() {
         <Route path="/mijn-werkbonnen" element={<AuthGuard><MijnWerkbonnen /></AuthGuard>} />
         <Route path="/werkbon/:id"     element={<AuthGuard><WerkbonUitvoeren /></AuthGuard>} />
         <Route path="/mijn-week"       element={<AuthGuard><MijnWeek /></AuthGuard>} />
+        <Route path="/mijn-bonnen"     element={<AuthGuard><MijnBonnen /></AuthGuard>} />
         <Route path="/afgerond"        element={<AuthGuard><Afgerond /></AuthGuard>} />
 
         <Route path="*" element={<Navigate to="/" replace />} />

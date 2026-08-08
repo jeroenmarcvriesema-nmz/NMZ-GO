@@ -12,6 +12,7 @@ import type { Persoon, Profile, Rol } from '@/types'
 
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Select } from '@/components/ui/Select'
+import { Dropdown } from '@/components/ui/Dropdown'
 import { rolLabel, ROL_LABEL } from '@/lib/utils'
 import { toast } from '@/store/toastStore'
 import { IconLink, IconCopy, IconKey, IconCheck, IconUsers, IconUserPlus } from '@tabler/icons-react'
@@ -114,24 +115,30 @@ export default function Medewerkers() {
     toast.goed('Rol bijgewerkt')
   }
 
-  const koppelClickUp = async (id: string, label: string) => {
+  /**
+   * De ClickUp-naam hoort bij de persoon, niet bij het account.
+   *
+   * Hij stond eerst op het profiel, maar de synchronisatie koppelt op
+   * personen.clickup_label — een naam moet immers op een klus kunnen
+   * staan voordat er een account bij hoort. Op het profiel instellen
+   * deed dus niets.
+   */
+  const zetClickUpNaam = async (persoonId: string, label: string) => {
     const waarde = label === '' ? null : label
-    const vorige = medewerkers
-    setMedewerkers((lijst) => lijst.map((m) => (m.id === id ? { ...m, clickup_label: waarde } : m)))
+    const vorige = ploeg
+    setPloeg((lijst) => lijst.map((p) => (p.id === persoonId ? { ...p, clickup_label: waarde } : p)))
 
     const { data, error } = await supabase
-      .from('profiles').update({ clickup_label: waarde }).eq('id', id).select('id')
+      .from('personen').update({ clickup_label: waarde }).eq('id', persoonId).select('id')
 
     if (error || !data || data.length === 0) {
-      setMedewerkers(vorige)
-      // Een unieke sleutel: twee mensen kunnen niet dezelfde ClickUp-naam
-      // claimen, anders is de toewijzing straks een gok.
+      setPloeg(vorige)
       toast.fout(error?.code === '23505'
-        ? 'Die ClickUp-naam is al aan iemand anders gekoppeld.'
-        : 'De koppeling kon niet worden opgeslagen.')
+        ? 'Die ClickUp-naam hangt al aan iemand anders in de ploeg.'
+        : 'De ClickUp-naam kon niet worden opgeslagen.')
       return
     }
-    toast.goed(waarde ? `Gekoppeld aan ${waarde}` : 'Koppeling verwijderd')
+    toast.goed(waarde ? `Gekoppeld aan ClickUp-naam ${waarde}` : 'ClickUp-naam verwijderd')
   }
 
   // Een reset-mail gaat naar een echt mens en maakt zijn huidige
@@ -197,27 +204,33 @@ export default function Medewerkers() {
                   {magGebruikersBeheren && (
                     <div className="mt-3 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2">
                       {m.id !== profile?.id && (
-                        <Select
-                          aria-label={`Rol van ${m.naam}`}
-                          className="w-full sm:w-44 text-sm"
-                          value={m.rol}
-                          onChange={(e) => wijzigRol(m.id, e.target.value as Rol)}
+                        <Dropdown
+                          ariaLabel={`Rol van ${m.naam}`}
+                          className="w-full sm:w-52"
+                          waarde={m.rol}
+                          onKies={(v) => wijzigRol(m.id, v as Rol)}
                           opties={ROL_OPTIES}
                         />
                       )}
 
-                      {clickupLabels.length > 0 && (
-                        <Select
-                          aria-label={`ClickUp-naam van ${m.naam}`}
-                          className="w-full sm:w-44 text-sm"
-                          value={m.clickup_label ?? ''}
-                          onChange={(e) => koppelClickUp(m.id, e.target.value)}
-                          opties={[
-                            { waarde: '', label: 'Geen ClickUp-naam' },
-                            ...clickupLabels.map((l) => ({ waarde: l, label: l })),
-                          ]}
-                        />
-                      )}
+                      {/* Geen keuzelijst meer voor de ClickUp-naam.
+                          Die zat op het profiel, maar sinds het
+                          personenregister leest de synchronisatie dat
+                          veld niet meer — hij koppelt op
+                          personen.clickup_label. Hier iets kunnen
+                          instellen wat nergens doorwerkt is erger dan
+                          het weglaten: je denkt dat je iets regelt.
+                          Koppelen gebeurt in De ploeg hieronder, of
+                          automatisch via de uitnodiging. */}
+                      <span className="text-xs text-gray-400 dark:text-white/40 self-center">
+                        {(() => {
+                          const persoon = ploeg.find((p) => p.profile_id === m.id)
+                          if (!persoon) return 'Niet aan een naam uit de ploeg gekoppeld'
+                          return persoon.clickup_label
+                            ? `Ploeg: ${persoon.naam} · ClickUp "${persoon.clickup_label}"`
+                            : `Ploeg: ${persoon.naam} · geen ClickUp-naam`
+                        })()}
+                      </span>
 
                       {/* Met tekst erbij en losgetrokken van de keuzelijsten:
                           een kaal grijs icoontje naast twee dropdowns is te
@@ -258,7 +271,7 @@ export default function Medewerkers() {
           />
           <div className="divide-y divide-gray-50 dark:divide-white/5">
             {ploeg.map((p) => (
-              <div key={p.id} className="flex items-center gap-3 py-3">
+              <div key={p.id} className="flex flex-col sm:flex-row sm:items-center gap-3 py-3">
                 <Avatar naam={p.naam} size="sm" />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-semibold truncate text-gray-900 dark:text-white">
@@ -268,6 +281,19 @@ export default function Medewerkers() {
                     {p.koppelrol ? `${p.koppelrol}${p.pilot ? ' · pilot' : ''}` : 'ClickUp-naam'}
                   </div>
                 </div>
+
+                {magGebruikersBeheren && clickupLabels.length > 0 && (
+                  <Dropdown
+                    ariaLabel={`ClickUp-naam van ${p.naam}`}
+                    className="w-52 flex-shrink-0"
+                    waarde={p.clickup_label ?? ''}
+                    onKies={(v) => zetClickUpNaam(p.id, v)}
+                    opties={[
+                      { waarde: '', label: 'Geen ClickUp-naam' },
+                      ...clickupLabels.map((l) => ({ waarde: l, label: l })),
+                    ]}
+                  />
+                )}
 
                 {p.profile_id ? (
                   <Badge variant="green">Heeft account</Badge>
@@ -302,11 +328,10 @@ export default function Medewerkers() {
             werkbonnen waar hij op staat — ook die van vóór zijn account.
           </p>
 
-          <Select
-            aria-label="Rol"
+          <Dropdown
             label="Rol"
-            value={kandidaatRol}
-            onChange={(e) => setKandidaatRol(e.target.value as Rol)}
+            waarde={kandidaatRol}
+            onKies={(v) => setKandidaatRol(v as Rol)}
             opties={ROL_OPTIES}
           />
           <p className="text-xs text-gray-400 dark:text-white/40">
