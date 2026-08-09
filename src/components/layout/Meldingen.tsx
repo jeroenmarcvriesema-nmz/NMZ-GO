@@ -86,7 +86,7 @@ export function Meldingen() {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-1 w-80 sm:w-96 max-h-[70vh] overflow-y-auto rounded-lg border border-gray-100 dark:border-white/10 bg-white dark:bg-surface-dark-2 shadow-lg">
+        <div className="absolute right-0 z-50 mt-1 w-80 sm:w-96 max-w-[calc(100vw-2rem)] max-h-[70vh] overflow-y-auto rounded-lg border border-gray-100 dark:border-white/10 bg-white dark:bg-surface-dark-2 shadow-lg">
           <div className="sticky top-0 px-4 py-3 border-b border-gray-100 dark:border-white/10 bg-white dark:bg-surface-dark-2">
             <span className="text-sm font-bold text-gray-900 dark:text-white">Meldingen</span>
           </div>
@@ -114,7 +114,7 @@ export function Meldingen() {
                     !m.gelezen_op && 'bg-brand-yellow-light/40 dark:bg-brand-yellow/5'
                   )}
                 >
-                  <p className="text-sm leading-snug text-gray-700 dark:text-white/70">{m.tekst}</p>
+                  <p className="text-sm leading-snug text-gray-700 dark:text-white/70 break-words">{m.tekst}</p>
                   <p className="text-xs text-gray-400 dark:text-white/40 mt-1">
                     {new Date(m.created_at).toLocaleString('nl-NL', {
                       day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',

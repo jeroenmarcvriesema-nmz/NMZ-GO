@@ -4,9 +4,9 @@ import { Meldingen } from './Meldingen'
 
 export function Topbar({ title, actions }: { title: string; actions?: React.ReactNode }) {
   return (
-    <header className="bg-white dark:bg-surface-dark-2 border-b border-gray-100 dark:border-white/10 border-t-[3px] border-t-brand-yellow h-14 flex items-center px-8 sticky top-0 z-40 shadow-sm">
-      <div className="text-lg font-bold text-gray-900 dark:text-white tracking-tight flex-1">{title}</div>
-      <div className="flex items-center gap-2">
+    <header className="bg-white dark:bg-surface-dark-2 border-b border-gray-100 dark:border-white/10 border-t-[3px] border-t-brand-yellow h-14 flex items-center gap-4 px-6 lg:px-8 sticky top-0 z-40 shadow-sm">
+      <div className="text-lg font-bold text-gray-900 dark:text-white tracking-tight flex-1 min-w-0 truncate">{title}</div>
+      <div className="flex items-center gap-2 flex-shrink-0">
         {actions}
         <Meldingen />
       </div>

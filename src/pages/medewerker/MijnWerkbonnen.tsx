@@ -283,15 +283,15 @@ function Prestaties() {
       {loading ? (
         <div className="flex justify-center py-4"><Spinner className="w-5 h-5" /></div>
       ) : (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
           {[
             { waarde: data.werkbonnenAfgerond, label: 'Werkbonnen afgerond' },
             { waarde: data.werkdagenGewerkt, label: 'Werkdagen gewerkt' },
             { waarde: data.fotosGemaakt, label: "Foto's gemaakt" },
           ].map((c, i) => (
-            <div key={c.label} className={cn('text-center', i === 1 && 'border-x border-gray-100 dark:border-white/10')}>
-              <p className="text-2xl font-extrabold text-gray-900 dark:text-white tabular-nums">{c.waarde}</p>
-              <p className="text-[11px] text-gray-400 dark:text-white/40 mt-0.5 leading-tight">{c.label}</p>
+            <div key={c.label} className={cn('min-w-0 text-center px-1', i === 1 && 'border-x border-gray-100 dark:border-white/10')}>
+              <p className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white tabular-nums">{c.waarde}</p>
+              <p className="text-[10px] sm:text-[11px] text-gray-400 dark:text-white/40 mt-0.5 leading-tight break-words">{c.label}</p>
             </div>
           ))}
         </div>

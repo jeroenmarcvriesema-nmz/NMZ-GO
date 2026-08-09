@@ -40,7 +40,7 @@ export function Toaster() {
           )}
         >
           <span className="flex-shrink-0 mt-0.5">{iconen[t.soort]}</span>
-          <span className="text-sm leading-snug flex-1 text-gray-900 dark:text-white">{t.tekst}</span>
+          <span className="text-sm leading-snug flex-1 min-w-0 break-words text-gray-900 dark:text-white">{t.tekst}</span>
           <button
             onClick={() => sluit(t.id)}
             aria-label="Melding sluiten"

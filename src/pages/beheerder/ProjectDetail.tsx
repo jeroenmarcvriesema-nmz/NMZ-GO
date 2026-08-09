@@ -78,7 +78,7 @@ export default function ProjectDetail() {
       {/* Header kaart */}
       <div className="bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-xl shadow-sm p-6 mb-6">
         <div className="flex flex-col lg:flex-row lg:items-start gap-6">
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-2">
               <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">{project.naam}</h1>
               <span className={cn('inline-flex items-center text-xs font-bold px-2.5 py-1 rounded-lg border', statusKleur(project.status))}>
@@ -115,7 +115,7 @@ export default function ProjectDetail() {
           </div>
 
           {/* KPI blokken */}
-          <div className="grid grid-cols-3 gap-3 lg:gap-4 lg:min-w-[280px]">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:gap-4 lg:min-w-[280px] min-w-0">
             <div className="text-center">
               <div className="text-3xl font-extrabold text-gray-900 dark:text-white">{project.aantalTakenKlaar}</div>
               <div className="text-xs text-gray-400 dark:text-white/40 mt-0.5">van {project.aantalTaken} taken</div>
@@ -193,7 +193,7 @@ export default function ProjectDetail() {
                 {project.medewerkers.map((m) => (
                   <div key={m.id} className="flex items-center gap-3 py-2.5 border-b border-gray-50 dark:border-white/5 last:border-0">
                     <Avatar naam={m.naam} size="md" />
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="text-sm font-semibold text-gray-900 dark:text-white">{m.naam}</div>
                       <div className="text-xs text-gray-400 dark:text-white/40">{m.rol}</div>
                     </div>

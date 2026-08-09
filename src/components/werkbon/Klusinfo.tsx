@@ -59,11 +59,11 @@ export function Klusinfo({ werkbon }: { werkbon: Werkbon }) {
           <div className="flex items-center justify-center w-11 h-11 rounded-lg bg-brand-yellow-light dark:bg-brand-yellow/15 flex-shrink-0">
             <IconKey className="w-5 h-5 text-brand-yellow-dark dark:text-brand-yellow" />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="text-xs text-gray-400 dark:text-white/40">Kluiscode</div>
             {/* Groot en met ruimte tussen de tekens: dit wordt op een
                 dak of in een kruipruimte afgelezen, niet aan een bureau. */}
-            <div className="text-2xl font-extrabold tracking-widest text-gray-900 dark:text-white">
+            <div className="text-xl sm:text-2xl font-extrabold tracking-widest text-gray-900 dark:text-white break-all">
               {werkbon.kluiscode}
             </div>
           </div>

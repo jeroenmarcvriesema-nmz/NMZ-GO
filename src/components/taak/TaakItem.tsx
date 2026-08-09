@@ -85,12 +85,16 @@ export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps
         )}>
           {taak.voltooid ? <IconCheck className="w-4 h-4" /> : null}
         </div>
-        <div className="flex-1">
-          <div className={cn('text-sm font-semibold leading-snug text-gray-900 dark:text-white', taak.voltooid && 'line-through text-gray-400 dark:text-white/40')}>
+        {/* min-w-0 en break-words: een afvinkpunt is bij ons vaak een
+            hele zin uit de werkopdracht, soms met een woord dat langer
+            is dan het scherm ("bodemafsluiterconstructie"). Zonder dit
+            duwt zo'n woord de hele kaart uit beeld. */}
+        <div className="flex-1 min-w-0">
+          <div className={cn('text-sm font-semibold leading-snug text-gray-900 dark:text-white break-words', taak.voltooid && 'line-through text-gray-400 dark:text-white/40')}>
             {taak.titel}
           </div>
           {taak.omschrijving && (
-            <div className="text-xs text-gray-500 dark:text-white/50 mt-1 leading-relaxed">{taak.omschrijving}</div>
+            <div className="text-xs text-gray-500 dark:text-white/50 mt-1 leading-relaxed break-words">{taak.omschrijving}</div>
           )}
         </div>
       </div>
