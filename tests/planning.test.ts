@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   isoDatum, maandagVan, weekDagen, kiesVandaag, looptOp, dagenUitloop,
+  weeknummer, weekLabel, maandagVerschoven, inWeek,
 } from '@/lib/planning'
 
 // Een minimale bon: precies de velden waar het rekenwerk naar kijkt.
@@ -140,5 +141,97 @@ describe('dagenUitloop', () => {
     const op = bon({ id: 'b', geplande_eind: '2026-07-01', opgeleverd_op: '2026-07-05' })
     expect(dagenUitloop(af, '2026-08-12')).toBe(0)
     expect(dagenUitloop(op, '2026-08-12')).toBe(0)
+  })
+})
+
+describe('weeknummer', () => {
+  // Het weeknummer is waar in Nederland mee gepland wordt en waar de
+  // planning in ClickUp op staat. Zit hij er één naast, dan rijdt er
+  // iemand een week te vroeg of te laat.
+  it('rekent een gewone week goed', () => {
+    // Maandag 10 augustus 2026 valt in week 33.
+    expect(weeknummer(new Date(2026, 7, 10))).toBe(33)
+    expect(weeknummer(new Date(2026, 7, 16))).toBe(33) // zondag hoort er nog bij
+    expect(weeknummer(new Date(2026, 7, 17))).toBe(34)
+  })
+
+  it('geeft elke dag van dezelfde week hetzelfde nummer', () => {
+    const nummers = weekDagen(maandagVan(new Date(2026, 7, 12)))
+      .map((d) => weeknummer(d))
+    expect(new Set(nummers).size).toBe(1)
+  })
+
+  it('rekent de jaarwisseling volgens ISO 8601', () => {
+    // 1 januari 2027 is een vrijdag en hoort nog bij week 53 van 2026.
+    expect(weeknummer(new Date(2027, 0, 1))).toBe(53)
+    // 4 januari 2027 is de maandag van week 1.
+    expect(weeknummer(new Date(2027, 0, 4))).toBe(1)
+    // 1 januari 2026 is een donderdag: dat is week 1.
+    expect(weeknummer(new Date(2026, 0, 1))).toBe(1)
+  })
+
+  it('rekent een jaar met 53 weken goed uit', () => {
+    // 2020 had er 53; 28 december 2020 is de maandag van week 53.
+    expect(weeknummer(new Date(2020, 11, 28))).toBe(53)
+    expect(weeknummer(new Date(2021, 0, 4))).toBe(1)
+  })
+})
+
+describe('weekLabel', () => {
+  it('gebruikt de woorden die iedereen gebruikt', () => {
+    expect(weekLabel(0)).toBe('Deze week')
+    expect(weekLabel(1)).toBe('Volgende week')
+    expect(weekLabel(-1)).toBe('Vorige week')
+  })
+
+  it('valt terug op tellen zodra dat niets meer zegt', () => {
+    expect(weekLabel(3)).toBe('Over 3 weken')
+    expect(weekLabel(-2)).toBe('2 weken terug')
+  })
+})
+
+describe('maandagVerschoven', () => {
+  it('telt hele weken op vanaf de maandag van nu', () => {
+    const donderdag = new Date(2026, 7, 13)
+    expect(isoDatum(maandagVerschoven(0, donderdag))).toBe('2026-08-10')
+    expect(isoDatum(maandagVerschoven(1, donderdag))).toBe('2026-08-17')
+    expect(isoDatum(maandagVerschoven(-1, donderdag))).toBe('2026-08-03')
+  })
+
+  it('stapt over een maandgrens heen', () => {
+    expect(isoDatum(maandagVerschoven(1, new Date(2026, 7, 26)))).toBe('2026-08-31')
+  })
+})
+
+describe('inWeek', () => {
+  const maandag = new Date(2026, 7, 10) // week 33
+
+  it('neemt een klus mee die in de week begint', () => {
+    expect(inWeek(bon({ id: 'a', geplande_start: '2026-08-12', geplande_eind: '2026-08-12' }), maandag)).toBe(true)
+  })
+
+  it('neemt een klus mee die uit de week ervóór doorloopt', () => {
+    // Dit is het geval waar het om gaat: een klus van drie weken hoort
+    // in alle drie die weken te staan, niet alleen in de week waarin
+    // hij begon.
+    expect(inWeek(bon({ id: 'a', geplande_start: '2026-08-03', geplande_eind: '2026-08-19' }), maandag)).toBe(true)
+  })
+
+  it('laat weg wat ervoor of erna ligt', () => {
+    expect(inWeek(bon({ id: 'a', geplande_start: '2026-08-03', geplande_eind: '2026-08-07' }), maandag)).toBe(false)
+    expect(inWeek(bon({ id: 'b', geplande_start: '2026-08-17', geplande_eind: '2026-08-21' }), maandag)).toBe(false)
+  })
+
+  it('telt het weekend niet als losse week', () => {
+    // Zaterdag 15 augustus valt buiten de vijf werkdagen, maar een klus
+    // die tot en met zaterdag loopt hoort wél bij week 33.
+    expect(inWeek(bon({ id: 'a', geplande_start: '2026-08-14', geplande_eind: '2026-08-15' }), maandag)).toBe(true)
+    // Een klus die pas op zondag begint hoort bij de week erna.
+    expect(inWeek(bon({ id: 'b', geplande_start: '2026-08-16', geplande_eind: '2026-08-16' }), maandag)).toBe(false)
+  })
+
+  it('valt terug op datum als er geen planning staat', () => {
+    expect(inWeek(bon({ id: 'a', datum: '2026-08-11' }), maandag)).toBe(true)
+    expect(inWeek(bon({ id: 'b', datum: '2026-09-01' }), maandag)).toBe(false)
   })
 })

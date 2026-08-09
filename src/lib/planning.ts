@@ -42,6 +42,68 @@ export function weekDagen(maandag: Date, aantal = 5): Date[] {
 }
 
 /**
+ * Het weeknummer volgens ISO 8601 — het nummer waar in Nederland mee
+ * gepland wordt.
+ *
+ * "Week 33" zegt iedereen op kantoor en in de bus; "10 t/m 14 augustus"
+ * moet je omrekenen. De regel is: week 1 is de week met de eerste
+ * donderdag van het jaar erin. Vandaar dat we naar de donderdag van
+ * deze week springen en dáár het jaar van pakken — een week eind
+ * december kan bij het volgende jaar horen en andersom.
+ */
+export function weeknummer(d: Date): number {
+  const donderdag = new Date(d)
+  donderdag.setHours(0, 0, 0, 0)
+  // Naar de donderdag van deze week (maandag = 0).
+  donderdag.setDate(donderdag.getDate() - ((d.getDay() + 6) % 7) + 3)
+
+  const eersteDonderdag = new Date(donderdag.getFullYear(), 0, 4)
+  eersteDonderdag.setDate(
+    eersteDonderdag.getDate() - ((eersteDonderdag.getDay() + 6) % 7) + 3,
+  )
+
+  const dagen = (donderdag.getTime() - eersteDonderdag.getTime()) / 86_400_000
+  return 1 + Math.round(dagen / 7)
+}
+
+/**
+ * Hoe je een week noemt als je hem op het scherm zet.
+ *
+ * "Deze week" en "volgende week" zijn hoe erover gepraat wordt; het
+ * weeknummer erbij zodat het aansluit op ClickUp en op de planning aan
+ * de muur. Verder weg dan een week of twee zegt "deze/volgende" niets
+ * meer en blijft alleen het nummer over.
+ */
+export function weekLabel(verschuiving: number): string {
+  if (verschuiving === 0) return 'Deze week'
+  if (verschuiving === 1) return 'Volgende week'
+  if (verschuiving === -1) return 'Vorige week'
+  if (verschuiving > 1) return `Over ${verschuiving} weken`
+  return `${Math.abs(verschuiving)} weken terug`
+}
+
+/** De maandag van de week die `verschuiving` weken van vandaag ligt. */
+export function maandagVerschoven(verschuiving: number, vanaf: Date = new Date()): Date {
+  const ma = maandagVan(vanaf)
+  ma.setDate(ma.getDate() + verschuiving * 7)
+  return ma
+}
+
+/**
+ * Valt deze klus in de week die op `maandag` begint?
+ *
+ * Een klus van drie weken valt in alle drie die weken — daarom kijken
+ * we naar overlap en niet naar de startdatum. Wie in week 34 kijkt wil
+ * ook de klus zien die in week 33 begon en nog loopt.
+ */
+export function inWeek(w: Ingepland, maandag: Date): boolean {
+  const dagen = weekDagen(maandag)
+  const van = isoDatum(dagen[0])
+  const tot = isoDatum(dagen[4])
+  return startVan(w) <= tot && eindVan(w) >= van
+}
+
+/**
  * Het minimum dat een bon moet hebben om ingepland te kunnen worden.
  * Bewust structureel getypeerd: dan werkt dit ook voor een rij uit een
  * andere query zonder dat het hele `Werkbon`-type mee hoeft.

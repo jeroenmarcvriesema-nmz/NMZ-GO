@@ -8,11 +8,12 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { useWerkbonnen } from '@/hooks/useWerkbonnen'
 import { berekenVoortgang, cn } from '@/lib/utils'
-import { isoDatum, maandagVan, weekDagen, looptOp } from '@/lib/planning'
+import { isoDatum, maandagVerschoven, weekDagen, looptOp, inWeek } from '@/lib/planning'
+import { Weekkiezer } from '@/components/layout/Weekkiezer'
 import type { Werkbon } from '@/types'
 import {
   IconCalendarWeek, IconMapPin, IconListCheck,
-  IconChevronRight, IconChevronLeft, IconAlertTriangle, IconKey,
+  IconChevronRight, IconAlertTriangle, IconKey,
 } from '@tabler/icons-react'
 
 const DAGEN = ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag']
@@ -39,11 +40,14 @@ export default function MijnWeek() {
   // donderdag in Haarlem staat, regelt zijn eigen vervoer.
   const [week, setWeek] = useState(0)
 
-  const maandag = maandagVan(new Date())
-  maandag.setDate(maandag.getDate() + week * 7)
+  const maandag = maandagVerschoven(week)
   const dagen = weekDagen(maandag)
 
   const vandaag = isoDatum()
+
+  // Hoeveel klussen staan er in de week die je bekijkt. Zonder dat
+  // getal blader je door lege kolommen zonder te weten of dat klopt.
+  const dezeWeek = werkbonnen.filter((w) => inWeek(w, maandag))
 
   const opDag = (dag: Date): Werkbon[] => {
     const d = isoDatum(dag)
@@ -69,34 +73,11 @@ export default function MijnWeek() {
   return (
     <PageWrapper title="Mijn week">
       <div className="max-w-6xl space-y-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => setWeek(week - 1)}
-            title="Vorige week"
-            className="flex items-center justify-center w-11 h-11 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-surface-dark-2 text-gray-500 dark:text-white/50 hover:border-brand-yellow transition-colors"
-          >
-            <IconChevronLeft className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setWeek(week + 1)}
-            title="Volgende week"
-            className="flex items-center justify-center w-11 h-11 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-surface-dark-2 text-gray-500 dark:text-white/50 hover:border-brand-yellow transition-colors"
-          >
-            <IconChevronRight className="w-4 h-4" />
-          </button>
-          <span className="text-sm font-semibold text-gray-700 dark:text-white/80">
-            {week === 0 ? 'Deze week' : week === 1 ? 'Volgende week'
-              : week === -1 ? 'Vorige week' : `${dagen[0].getDate()}/${dagen[0].getMonth() + 1}`}
-          </span>
-          {week !== 0 && (
-            <button
-              onClick={() => setWeek(0)}
-              className="min-h-[44px] px-3 rounded-sm text-sm font-semibold text-gray-500 dark:text-white/50 hover:text-gray-900 dark:hover:text-white hover:bg-surface-2 dark:hover:bg-white/5 transition-colors"
-            >
-              Naar deze week
-            </button>
-          )}
-        </div>
+        <Weekkiezer
+          week={week}
+          onWissel={setWeek}
+          telling={`${dezeWeek.length} ${dezeWeek.length === 1 ? 'klus' : 'klussen'}`}
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
           {dagen.map((dag) => {
