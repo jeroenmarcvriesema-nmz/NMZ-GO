@@ -29,7 +29,7 @@ import {
 // De eigenaarsrol staat er bewust niet bij: die kan alleen een eigenaar
 // toekennen, en de database weigert het van iedereen anders. Hem tonen
 // zou een keuze suggereren die op een foutmelding uitloopt.
-const ROL_OPTIES = (['beheerder', 'uitvoerder', 'werkvoorbereider', 'medewerker'] as const)
+const ROL_OPTIES = (['beheerder', 'uitvoerder', 'werkvoorbereider', 'planner', 'medewerker'] as const)
   .map((r) => ({ waarde: r, label: ROL_LABEL[r] }))
 
 /**

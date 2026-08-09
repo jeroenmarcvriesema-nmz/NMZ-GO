@@ -20,10 +20,10 @@ import type { Rol } from '@/types'
 export const GEBRUIKERSBEHEER: Rol[] = ['eigenaar', 'beheerder']
 
 /** Werkbonnen maken en wijzigen, alles inzien, zoeken, plannen. */
-export const WERKBEHEER: Rol[] = ['eigenaar', 'beheerder', 'uitvoerder', 'werkvoorbereider']
+export const WERKBEHEER: Rol[] = ['eigenaar', 'beheerder', 'uitvoerder', 'werkvoorbereider', 'planner']
 
 export const ALLE_ROLLEN: Rol[] = [
-  'eigenaar', 'beheerder', 'uitvoerder', 'werkvoorbereider', 'medewerker',
+  'eigenaar', 'beheerder', 'uitvoerder', 'werkvoorbereider', 'planner', 'medewerker',
 ]
 
 export function magWerkBeheren(rol: Rol | undefined | null): boolean {

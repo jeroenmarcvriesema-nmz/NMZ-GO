@@ -23,6 +23,9 @@ export function isoDatum(d: Date = new Date()): string {
   return `${jaar}-${maand}-${dag}`
 }
 
+/** Zoveel dagen telt een werkweek bij ons: maandag tot en met zaterdag. */
+export const WERKDAGEN = 6
+
 /** Maandag van de week waar deze datum in valt. */
 export function maandagVan(d: Date): Date {
   const kopie = new Date(d)
@@ -32,8 +35,15 @@ export function maandagVan(d: Date): Date {
   return kopie
 }
 
-/** De werkdagen van een week, vanaf maandag. */
-export function weekDagen(maandag: Date, aantal = 5): Date[] {
+/**
+ * De werkdagen van een week, vanaf maandag.
+ *
+ * Zes dagen, niet vijf. Zaterdag wordt bij ons gebruikt om dingen af te
+ * maken en voor garantiewerk — die dag hoort dus gewoon in de planning
+ * en niet in een uitzondering. Zondag blijft eruit: dat is geen
+ * werkdag, en een lege zevende kolom kost alleen ruimte.
+ */
+export function weekDagen(maandag: Date, aantal = WERKDAGEN): Date[] {
   return Array.from({ length: aantal }, (_, n) => {
     const d = new Date(maandag)
     d.setDate(maandag.getDate() + n)
@@ -75,8 +85,7 @@ export function weeknummer(d: Date): number {
  * meer en blijft alleen het nummer over.
  */
 export function weekLabel(verschuiving: number, vanaf: Date = new Date()): string {
-  const dag = vanaf.getDay()
-  const weekend = dag === 0 || dag === 6
+  const weekend = vanaf.getDay() === 0
 
   if (verschuiving === 0) {
     // In het weekend is "deze week" de week die maandag begint. Hem
@@ -104,11 +113,13 @@ export function weekLabel(verschuiving: number, vanaf: Date = new Date()): strin
  * het alsof er niets is ingepland.
  */
 export function maandagVanWerkweek(vanaf: Date = new Date()): Date {
-  const dag = vanaf.getDay() // 0 = zondag, 6 = zaterdag
-  if (dag === 0 || dag === 6) {
-    const komende = new Date(vanaf)
-    komende.setDate(komende.getDate() + (dag === 6 ? 2 : 1))
-    return maandagVan(komende)
+  // Alleen zondag rolt door. Zaterdag is sinds de werkweek zes dagen
+  // telt een gewone werkdag: wie er dan naar kijkt wil zíjn dag zien,
+  // niet die van overmorgen.
+  if (vanaf.getDay() === 0) {
+    const morgen = new Date(vanaf)
+    morgen.setDate(morgen.getDate() + 1)
+    return maandagVan(morgen)
   }
   return maandagVan(vanaf)
 }
@@ -130,7 +141,7 @@ export function maandagVerschoven(verschuiving: number, vanaf: Date = new Date()
 export function inWeek(w: Ingepland, maandag: Date): boolean {
   const dagen = weekDagen(maandag)
   const van = isoDatum(dagen[0])
-  const tot = isoDatum(dagen[4])
+  const tot = isoDatum(dagen[dagen.length - 1])
   return startVan(w) <= tot && eindVan(w) >= van
 }
 

@@ -57,6 +57,7 @@ export const ROL_LABEL: Record<string, string> = {
   beheerder: 'Beheerder',
   uitvoerder: 'Uitvoerder',
   werkvoorbereider: 'Werkvoorbereider',
+  planner: 'Planner',
   medewerker: 'Zwamsaneerder',
 }
 

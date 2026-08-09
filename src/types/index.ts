@@ -2,7 +2,7 @@ export type Theme = 'light' | 'dark'
 // Vijf rollen sinds migratie 008. In de database heet de uitvoerende
 // rol `medewerker` — generiek, zodat er later een ander vak bij kan.
 // Op het scherm staat "Zwamsaneerder"; zie ROL_LABEL in lib/utils.
-export type Rol = 'eigenaar' | 'beheerder' | 'uitvoerder' | 'werkvoorbereider' | 'medewerker'
+export type Rol = 'eigenaar' | 'beheerder' | 'uitvoerder' | 'werkvoorbereider' | 'planner' | 'medewerker'
 export type WerkbonStatus = 'open' | 'bezig' | 'voltooid'
 export type ProjectStatus = 'actief' | 'niet_gestart' | 'op_schema' | 'vertraging' | 'afgerond' | 'stilgelegd'
 

@@ -59,7 +59,7 @@ export default function MijnWeek() {
   // volgende week gewoon werk staat.
   const buitenDeWeek = werkbonnen.filter((w) => {
     const start = w.geplande_start ?? w.datum
-    return start > isoDatum(dagen[4]) && w.status !== 'voltooid'
+    return start > isoDatum(dagen[dagen.length - 1]) && w.status !== 'voltooid'
   })
 
   if (loading) {
@@ -79,7 +79,7 @@ export default function MijnWeek() {
           telling={`${dezeWeek.length} ${dezeWeek.length === 1 ? 'klus' : 'klussen'}`}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
           {dagen.map((dag) => {
             const d = isoDatum(dag)
             const bonnen = opDag(dag)

@@ -23,7 +23,10 @@ import type { Rol } from '@/types'
 // test rood wordt.
 // ============================================================
 
-const KANTOOR: Rol[] = ['eigenaar', 'beheerder', 'uitvoerder', 'werkvoorbereider']
+// Zes rollen. Planner is Anthony's vak: hij zet de week in elkaar en
+// heeft dezelfde bevoegdheden als een uitvoerder — alles rond het werk,
+// niets rond accounts.
+const KANTOOR: Rol[] = ['eigenaar', 'beheerder', 'uitvoerder', 'werkvoorbereider', 'planner']
 
 function lees(bestand: string): string {
   return readFileSync(resolve(__dirname, '..', bestand), 'utf8')
@@ -45,6 +48,7 @@ describe('bevoegdheden', () => {
     expect(magGebruikersBeheren('beheerder')).toBe(true)
     expect(magGebruikersBeheren('uitvoerder')).toBe(false)
     expect(magGebruikersBeheren('werkvoorbereider')).toBe(false)
+    expect(magGebruikersBeheren('planner')).toBe(false)
     expect(magGebruikersBeheren('medewerker')).toBe(false)
   })
 

@@ -9,7 +9,9 @@ import { cn, formatDatumKort } from '@/lib/utils'
 import { isoDatum, weekDagen, maandagVerschoven } from '@/lib/planning'
 import { IconAlertTriangle } from '@tabler/icons-react'
 
-const DAG_NAMEN = ['Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag']
+// Zes dagen: zaterdag wordt gebruikt om dingen af te maken en voor
+// garantiewerk, en hoort dus gewoon in de planning.
+const DAG_NAMEN = ['Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag']
 
 export default function Planning() {
   const { planning, loading } = usePlanning()
@@ -26,7 +28,7 @@ export default function Planning() {
   // dat getal veranderde dus niet als je bladerde, en dat is precies het
   // moment waarop je niet meer weet welke week je bekijkt.
   const vanWeek = isoDatum(dagen[0])
-  const totWeek = isoDatum(dagen[4])
+  const totWeek = isoDatum(dagen[dagen.length - 1])
   const dezeWeek = planning.filter((p) => p.datum <= totWeek && (p.eind ?? p.datum) >= vanWeek)
 
   /**
@@ -69,7 +71,7 @@ export default function Planning() {
       />
 
       {/* Desktop: 5-kolommen grid */}
-      <div className="hidden md:grid grid-cols-5 gap-4">
+      <div className="hidden md:grid md:grid-cols-3 xl:grid-cols-6 gap-4">
         {dagen.map((dag, i) => {
           const dagStr = isoDatum(dag)
           const isVandaag = dag.getTime() === vandaag.getTime()

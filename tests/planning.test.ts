@@ -45,17 +45,26 @@ describe('maandagVan en weekDagen', () => {
     expect(isoDatum(maandagVan(new Date(2026, 7, 10)))).toBe('2026-08-10')
   })
 
-  it('geeft vijf werkdagen vanaf maandag', () => {
+  it('geeft zes werkdagen vanaf maandag, zaterdag erbij', () => {
+    // Zaterdag wordt gebruikt om dingen af te maken en voor
+    // garantiewerk. Die dag hoort in de planning, niet in een
+    // uitzondering.
     const dagen = weekDagen(maandagVan(new Date(2026, 7, 12))).map((d) => isoDatum(d))
     expect(dagen).toEqual([
-      '2026-08-10', '2026-08-11', '2026-08-12', '2026-08-13', '2026-08-14',
+      '2026-08-10', '2026-08-11', '2026-08-12',
+      '2026-08-13', '2026-08-14', '2026-08-15',
     ])
+  })
+
+  it('laat zondag erbuiten', () => {
+    const dagen = weekDagen(maandagVan(new Date(2026, 7, 12))).map((d) => isoDatum(d))
+    expect(dagen).not.toContain('2026-08-16')
   })
 
   it('werkt over een maandgrens heen', () => {
     const dagen = weekDagen(maandagVan(new Date(2026, 7, 31))).map((d) => isoDatum(d))
     expect(dagen[0]).toBe('2026-08-31')
-    expect(dagen[4]).toBe('2026-09-04')
+    expect(dagen[dagen.length - 1]).toBe('2026-09-05')
   })
 })
 
@@ -227,10 +236,9 @@ describe('inWeek', () => {
     expect(inWeek(bon({ id: 'b', geplande_start: '2026-08-17', geplande_eind: '2026-08-21' }), maandag)).toBe(false)
   })
 
-  it('telt het weekend niet als losse week', () => {
-    // Zaterdag 15 augustus valt buiten de vijf werkdagen, maar een klus
-    // die tot en met zaterdag loopt hoort wél bij week 33.
-    expect(inWeek(bon({ id: 'a', geplande_start: '2026-08-14', geplande_eind: '2026-08-15' }), maandag)).toBe(true)
+  it('rekent zaterdag mee en zondag niet', () => {
+    // Zaterdag 15 augustus is een werkdag en hoort bij week 33.
+    expect(inWeek(bon({ id: 'a', geplande_start: '2026-08-15', geplande_eind: '2026-08-15' }), maandag)).toBe(true)
     // Een klus die pas op zondag begint hoort bij de week erna.
     expect(inWeek(bon({ id: 'b', geplande_start: '2026-08-16', geplande_eind: '2026-08-16' }), maandag)).toBe(false)
   })
@@ -246,16 +254,19 @@ describe('maandagVanWerkweek', () => {
   // de week van 3 t/m 7 augustus — de week die vrijdag was geëindigd —
   // terwijl al het werk in de week erna stond. Het leek daardoor alsof
   // er niets was ingepland.
-  it('rolt in het weekend door naar de week die eraan komt', () => {
+  it('rolt op zondag door naar de week die eraan komt', () => {
     const zondag = new Date(2026, 7, 9)
     expect(isoDatum(maandagVanWerkweek(zondag))).toBe('2026-08-10')
+  })
 
-    const zaterdag = new Date(2026, 7, 8)
+  it('laat zaterdag met rust, want dat is een werkdag', () => {
+    // Wie op zaterdag kijkt wil zíjn dag zien, niet die van overmorgen.
+    const zaterdag = new Date(2026, 7, 15)
     expect(isoDatum(maandagVanWerkweek(zaterdag))).toBe('2026-08-10')
   })
 
   it('laat een doordeweekse dag met rust', () => {
-    for (const dag of [10, 11, 12, 13, 14]) {
+    for (const dag of [10, 11, 12, 13, 14, 15]) {
       expect(isoDatum(maandagVanWerkweek(new Date(2026, 7, dag)))).toBe('2026-08-10')
     }
   })

@@ -37,7 +37,7 @@ export function Weekkop({ maandag, nummer, aantal }: { maandag: Date; nummer?: n
         Week {wk}
       </span>
       <span className="text-xs text-gray-400 dark:text-white/40">
-        {periode(dagen[0], dagen[4])}
+        {periode(dagen[0], dagen[dagen.length - 1])}
         {aantal !== undefined && ` · ${aantal} ${aantal === 1 ? 'klus' : 'klussen'}`}
       </span>
       {nu && (

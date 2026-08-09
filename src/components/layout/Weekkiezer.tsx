@@ -88,7 +88,7 @@ export function Weekkiezer({ week, onWissel, telling, className }: WeekkiezerPro
             </span>
           </div>
           <div className="text-xs text-gray-400 dark:text-white/40">
-            {periode(dagen[0], dagen[4])}
+            {periode(dagen[0], dagen[dagen.length - 1])}
             {telling && <> · {telling}</>}
           </div>
         </div>
