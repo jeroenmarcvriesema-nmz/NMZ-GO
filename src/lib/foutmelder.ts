@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/authStore'
+import { vanOnsZelf } from '@/lib/foutfilter'
 
 // ============================================================
 // NMZ GO — fouten melden
@@ -53,6 +54,11 @@ export async function meldFout(fout: unknown, bron: FoutBron = 'render'): Promis
     // Altijd ook in de console: wie erbij staat met een laptop ziet hem
     // meteen, zonder de database te hoeven openen.
     console.error(`[NMZ GO/${bron}]`, fout)
+
+    // Komt hij van een browserextensie, dan houdt het hier op. In de
+    // console blijft hij staan voor wie hem zoekt; kantoor krijgt hem
+    // niet te zien.
+    if (!vanOnsZelf(boodschap, stack)) return
 
     if (!ontdubbel(`${bron}:${boodschap}`)) return
 

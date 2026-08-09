@@ -31,3 +31,15 @@
     border-color: rgba(255, 255, 255, 0.06);
   }
 }
+
+/* Een rij die opzij schuift zonder zichtbare scrollbalk. Op een telefoon
+   is die balk toch niet aan te wijzen en neemt hij alleen hoogte weg;
+   dit is wat een app doet. Het schuiven zelf blijft gewoon werken, ook
+   met een toetsenbord. */
+.scrollbar-verbergen {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-verbergen::-webkit-scrollbar {
+  display: none;
+}

@@ -90,8 +90,8 @@ export default function Dashboard() {
       }
     >
       {/* Header */}
-      <div className="mb-10">
-        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
+      <div className="mb-8 sm:mb-10">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white break-words">
           {greeting()}, {voornaam}
         </h1>
         <p className="text-sm text-gray-400 dark:text-white/40 mt-1.5 capitalize">{formatDatumLang()}</p>
@@ -113,7 +113,7 @@ export default function Dashboard() {
           Wat aandacht vraagt staat vooraan en niet ergens in het midden.
           Een rij van zes waarvan er vijf op nul staan leest als een
           dashboard dat niets weet. */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-10">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-8 sm:mb-10">
         <KpiCard
           label={nietGestart > 0 ? `Niet gestart · ${lopend} vandaag` : `Vandaag · ${vandaagActief} gestart`}
           value={nietGestart > 0 ? nietGestart : lopend}
@@ -136,7 +136,7 @@ export default function Dashboard() {
 
       {/* Operationele meldingen */}
       {data.meldingen.length > 0 && (
-        <div className="mb-10">
+        <div className="mb-8 sm:mb-10">
           <SectionHeading title="Operationele meldingen" />
           <div className="space-y-2">
             {data.meldingen.map((m) => (
@@ -147,8 +147,12 @@ export default function Dashboard() {
       )}
 
       {/* Projectoverzicht + Activiteit */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        <div className="xl:col-span-2 bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-xl shadow-sm p-6">
+      {/* min-w-0 op beide kolommen. Zonder dat groeit een grid-kind mee
+          met zijn inhoud in plaats van zich aan de kolom te houden, en
+          dan schuift de hele pagina opzij — dat was het overzicht dat
+          buiten de marges viel. */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 xl:gap-8">
+        <div className="xl:col-span-2 min-w-0 bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-xl shadow-sm p-4 sm:p-6">
           <SectionHeading
             title="Projectoverzicht"
             actions={
@@ -173,7 +177,7 @@ export default function Dashboard() {
             <ProjectTabel projecten={data.projecten} />
           )}
         </div>
-        <div className="bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-xl shadow-sm p-6">
+        <div className="min-w-0 bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-xl shadow-sm p-4 sm:p-6">
           <SectionHeading title="Activiteit vandaag" />
           <ActivityFeed activiteit={data.activiteit} />
         </div>

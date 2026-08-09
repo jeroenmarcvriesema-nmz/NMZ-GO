@@ -50,16 +50,18 @@ const variants = {
 export function KpiCard({ label, value, icon, variant = 'neutral', sub }: KpiCardProps) {
   const v = variants[variant]
   return (
-    <div className={cn('rounded-xl border border-gray-100 dark:border-white/10 shadow-sm p-6 flex flex-col gap-3 relative overflow-hidden transition-all duration-200 ease-brand hover:-translate-y-0.5 hover:shadow-md', v.bg)}>
-      <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center', v.iconBg)}>
+    <div className={cn('min-w-0 rounded-xl border border-gray-100 dark:border-white/10 shadow-sm p-4 sm:p-6 flex flex-col gap-3 relative overflow-hidden transition-all duration-200 ease-brand hover:-translate-y-0.5 hover:shadow-md', v.bg)}>
+      <div className={cn('w-10 h-10 flex-shrink-0 rounded-lg flex items-center justify-center', v.iconBg)}>
         <span className={cn('text-[19px]', v.iconColor)}>{icon}</span>
       </div>
-      <div>
-        <div className={cn('text-4xl font-extrabold tracking-tight leading-none', v.value)}>
+      <div className="min-w-0">
+        {/* Kleiner op een telefoon, en altijd breekbaar: "12/405" of
+            "3 dagen" paste anders niet in een halve schermbreedte. */}
+        <div className={cn('text-3xl sm:text-4xl font-extrabold tracking-tight leading-none break-words', v.value)}>
           {value}
         </div>
-        <div className="text-sm font-medium text-gray-400 dark:text-white/40 mt-2">{label}</div>
-        {sub && <div className="text-xs text-gray-300 dark:text-white/30 mt-0.5">{sub}</div>}
+        <div className="text-xs sm:text-sm font-medium text-gray-400 dark:text-white/40 mt-2 break-words">{label}</div>
+        {sub && <div className="text-xs text-gray-300 dark:text-white/30 mt-0.5 break-words">{sub}</div>}
       </div>
       <div className={cn('absolute bottom-0 left-0 right-0 h-0.5', v.bar)} />
     </div>

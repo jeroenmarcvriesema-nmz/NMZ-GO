@@ -23,7 +23,7 @@ export function ActivityFeed({ activiteit }: { activiteit: Activiteit[] }) {
               {c.icon}
             </div>
             <div className="flex-1 min-w-0 pt-0.5">
-              <div className="text-sm text-gray-700 dark:text-white/70">{a.tekst}</div>
+              <div className="text-sm text-gray-700 dark:text-white/70 break-words">{a.tekst}</div>
             </div>
             <span className="text-[11px] font-mono text-gray-400 dark:text-white/40 flex-shrink-0 pt-0.5">{a.tijd}</span>
           </div>

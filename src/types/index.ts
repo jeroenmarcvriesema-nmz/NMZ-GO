@@ -130,8 +130,12 @@ export interface PlanningItem {
   datum: string
   eind: string
   projectId: string | null
+  /** Leeg zolang klussen losse bonnen zijn en niet aan een project hangen. */
   projectnaam: string
   adres: string
+  kluiscode: string | null
+  punten: number
+  puntenKlaar: number
   medewerkers: string[]
   status: ProjectStatus
 }

@@ -198,9 +198,10 @@ export function usePlanning() {
       const { data, error } = await supabase
         .from('werkbonnen')
         .select(`
-          id, datum, adres, status,
+          id, datum, adres, status, kluiscode,
           geplande_start, geplande_eind, stilgelegd_op, opgeleverd_op,
           project:projecten ( id, naam, status ),
+          taken ( id, voltooid ),
           werkbon_medewerkers ( persoon:personen(naam) )
         `)
         .order('datum', { ascending: true })
@@ -217,6 +218,9 @@ export function usePlanning() {
             projectId: w.project?.id ?? null,
             projectnaam: w.project?.naam ?? '',
             adres: w.adres ?? '',
+            kluiscode: w.kluiscode ?? null,
+            punten: (w.taken ?? []).length,
+            puntenKlaar: (w.taken ?? []).filter((t: any) => t.voltooid).length,
             medewerkers: (w.werkbon_medewerkers || [])
               .map((wm: any) => wm.persoon?.naam)
               .filter(Boolean),
