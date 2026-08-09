@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
+import { Input } from '@/components/ui/Input'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import type { Persoon, Profile, Rol } from '@/types'
@@ -37,6 +38,10 @@ export default function Medewerkers() {
   // gevuld is, staat de bevestiging open.
   const [resetKandidaat, setResetKandidaat] = useState<Profile | null>(null)
   const [resetBezig, setResetBezig] = useState(false)
+  // Wiens naam staat er op het punt gewijzigd te worden?
+  const [naamKandidaat, setNaamKandidaat] = useState<Profile | null>(null)
+  const [nieuweNaam, setNieuweNaam] = useState('')
+  const [naamBezig, setNaamBezig] = useState(false)
 
   // De ploeg: iedereen uit het register, met of zonder account.
   const [ploeg, setPloeg] = useState<Persoon[]>([])
@@ -192,7 +197,23 @@ export default function Medewerkers() {
                   <div className="flex items-center gap-3">
                     <Avatar naam={m.naam} size="sm" />
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold truncate text-gray-900 dark:text-white">{m.naam}</div>
+                      {/* De naam is aanpasbaar. Wie via een uitnodiging
+                          binnenkomt krijgt zijn naam uit het
+                          personenregister — de naam waaronder hij in
+                          ClickUp staat — maar de allereerste accounts
+                          kregen het stuk vóór de apenstaart van hun
+                          mailadres, en daar is geen register voor. */}
+                      {magGebruikersBeheren ? (
+                        <button
+                          onClick={() => { setNaamKandidaat(m); setNieuweNaam(m.naam) }}
+                          className="text-sm font-semibold truncate text-gray-900 dark:text-white hover:text-brand-yellow-dark dark:hover:text-brand-yellow transition-colors text-left max-w-full"
+                          title="Naam wijzigen"
+                        >
+                          {m.naam}
+                        </button>
+                      ) : (
+                        <div className="text-sm font-semibold truncate text-gray-900 dark:text-white">{m.naam}</div>
+                      )}
                       <div className="text-xs text-gray-400 dark:text-white/40 truncate">
                         {m.functie || m.email || '—'}
                       </div>
@@ -332,6 +353,52 @@ export default function Medewerkers() {
         </Card>
 
       </div>
+
+      <Modal
+        open={naamKandidaat !== null}
+        onClose={() => setNaamKandidaat(null)}
+        title="Naam wijzigen"
+      >
+        <div className="space-y-4">
+          <p className="text-sm leading-relaxed text-gray-500 dark:text-white/50">
+            Dit is de naam die op het scherm staat — in de begroeting, op de
+            werkbon en in de planning. Bij wie via een uitnodiging binnenkomt
+            wordt hij automatisch overgenomen uit de ploeglijst.
+          </p>
+
+          <Input
+            label="Naam"
+            value={nieuweNaam}
+            onChange={(e) => setNieuweNaam(e.target.value)}
+            placeholder="Jeffrey"
+            autoFocus
+          />
+
+          <div className="flex flex-col sm:flex-row gap-2 pt-1">
+            <Button
+              className="flex-1"
+              disabled={naamBezig || !nieuweNaam.trim() || nieuweNaam.trim() === naamKandidaat?.naam}
+              onClick={async () => {
+                if (!naamKandidaat) return
+                setNaamBezig(true)
+                const naam = nieuweNaam.trim()
+                const { error } = await supabase
+                  .from('profiles').update({ naam }).eq('id', naamKandidaat.id)
+                setNaamBezig(false)
+                if (error) { toast.fout('Naam wijzigen mislukt: ' + error.message); return }
+                setMedewerkers((lijst) => lijst.map((x) => x.id === naamKandidaat.id ? { ...x, naam } : x))
+                setNaamKandidaat(null)
+                toast.goed('Naam bijgewerkt.')
+              }}
+            >
+              {naamBezig ? 'Bezig…' : 'Opslaan'}
+            </Button>
+            <Button variant="secondary" className="flex-1" onClick={() => setNaamKandidaat(null)}>
+              Annuleren
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       <Modal
         open={kandidaat !== null}
