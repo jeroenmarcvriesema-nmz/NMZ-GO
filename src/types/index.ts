@@ -27,6 +27,11 @@ export interface Werkbon {
   bonnummer: string
   projectnaam: string
   adres: string
+  /** Los van `adres`: zoeken op "Assendelft" hoort te werken. */
+  plaats?: string | null
+  postcode?: string | null
+  /** Projectnummer van de opdrachtgever, bijv. "C515". Leeg bij losse klussen. */
+  opdrachtnummer?: string | null
   opdrachtgever: string | null
   datum: string
   status: WerkbonStatus
@@ -55,6 +60,23 @@ export interface Werkbon {
   stilgelegd_op?: string | null
   stilleg_reden?: string | null
   opgeleverd_op?: string | null
+
+  // ── De drie tekstvelden van het opleverrapport (migratie 002/025) ──
+  opmerkingen_bewoners?: string | null
+  extra_werkzaamheden?: string | null
+  bijzonderheden?: string | null
+}
+
+/** Een aangevraagd opleverrapport. Zie migratie 025. */
+export interface Rapportage {
+  id: string
+  werkbon_id: string
+  status: 'wachtend' | 'klaar' | 'mislukt'
+  bestandspad: string | null
+  fout: string | null
+  aangevraagd_op: string
+  gegenereerd_op: string | null
+  clickup_geupload_op: string | null
 }
 
 /**

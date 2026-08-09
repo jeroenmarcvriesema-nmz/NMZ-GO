@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Synchronisatie } from '@/components/werkbon/Synchronisatie'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { inWeek, maandagVerschoven, groepeerPerWeek } from '@/lib/planning'
+import { zoektMee } from '@/lib/zoeken'
 import { Weekkop } from '@/components/layout/Weekkop'
 import { cn } from '@/lib/utils'
 import { IconPlus, IconSearch, IconClipboardList, IconCalendarWeek, IconList } from '@tabler/icons-react'
@@ -46,12 +47,9 @@ export default function Werkbonnen() {
 
   const gefilterd = werkbonnen.filter((w) => {
     const sOk = statusFilter === 'alle' || w.status === statusFilter
-    const zOk = !zoekt || w.adres.toLowerCase().includes(zoek.toLowerCase()) ||
-      w.projectnaam.toLowerCase().includes(zoek.toLowerCase()) ||
-      (w.medewerkers || []).some((m) => m.naam.toLowerCase().includes(zoek.toLowerCase()))
     const wOk = !inHuidigeWeek || inWeek(w, maandag)
-    return sOk && zOk && wOk
-  })
+    return sOk && wOk
+  }).filter((w) => zoektMee(w, zoek))
 
   const inDeWeek = werkbonnen.filter((w) => inWeek(w, maandag)).length
 
@@ -107,7 +105,7 @@ export default function Werkbonnen() {
             <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-white/40" />
             <input
               type="text"
-              placeholder="Zoek op adres, project of medewerker…"
+              placeholder="Adres, plaats, postcode, bonnummer, opdrachtgever of naam…"
               value={zoek}
               onChange={(e) => setZoek(e.target.value)}
               className="w-full pl-9 pr-4 py-2.5 text-sm text-gray-900 dark:text-white bg-white dark:bg-surface-dark-2 border border-gray-200 dark:border-white/10 rounded-sm outline-none placeholder:text-gray-400 dark:placeholder:text-white/30 focus:border-brand-yellow"

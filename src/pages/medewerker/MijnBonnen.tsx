@@ -9,6 +9,7 @@ import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useWerkbonnen } from '@/hooks/useWerkbonnen'
 import { berekenVoortgang, formatDatum, cn } from '@/lib/utils'
 import { groepeerPerWeek } from '@/lib/planning'
+import { zoektMee } from '@/lib/zoeken'
 import { Weekkop } from '@/components/layout/Weekkop'
 import type { Werkbon } from '@/types'
 import {
@@ -40,16 +41,12 @@ export default function MijnBonnen() {
   const [zoek, setZoek] = useState('')
   const navigate = useNavigate()
 
-  const term = zoek.trim().toLowerCase()
+  const term = zoek.trim()
   const gefilterd = werkbonnen.filter((w) => {
     const afgerond = w.status === 'voltooid' || Boolean(w.opgeleverd_op)
     if (filter === 'loopt' && afgerond) return false
     if (filter === 'afgerond' && !afgerond) return false
-    if (!term) return true
-    return (
-      w.adres.toLowerCase().includes(term) ||
-      (w.bonnummer ?? '').toLowerCase().includes(term)
-    )
+    return zoektMee(w, zoek)
   })
 
   return (
@@ -61,7 +58,7 @@ export default function MijnBonnen() {
             <input
               value={zoek}
               onChange={(e) => setZoek(e.target.value)}
-              placeholder="Zoek op adres of bonnummer"
+              placeholder="Zoek op adres, plaats of bonnummer"
               className="w-full min-h-[44px] pl-9 pr-3 rounded-sm border border-gray-200 dark:border-white/10 bg-white dark:bg-surface-dark-2 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:border-brand-yellow transition-all"
             />
           </div>
