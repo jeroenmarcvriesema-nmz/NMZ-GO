@@ -312,9 +312,12 @@ export default function Medewerkers() {
                       {p.naam}
                     </div>
                     <div className="text-xs text-gray-400 dark:text-white/40 truncate">
-                      {p.koppelrol
-                        ? `${p.koppelrol}${p.pilot ? ' · pilot' : ''}`
-                        : p.clickup_label ? `ClickUp "${p.clickup_label}"` : 'geen ClickUp-naam'}
+                      {/* Eerste of tweede man stond hier als etiket. Dat
+                          is een werkafspraak die per klus verschilt en
+                          niets verandert aan rechten of aan wat iemand
+                          ziet; hem vastzetten op een profiel maakt er
+                          een rang van die hij niet is. */}
+                      {p.clickup_label ? `ClickUp "${p.clickup_label}"` : 'geen ClickUp-naam'}
                     </div>
                   </div>
                   <IconChevronRight className="w-4 h-4 flex-shrink-0 text-gray-300 dark:text-white/25" />
