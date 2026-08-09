@@ -105,10 +105,11 @@ export default function MijnBonnen() {
           <div className="space-y-5">
             {groepeerPerWeek(gefilterd).map((blok) => (
               <div key={blok.maandag.toISOString()}>
-                <Weekkop maandag={blok.maandag} nummer={blok.nummer} />
+                <Weekkop maandag={blok.maandag} nummer={blok.nummer} aantal={blok.items.length} />
                 <div className="space-y-3 mt-3">
-                  {blok.bonnen.map((w) => (
-                    <BonRegel key={w.id} werkbon={w} onOpen={() => navigate(`/werkbon/${w.id}`)} />
+                  {blok.items.map(({ bon, begintHier }) => (
+                    <BonRegel key={bon.id} werkbon={bon} looptDoor={!begintHier}
+                              onOpen={() => navigate(`/werkbon/${bon.id}`)} />
                   ))}
                 </div>
               </div>
@@ -120,7 +121,7 @@ export default function MijnBonnen() {
   )
 }
 
-function BonRegel({ werkbon, onOpen }: { werkbon: Werkbon; onOpen: () => void }) {
+function BonRegel({ werkbon, onOpen, looptDoor }: { werkbon: Werkbon; onOpen: () => void; looptDoor?: boolean }) {
   const taken = werkbon.taken ?? []
   const voortgang = berekenVoortgang(taken)
   const fotos = taken.flatMap((t) => t.fotos ?? []).length
@@ -145,6 +146,9 @@ function BonRegel({ werkbon, onOpen }: { werkbon: Werkbon; onOpen: () => void })
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 ml-5.5 text-xs text-gray-400 dark:text-white/40">
+            {looptDoor && (
+              <span className="font-semibold text-gray-500 dark:text-white/50">loopt door</span>
+            )}
             {werkbon.bonnummer && <span>Bon {werkbon.bonnummer}</span>}
             <span>start {formatDatum(werkbon.geplande_start ?? werkbon.datum)}</span>
             {werkbon.kluiscode && (

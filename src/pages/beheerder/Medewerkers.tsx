@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { PageWrapper } from '@/components/layout/PageWrapper'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { Card } from '@/components/ui/Card'
@@ -15,7 +16,7 @@ import { Select } from '@/components/ui/Select'
 import { Dropdown } from '@/components/ui/Dropdown'
 import { rolLabel, ROL_LABEL } from '@/lib/utils'
 import { toast } from '@/store/toastStore'
-import { IconLink, IconCopy, IconKey, IconCheck, IconUsers, IconUserPlus } from '@tabler/icons-react'
+import { IconLink, IconCopy, IconKey, IconCheck, IconUsers, IconUserPlus, IconChevronRight } from '@tabler/icons-react'
 
 // De eigenaarsrol staat er bewust niet bij: die kan alleen een eigenaar
 // toekennen, en de database weigert het van iedereen anders. Hem tonen
@@ -25,6 +26,7 @@ const ROL_OPTIES = (['beheerder', 'uitvoerder', 'werkvoorbereider', 'medewerker'
 
 export default function Medewerkers() {
   const { profile, magGebruikersBeheren } = useAuth()
+  const navigate = useNavigate()
   const [medewerkers, setMedewerkers] = useState<Profile[]>([])
   const [loading, setLoading] = useState(true)
   const [uitnodigingLink, setUitnodigingLink] = useState<string | null>(null)
@@ -275,9 +277,16 @@ export default function Medewerkers() {
           <div className="grid grid-cols-1 2xl:grid-cols-2 2xl:gap-x-8 divide-y 2xl:divide-y-0 divide-gray-50 dark:divide-white/5">
             {ploeg.map((p) => (
               <div key={p.id} className="flex flex-col sm:flex-row sm:items-center gap-3 py-3 2xl:border-b 2xl:border-gray-50 dark:2xl:border-white/5">
-                <div className="flex items-center gap-3 flex-1 min-w-[10rem]">
+                {/* De naam is de ingang naar het dossier: klussen,
+                    punten, uren en het beheer van dit ene account. Dat
+                    stond nergens — deze pagina was een lijst en verder
+                    niets. */}
+                <button
+                  onClick={() => navigate(`/medewerkers/${p.id}`)}
+                  className="flex items-center gap-3 flex-1 min-w-0 text-left rounded-lg -mx-1 px-1 py-1 hover:bg-brand-yellow-light/40 dark:hover:bg-white/5 transition-colors"
+                >
                   <Avatar naam={p.naam} size="sm" />
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="text-sm font-semibold truncate text-gray-900 dark:text-white">
                       {p.naam}
                     </div>
@@ -287,7 +296,8 @@ export default function Medewerkers() {
                         : p.clickup_label ? `ClickUp "${p.clickup_label}"` : 'geen ClickUp-naam'}
                     </div>
                   </div>
-                </div>
+                  <IconChevronRight className="w-4 h-4 flex-shrink-0 text-gray-300 dark:text-white/25" />
+                </button>
 
                 {magGebruikersBeheren && clickupLabels.length > 0 && (
                   <Dropdown

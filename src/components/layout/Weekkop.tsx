@@ -23,7 +23,7 @@ function periode(van: Date, tot: Date): string {
  * De week die nu loopt is gemarkeerd. In het weekend is dat de week die
  * maandag begint, want dat is waar je dan naar kijkt.
  */
-export function Weekkop({ maandag, nummer }: { maandag: Date; nummer?: number }) {
+export function Weekkop({ maandag, nummer, aantal }: { maandag: Date; nummer?: number; aantal?: number }) {
   const dagen = weekDagen(maandag)
   const nu = isoDatum(maandagVanWerkweek()) === isoDatum(maandag)
   const wk = nummer ?? weeknummer(maandag)
@@ -38,6 +38,7 @@ export function Weekkop({ maandag, nummer }: { maandag: Date; nummer?: number })
       </span>
       <span className="text-xs text-gray-400 dark:text-white/40">
         {periode(dagen[0], dagen[4])}
+        {aantal !== undefined && ` · ${aantal} ${aantal === 1 ? 'klus' : 'klussen'}`}
       </span>
       {nu && (
         <span className="text-[10px] font-bold uppercase tracking-widest text-brand-yellow-dark dark:text-brand-yellow">

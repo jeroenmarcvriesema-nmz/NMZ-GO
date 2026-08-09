@@ -20,6 +20,8 @@ function weekBereik(w: Werkbon): string {
 interface WerkbonKaartProps {
   werkbon: Werkbon
   linkPrefix?: string
+  /** Deze klus begon in een eerdere week en loopt hier alleen door. */
+  looptDoor?: boolean
 }
 
 /**
@@ -32,7 +34,7 @@ interface WerkbonKaartProps {
  * is dat iets voor de werkvoorbereider en niet iets wat een
  * zwamsaneerder om half acht moet ontdekken.
  */
-export function WerkbonKaart({ werkbon, linkPrefix = '/werkbonnen' }: WerkbonKaartProps) {
+export function WerkbonKaart({ werkbon, linkPrefix = '/werkbonnen', looptDoor }: WerkbonKaartProps) {
   const navigate = useNavigate()
   const taken = werkbon.taken || []
   const voortgang = berekenVoortgang(taken)
@@ -81,6 +83,7 @@ export function WerkbonKaart({ werkbon, linkPrefix = '/werkbonnen' }: WerkbonKaa
         <span className="flex items-center gap-1">
           <IconCalendar className="w-3.5 h-3.5" />
           <span className="font-semibold text-gray-500 dark:text-white/50">{weekBereik(werkbon)}</span>
+          {looptDoor && <span className="font-semibold text-gray-500 dark:text-white/50">loopt door</span>}
           <span>
             {formatDatumKort(werkbon.geplande_start ?? werkbon.datum)}
             {werkbon.geplande_eind && ` – ${formatDatumKort(werkbon.geplande_eind)}`}

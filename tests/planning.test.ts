@@ -296,7 +296,9 @@ describe('weekLabel in het weekend', () => {
 })
 
 describe('groepeerPerWeek', () => {
-  it('deelt in op de week waarin een klus begint', () => {
+  const ids = (blok: { items: { bon: { id: string } }[] }) => blok.items.map((i) => i.bon.id)
+
+  it('zet een klus in de week waarin hij valt', () => {
     const blokken = groepeerPerWeek([
       bon({ id: 'a', geplande_start: '2026-08-11', geplande_eind: '2026-08-13' }),
       bon({ id: 'b', geplande_start: '2026-08-04', geplande_eind: '2026-08-06' }),
@@ -306,9 +308,39 @@ describe('groepeerPerWeek', () => {
     expect(blokken).toHaveLength(2)
     // Nieuwste week bovenaan: de vraag gaat over wat eraan komt.
     expect(blokken[0].nummer).toBe(33)
-    expect(blokken[0].bonnen.map((b) => b.id)).toEqual(['a', 'c'])
+    expect(ids(blokken[0])).toEqual(['a', 'c'])
     expect(blokken[1].nummer).toBe(32)
-    expect(blokken[1].bonnen.map((b) => b.id)).toEqual(['b'])
+    expect(ids(blokken[1])).toEqual(['b'])
+  })
+
+  it('zet een klus van meerdere weken in élke week waarin hij loopt', () => {
+    // Dit is het Bentinckstraat-geval: 24 juli tot 14 augustus. Alleen
+    // onder de beginweek zetten betekent dat je hem in week 33 niet
+    // ziet en denkt dat de ploeg vrij is.
+    const blokken = groepeerPerWeek([
+      bon({ id: 'lang', geplande_start: '2026-07-27', geplande_eind: '2026-08-14' }),
+    ])
+
+    expect(blokken.map((b) => b.nummer)).toEqual([33, 32, 31])
+    for (const blok of blokken) expect(ids(blok)).toEqual(['lang'])
+  })
+
+  it('markeert waar een doorlopende klus begint en eindigt', () => {
+    const blokken = groepeerPerWeek([
+      bon({ id: 'lang', geplande_start: '2026-08-03', geplande_eind: '2026-08-19' }),
+    ])
+
+    // Oudste week onderaan; daar begint hij.
+    const eerste = blokken[blokken.length - 1]
+    const laatste = blokken[0]
+
+    expect(eerste.items[0].begintHier).toBe(true)
+    expect(eerste.items[0].eindigtHier).toBe(false)
+    expect(laatste.items[0].begintHier).toBe(false)
+    expect(laatste.items[0].eindigtHier).toBe(true)
+    // De week ertussen is puur doorloop.
+    expect(blokken[1].items[0].begintHier).toBe(false)
+    expect(blokken[1].items[0].eindigtHier).toBe(false)
   })
 
   it('sorteert binnen een week op startdatum', () => {
@@ -316,7 +348,15 @@ describe('groepeerPerWeek', () => {
       bon({ id: 'laat',  geplande_start: '2026-08-13' }),
       bon({ id: 'vroeg', geplande_start: '2026-08-10' }),
     ])
-    expect(blokken[0].bonnen.map((b) => b.id)).toEqual(['vroeg', 'laat'])
+    expect(ids(blokken[0])).toEqual(['vroeg', 'laat'])
+  })
+
+  it('loopt niet oneindig door op onzinnige data', () => {
+    // Een einddatum jaren na de start is een fout in de bron, geen klus.
+    const blokken = groepeerPerWeek([
+      bon({ id: 'kapot', geplande_start: '2026-01-01', geplande_eind: '2030-01-01' }),
+    ])
+    expect(blokken.length).toBeLessThanOrEqual(26)
   })
 
   it('geeft een lege lijst terug bij niets', () => {

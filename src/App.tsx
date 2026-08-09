@@ -33,6 +33,7 @@ const Werkbonnen       = lazy(() => import('@/pages/beheerder/Werkbonnen'))
 const WerkbonNieuw     = lazy(() => import('@/pages/beheerder/WerkbonNieuw'))
 const WerkbonDetail    = lazy(() => import('@/pages/beheerder/WerkbonDetail'))
 const Medewerkers      = lazy(() => import('@/pages/beheerder/Medewerkers'))
+const PersoonDetail    = lazy(() => import('@/pages/beheerder/PersoonDetail'))
 const Rapporten        = lazy(() => import('@/pages/beheerder/Rapporten'))
 const Archief          = lazy(() => import('@/pages/beheerder/Archief'))
 const Uitloop          = lazy(() => import('@/pages/beheerder/Uitloop'))
@@ -177,6 +178,7 @@ export default function App() {
             <Route path="/werkbonnen/nieuw" element={<KantoorGuard><WerkbonNieuw /></KantoorGuard>} />
             <Route path="/werkbonnen/:id"   element={<KantoorGuard><WerkbonDetail /></KantoorGuard>} />
             <Route path="/medewerkers"      element={<GebruikersbeheerGuard><Medewerkers /></GebruikersbeheerGuard>} />
+            <Route path="/medewerkers/:id"  element={<GebruikersbeheerGuard><PersoonDetail /></GebruikersbeheerGuard>} />
             <Route path="/rapporten"        element={<KantoorGuard><Rapporten /></KantoorGuard>} />
             <Route path="/archief"          element={<KantoorGuard><Archief /></KantoorGuard>} />
             <Route path="/uitloop"          element={<KantoorGuard><Uitloop /></KantoorGuard>} />

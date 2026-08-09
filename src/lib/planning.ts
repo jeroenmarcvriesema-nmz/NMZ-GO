@@ -200,33 +200,66 @@ export function kiesVandaag<T extends Ingepland>(bonnen: T[], nu: string = isoDa
  *
  * Een lijst van dertig bonnen achter elkaar zegt niets over wanneer
  * iets staat — dat was precies de klacht: "ik zie alles staan maar niet
- * bij welke week het hoort". Een klus wordt ingedeeld op de week waarin
- * hij begint; loopt hij door, dan zegt zijn eigen datumregel de rest.
+ * bij welke week het hoort".
+ *
+ * Een klus die meerdere weken duurt staat in élke week waarin hij
+ * loopt, niet alleen in de week waarin hij begon. Dat is geen
+ * verdubbeling maar de werkelijkheid: de Bentinckstraat loopt van 24
+ * juli tot 14 augustus, en wie week 33 bekijkt hoort te zien dat er
+ * die week iemand staat. Hem alleen onder week 30 zetten betekent dat
+ * je hem in week 33 niet ziet en denkt dat de ploeg vrij is.
+ *
+ * Per week staat erbij of hij daar begint of eindigt, zodat het scherm
+ * "loopt door" kan tonen en het onderscheid zichtbaar blijft.
  *
  * Nieuwste week bovenaan, want de vraag gaat vrijwel altijd over wat
  * eraan komt en niet over wat is geweest.
  */
-export function groepeerPerWeek<T extends Ingepland>(
-  bonnen: T[],
-): { maandag: Date; nummer: number; bonnen: T[] }[] {
-  const blokken = new Map<string, { maandag: Date; nummer: number; bonnen: T[] }>()
+export interface Weekblok<T> {
+  maandag: Date
+  nummer: number
+  items: { bon: T; begintHier: boolean; eindigtHier: boolean }[]
+}
 
-  for (const b of bonnen) {
-    const ma = maandagVan(new Date(startVan(b)))
+/** Meer dan een halfjaar doorlopen is geen klus meer maar een fout in de data. */
+const MAX_WEKEN = 26
+
+export function groepeerPerWeek<T extends Ingepland>(bonnen: T[]): Weekblok<T>[] {
+  const blokken = new Map<string, Weekblok<T>>()
+
+  const zet = (ma: Date, bon: T, begintHier: boolean, eindigtHier: boolean) => {
     const sleutel = isoDatum(ma)
     let blok = blokken.get(sleutel)
     if (!blok) {
-      blok = { maandag: ma, nummer: weeknummer(ma), bonnen: [] }
+      blok = { maandag: new Date(ma), nummer: weeknummer(ma), items: [] }
       blokken.set(sleutel, blok)
     }
-    blok.bonnen.push(b)
+    blok.items.push({ bon, begintHier, eindigtHier })
+  }
+
+  for (const b of bonnen) {
+    const eersteMa = maandagVan(new Date(startVan(b)))
+    const laatsteMa = maandagVan(new Date(eindVan(b)))
+
+    const loop = new Date(eersteMa)
+    let n = 0
+    while (loop.getTime() <= laatsteMa.getTime() && n < MAX_WEKEN) {
+      zet(
+        loop,
+        b,
+        loop.getTime() === eersteMa.getTime(),
+        loop.getTime() === laatsteMa.getTime(),
+      )
+      loop.setDate(loop.getDate() + 7)
+      n++
+    }
   }
 
   return [...blokken.values()]
     .sort((a, b) => b.maandag.getTime() - a.maandag.getTime())
     .map((blok) => ({
       ...blok,
-      bonnen: blok.bonnen.sort((a, b) => startVan(a).localeCompare(startVan(b))),
+      items: blok.items.sort((a, b) => startVan(a.bon).localeCompare(startVan(b.bon))),
     }))
 }
 

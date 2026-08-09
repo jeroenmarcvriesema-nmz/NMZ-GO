@@ -176,9 +176,11 @@ export default function Werkbonnen() {
         <div className="space-y-6">
           {groepeerPerWeek(gefilterd).map((blok) => (
             <div key={blok.maandag.toISOString()}>
-              <Weekkop maandag={blok.maandag} nummer={blok.nummer} />
+              <Weekkop maandag={blok.maandag} nummer={blok.nummer} aantal={blok.items.length} />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
-                {blok.bonnen.map((w) => <WerkbonKaart key={w.id} werkbon={w} />)}
+                {blok.items.map(({ bon, begintHier }) => (
+                  <WerkbonKaart key={bon.id} werkbon={bon} looptDoor={!begintHier} />
+                ))}
               </div>
             </div>
           ))}
