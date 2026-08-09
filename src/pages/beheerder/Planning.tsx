@@ -2,12 +2,15 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PageWrapper } from '@/components/layout/PageWrapper'
 import { Spinner } from '@/components/ui/Spinner'
+import { Select } from '@/components/ui/Select'
 import { usePlanning } from '@/hooks/useProjecten'
 import { PlanningKaart } from '@/components/werkbon/PlanningKaart'
 import { Weekkiezer } from '@/components/layout/Weekkiezer'
 import { cn, formatDatumKort } from '@/lib/utils'
 import { isoDatum, weekDagen, maandagVerschoven } from '@/lib/planning'
-import { IconAlertTriangle } from '@tabler/icons-react'
+import { zoektMee } from '@/lib/zoeken'
+import type { PlanningItem } from '@/types'
+import { IconAlertTriangle, IconSearch, IconX } from '@tabler/icons-react'
 
 // Zes dagen: zaterdag wordt gebruikt om dingen af te maken en voor
 // garantiewerk, en hoort dus gewoon in de planning.
@@ -20,16 +23,42 @@ export default function Planning() {
   // huidige week, terwijl er werk staat tot ver in de maand — en na een
   // uitloop wil je juist terugkijken.
   const [week, setWeek] = useState(0)
+  // Twee vragen die een planner elke dag stelt en waar bladeren geen
+  // antwoord op geeft: "waar staat Mario deze week" en "zit dat adres
+  // er al ergens in". Een filter op ploeg en een zoekveld beantwoorden
+  // ze allebei zonder de weekindeling los te laten.
+  const [ploeg, setPloeg] = useState('alle')
+  const [zoek, setZoek] = useState('')
   const dagen = weekDagen(maandagVerschoven(week))
   const vandaag = new Date()
   vandaag.setHours(0, 0, 0, 0)
+
+  // Iedereen die deze maand ergens op staat, één keer, op alfabet.
+  const ploegen = [...new Set(planning.flatMap((p) => p.medewerkers))].sort((a, b) => a.localeCompare(b))
+
+  const past = (p: PlanningItem) =>
+    (ploeg === 'alle' || p.medewerkers.includes(ploeg)) &&
+    zoektMee(
+      {
+        adres: p.adres,
+        plaats: p.plaats,
+        bonnummer: p.bonnummer,
+        projectnaam: p.projectnaam,
+        kluiscode: p.kluiscode,
+        medewerkers: p.medewerkers.map((naam) => ({ naam })),
+      },
+      zoek
+    )
+
+  const zichtbaar = planning.filter(past)
+  const filtersAan = ploeg !== 'alle' || zoek.trim() !== ''
 
   // Wat staat er in déze week. Hier stond het totaal over alle weken —
   // dat getal veranderde dus niet als je bladerde, en dat is precies het
   // moment waarop je niet meer weet welke week je bekijkt.
   const vanWeek = isoDatum(dagen[0])
   const totWeek = isoDatum(dagen[dagen.length - 1])
-  const dezeWeek = planning.filter((p) => p.datum <= totWeek && (p.eind ?? p.datum) >= vanWeek)
+  const dezeWeek = zichtbaar.filter((p) => p.datum <= totWeek && (p.eind ?? p.datum) >= vanWeek)
 
   /**
    * Wie staat er op deze dag op meer dan één klus?
@@ -67,15 +96,63 @@ export default function Planning() {
         week={week}
         onWissel={setWeek}
         telling={`${dezeWeek.length} ${dezeWeek.length === 1 ? 'klus' : 'klussen'}`}
-        className="mb-6"
+        className="mb-4"
       />
+
+      <div className="flex flex-col sm:flex-row gap-3 mb-5">
+        <div className="relative flex-1 sm:max-w-sm">
+          <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-white/40" />
+          <input
+            type="text"
+            value={zoek}
+            onChange={(e) => setZoek(e.target.value)}
+            placeholder="Adres, plaats of bonnummer…"
+            className="w-full min-h-[44px] pl-9 pr-4 text-sm text-gray-900 dark:text-white bg-white dark:bg-surface-dark-2 border border-gray-200 dark:border-white/10 rounded-sm outline-none placeholder:text-gray-400 dark:placeholder:text-white/30 focus:border-brand-yellow focus:ring-2 focus:ring-brand-yellow/20"
+          />
+        </div>
+
+        {/* Alleen tonen als er iemand te kiezen valt. Een lege
+            keuzelijst is een knop die niets doet. */}
+        {ploegen.length > 0 && (
+          <div className="sm:w-56">
+            <Select
+              name="ploeg"
+              value={ploeg}
+              onChange={(e) => setPloeg(e.target.value)}
+              className="min-h-[44px]"
+              opties={[
+                { waarde: 'alle', label: 'Hele ploeg' },
+                ...ploegen.map((naam) => ({ waarde: naam, label: naam })),
+              ]}
+            />
+          </div>
+        )}
+
+        {filtersAan && (
+          <button
+            onClick={() => { setPloeg('alle'); setZoek('') }}
+            className="flex items-center justify-center gap-1.5 min-h-[44px] px-3 rounded-sm text-sm font-semibold text-gray-500 dark:text-white/50 hover:text-gray-900 dark:hover:text-white hover:bg-surface-2 dark:hover:bg-white/5 transition-colors"
+          >
+            <IconX className="w-4 h-4" /> Filter wissen
+          </button>
+        )}
+      </div>
+
+      {/* Zonder deze regel lijkt een lege week een lege week, terwijl er
+          een filter aan staat die je twee schermen geleden hebt gezet. */}
+      {filtersAan && (
+        <p className="text-xs text-gray-400 dark:text-white/40 -mt-2 mb-4">
+          Je ziet {dezeWeek.length} van de {planning.filter((p) => p.datum <= totWeek && (p.eind ?? p.datum) >= vanWeek).length} klussen in deze week.
+          {ploeg !== 'alle' && ` Alleen waar ${ploeg} op staat.`}
+        </p>
+      )}
 
       {/* Desktop: 5-kolommen grid */}
       <div className="hidden md:grid md:grid-cols-3 xl:grid-cols-6 gap-4">
         {dagen.map((dag, i) => {
           const dagStr = isoDatum(dag)
           const isVandaag = dag.getTime() === vandaag.getTime()
-          const dagItems = planning.filter((p) => p.datum <= dagStr && (p.eind ?? p.datum) >= dagStr)
+          const dagItems = zichtbaar.filter((p) => p.datum <= dagStr && (p.eind ?? p.datum) >= dagStr)
 
           return (
             <div key={i} className="flex flex-col">
@@ -112,7 +189,11 @@ export default function Planning() {
 
                 {dagItems.length === 0 ? (
                   <div className="flex items-center justify-center h-full py-6">
-                    <span className="text-xs text-gray-300 dark:text-white/30">Vrij</span>
+                    {/* "Vrij" met een filter aan is onwaar: er staat
+                        misschien van alles, alleen niet van deze man. */}
+                    <span className="text-xs text-gray-300 dark:text-white/30">
+                      {filtersAan ? 'Niets in dit filter' : 'Vrij'}
+                    </span>
                   </div>
                 ) : (
                   dagItems.map((item) => (
@@ -136,7 +217,7 @@ export default function Planning() {
         {dagen.map((dag, i) => {
           const dagStr = isoDatum(dag)
           const isVandaag = dag.getTime() === vandaag.getTime()
-          const dagItems = planning.filter((p) => p.datum <= dagStr && (p.eind ?? p.datum) >= dagStr)
+          const dagItems = zichtbaar.filter((p) => p.datum <= dagStr && (p.eind ?? p.datum) >= dagStr)
 
           return (
             <div key={i} className="bg-white dark:bg-surface-dark-2 rounded-xl border border-gray-100 dark:border-white/10 shadow-sm overflow-hidden">
@@ -156,7 +237,9 @@ export default function Planning() {
                 )}
               </div>
               {dagItems.length === 0 ? (
-                <div className="px-4 py-5 text-sm text-gray-300 dark:text-white/30 text-center">Niets ingepland</div>
+                <div className="px-4 py-5 text-sm text-gray-300 dark:text-white/30 text-center">
+                  {filtersAan ? 'Niets in dit filter' : 'Niets ingepland'}
+                </div>
               ) : (
                 <div className="p-3 space-y-2">
                   {(() => {

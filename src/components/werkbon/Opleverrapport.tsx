@@ -1,0 +1,258 @@
+import { useEffect, useState } from 'react'
+import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { SectionHeading } from '@/components/ui/SectionHeading'
+import { supabase } from '@/lib/supabase'
+import { toast } from '@/store/toastStore'
+import { useAuth } from '@/hooks/useAuth'
+import { formatDatum } from '@/lib/utils'
+import type { Werkbon, Rapportage } from '@/types'
+import {
+  IconFileText, IconPhoto, IconInfoCircle, IconDeviceFloppy,
+  IconAlertTriangle, IconClock, IconCircleCheck,
+} from '@tabler/icons-react'
+
+interface Props {
+  werkbon: Werkbon
+  onKlaar: () => void
+}
+
+/** De drie velden die op het opleverrapport terechtkomen. */
+const VELDEN = [
+  {
+    naam: 'opmerkingen_bewoners' as const,
+    label: 'Opmerkingen bewoners',
+    hint: 'Wat de bewoners zeiden over de voorbereiding en de uitvoering.',
+    plaatshouder: 'Bijvoorbeeld: bewoner was tevreden over de communicatie vooraf.',
+  },
+  {
+    naam: 'extra_werkzaamheden' as const,
+    label: 'Extra uitgevoerde werkzaamheden',
+    hint: 'Werk dat afweek van de opdracht.',
+    plaatshouder: 'Bijvoorbeeld: extra compartiment behandeld op verzoek van de inspecteur.',
+  },
+  {
+    naam: 'bijzonderheden' as const,
+    label: 'Bijzonderheden',
+    hint: 'Alles wat de opdrachtgever moet weten en nergens anders staat.',
+    plaatshouder: 'Bijvoorbeeld: kruipluik was niet bereikbaar, afgestemd met de inspecteur.',
+  },
+]
+
+type Tekstveld = (typeof VELDEN)[number]['naam']
+
+/**
+ * Het opleverrapport: de tekst die erin komt, en de aanvraag zelf.
+ *
+ * De twee regels staan in de database (migratie 025) en niet in deze
+ * knop: uitvoerder of hoger, en minstens één foto. Dit scherm zegt
+ * hetzelfde, maar eerder — een knop die weigert nadat je erop drukt is
+ * vervelender dan een knop die vooraf uitlegt wat er nog mist. Wie het
+ * scherm omzeilt loopt alsnog tegen de database aan; dat is de bedoeling.
+ *
+ * De drie tekstvelden bestonden al als kolom sinds migratie 002 maar
+ * hadden nergens een invoerveld. Het rapport heeft ze nodig en niemand
+ * kon ze vullen. Ze staan hier omdat dit de plek is waar iemand ze
+ * schrijft: bij de klus, met de punten en de foto's ernaast.
+ */
+export function Opleverrapport({ werkbon, onKlaar }: Props) {
+  const { magWerkBeheren } = useAuth()
+  const [tekst, setTekst] = useState<Record<Tekstveld, string>>({
+    opmerkingen_bewoners: werkbon.opmerkingen_bewoners ?? '',
+    extra_werkzaamheden: werkbon.extra_werkzaamheden ?? '',
+    bijzonderheden: werkbon.bijzonderheden ?? '',
+  })
+  const [opslaan, setOpslaan] = useState(false)
+  const [aanvragen, setAanvragen] = useState(false)
+  const [rapportage, setRapportage] = useState<Rapportage | null>(null)
+
+  // De laatste aanvraag ophalen. Een select is genoeg: aanmaken kan
+  // alleen via de RPC, dus wat hier staat is per definitie langs de
+  // twee regels gekomen.
+  useEffect(() => {
+    let levend = true
+    const haal = async () => {
+      const { data } = await supabase
+        .from('rapportages')
+        .select('*')
+        .eq('werkbon_id', werkbon.id)
+        .order('aangevraagd_op', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (levend) setRapportage((data as Rapportage) ?? null)
+    }
+    haal()
+    return () => { levend = false }
+  }, [werkbon.id])
+
+  if (!magWerkBeheren) return null
+
+  const fotos = (werkbon.taken ?? []).reduce((n, t) => n + (t.fotos?.length ?? 0), 0)
+  const gewijzigd = VELDEN.some((v) => tekst[v.naam] !== (werkbon[v.naam] ?? ''))
+
+  const bewaar = async () => {
+    setOpslaan(true)
+    const { data, error } = await supabase
+      .from('werkbonnen')
+      .update({
+        // Leeg opslaan als null: een lege string zou als "ingevuld"
+        // tellen en straks als lege regel op het rapport komen.
+        opmerkingen_bewoners: tekst.opmerkingen_bewoners.trim() || null,
+        extra_werkzaamheden: tekst.extra_werkzaamheden.trim() || null,
+        bijzonderheden: tekst.bijzonderheden.trim() || null,
+      })
+      .eq('id', werkbon.id)
+      .select('id')
+    setOpslaan(false)
+
+    // Geen rijen terug betekent dat de policy hem tegenhield. Zonder
+    // deze controle ziet dat eruit als een geslaagde opslag.
+    if (error || !data || data.length === 0) {
+      toast.fout(error?.message || 'De tekst kon niet worden opgeslagen.')
+      return
+    }
+    toast.goed('Tekst opgeslagen')
+    onKlaar()
+  }
+
+  const vraagAan = async () => {
+    setAanvragen(true)
+    const { data, error } = await supabase.rpc('rapportage_aanvragen', { p_werkbon: werkbon.id })
+    setAanvragen(false)
+
+    if (error) {
+      // De twee weigeringen uit migratie 025 in gewone taal. De rest
+      // van de melding komt zoals hij is: verzinnen wat er mis is
+      // helpt niemand.
+      const melding =
+        error.code === '42501' ? 'Alleen een uitvoerder of hoger kan een opleverrapport aanvragen.'
+        : error.code === '23514' ? 'Er staat nog geen foto bij deze klus. Zonder fotorapportage is het rapport leeg.'
+        : error.message || 'De aanvraag lukte niet.'
+      toast.fout(melding)
+      return
+    }
+
+    const nieuw = (data as { nieuw?: boolean } | null)?.nieuw
+    toast.goed(nieuw === false ? 'Er liep al een aanvraag voor deze klus' : 'Opleverrapport aangevraagd')
+
+    const { data: vers } = await supabase
+      .from('rapportages')
+      .select('*')
+      .eq('werkbon_id', werkbon.id)
+      .order('aangevraagd_op', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    setRapportage((vers as Rapportage) ?? null)
+  }
+
+  return (
+    <Card>
+      <SectionHeading title="Opleverrapport" />
+
+      <div className="space-y-4">
+        {VELDEN.map((veld) => (
+          <div key={veld.naam}>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-white/70">
+              {veld.label}
+            </label>
+            <p className="text-xs text-gray-400 dark:text-white/40 mt-0.5 mb-1.5">{veld.hint}</p>
+            <textarea
+              rows={2}
+              value={tekst[veld.naam]}
+              onChange={(e) => setTekst((t) => ({ ...t, [veld.naam]: e.target.value }))}
+              placeholder={veld.plaatshouder}
+              className="w-full rounded-sm border border-gray-200 dark:border-white/10 bg-white dark:bg-surface-dark-2 px-3 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:border-brand-yellow transition-all resize-y"
+            />
+          </div>
+        ))}
+
+        {gewijzigd && (
+          <Button variant="secondary" className="min-h-[44px]" loading={opslaan} onClick={bewaar}>
+            <IconDeviceFloppy className="w-4 h-4" /> Tekst opslaan
+          </Button>
+        )}
+      </div>
+
+      <div className="mt-5 pt-5 border-t border-gray-100 dark:border-white/10">
+        <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-white/50 mb-3">
+          <IconPhoto className="w-3.5 h-3.5 flex-shrink-0" />
+          {fotos === 0
+            ? 'Nog geen foto bij deze klus'
+            : `${fotos} ${fotos === 1 ? 'foto' : "foto's"} in de fotorapportage`}
+        </div>
+
+        {rapportage ? (
+          <Rapportagestand rapportage={rapportage} />
+        ) : (
+          <>
+            <Button
+              variant="primary"
+              className="min-h-[44px]"
+              loading={aanvragen}
+              disabled={fotos === 0}
+              onClick={vraagAan}
+            >
+              <IconFileText className="w-4 h-4" /> Opleverrapport aanvragen
+            </Button>
+
+            <p className="flex items-start gap-1.5 mt-3 text-xs text-gray-400 dark:text-white/40">
+              <IconInfoCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+              {fotos === 0
+                ? 'Een rapport zonder foto’s is een lege huls met een briefhoofd. Zodra de ploeg de eerste foto heeft geüpload kan het rapport aangevraagd worden.'
+                : 'De aanvraag wordt vastgelegd en in de wachtrij gezet. Het document zelf wordt gebouwd zodra de rapportgenerator draait; tot die tijd blijft de aanvraag staan.'}
+            </p>
+          </>
+        )}
+      </div>
+    </Card>
+  )
+}
+
+/** Wat er met een lopende aanvraag gebeurd is, zonder mooier voor te stellen dan het is. */
+function Rapportagestand({ rapportage }: { rapportage: Rapportage }) {
+  if (rapportage.status === 'mislukt') {
+    return (
+      <div className="flex items-start gap-2 p-3 rounded-sm bg-brand-red-light dark:bg-brand-red/10 border border-brand-red">
+        <IconAlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-brand-red dark:text-red-400" />
+        <div className="min-w-0">
+          <div className="text-sm font-bold text-brand-red dark:text-red-400">
+            Het rapport kon niet gemaakt worden
+          </div>
+          <div className="text-sm text-gray-600 dark:text-white/60 mt-0.5 break-words">
+            {rapportage.fout || 'Geen reden vastgelegd.'}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (rapportage.status === 'klaar') {
+    return (
+      <div className="flex items-start gap-2 p-3 rounded-sm bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30">
+        <IconCircleCheck className="w-4 h-4 flex-shrink-0 mt-0.5 text-green-600 dark:text-green-400" />
+        <div className="min-w-0">
+          <div className="text-sm font-bold text-green-800 dark:text-green-300">Rapport klaar</div>
+          <div className="text-xs text-green-700 dark:text-green-200/70 mt-0.5">
+            Gemaakt op {formatDatum(rapportage.gegenereerd_op ?? rapportage.aangevraagd_op)}
+            {rapportage.clickup_geupload_op && ' · staat in ClickUp'}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex items-start gap-2 p-3 rounded-sm bg-surface-2 dark:bg-white/5 border border-gray-200 dark:border-white/10">
+      <IconClock className="w-4 h-4 flex-shrink-0 mt-0.5 text-gray-400 dark:text-white/40" />
+      <div className="min-w-0">
+        <div className="text-sm font-bold text-gray-700 dark:text-white/80">
+          Aangevraagd op {formatDatum(rapportage.aangevraagd_op)}
+        </div>
+        <div className="text-xs text-gray-500 dark:text-white/50 mt-0.5">
+          De aanvraag staat in de wachtrij. Het document wordt gebouwd zodra de
+          rapportgenerator draait — die is er nog niet, dus dit blijft even staan.
+        </div>
+      </div>
+    </div>
+  )
+}

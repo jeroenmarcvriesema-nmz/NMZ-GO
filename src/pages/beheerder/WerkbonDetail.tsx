@@ -9,6 +9,7 @@ import { ProgressBar } from '@/components/ui/ProgressBar'
 import { TaakItem } from '@/components/taak/TaakItem'
 import { Klusacties } from '@/components/werkbon/Klusacties'
 import { Klusinfo } from '@/components/werkbon/Klusinfo'
+import { Opleverrapport } from '@/components/werkbon/Opleverrapport'
 import { Spinner } from '@/components/ui/Spinner'
 import { Modal } from '@/components/ui/Modal'
 import { useWerkbon } from '@/hooks/useWerkbonnen'
@@ -106,6 +107,11 @@ export default function WerkbonDetail() {
             documenten, werkvoorbereiding. Kantoor moet kunnen
             controleren wat de ploeg voor zich krijgt. */}
         <Klusinfo werkbon={werkbon} />
+
+        {/* De drie tekstvelden van het rapport bestonden als kolom sinds
+            migratie 002 maar hadden nergens een invoerveld, en
+            rapportage_aanvragen() had geen knop. */}
+        <Opleverrapport werkbon={werkbon} onKlaar={refetch} />
 
         <Card>
           <SectionHeading

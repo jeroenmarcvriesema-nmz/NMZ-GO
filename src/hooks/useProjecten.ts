@@ -198,7 +198,7 @@ export function usePlanning() {
       const { data, error } = await supabase
         .from('werkbonnen')
         .select(`
-          id, datum, adres, status, kluiscode,
+          id, datum, adres, plaats, bonnummer, status, kluiscode,
           geplande_start, geplande_eind, stilgelegd_op, opgeleverd_op,
           project:projecten ( id, naam, status ),
           taken ( id, voltooid ),
@@ -218,6 +218,8 @@ export function usePlanning() {
             projectId: w.project?.id ?? null,
             projectnaam: w.project?.naam ?? '',
             adres: w.adres ?? '',
+            plaats: w.plaats ?? null,
+            bonnummer: w.bonnummer ?? null,
             kluiscode: w.kluiscode ?? null,
             punten: (w.taken ?? []).length,
             puntenKlaar: (w.taken ?? []).filter((t: any) => t.voltooid).length,

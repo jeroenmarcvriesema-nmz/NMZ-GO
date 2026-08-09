@@ -155,6 +155,9 @@ export interface PlanningItem {
   /** Leeg zolang klussen losse bonnen zijn en niet aan een project hangen. */
   projectnaam: string
   adres: string
+  /** Los van `adres`, zodat zoeken op de plaats ook in de planning werkt. */
+  plaats: string | null
+  bonnummer: string | null
   kluiscode: string | null
   punten: number
   puntenKlaar: number
