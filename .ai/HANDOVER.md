@@ -8,32 +8,151 @@ Lees hoofdstuk 0 als eerste — dat is de actuele stand. De hoofdstukken daarna 
 
 # 0. Actuele stand — augustus 2026
 
-## Auditronde — wat er is opgelost
+## LEES DIT EERST — waar je begint
 
-Na de volledige technische en functionele audit is de lijst met bevindingen afgewerkt. Wat hieronder staat is de nieuwe uitgangspositie; de tekst daaronder beschrijft de stand van vóór die ronde.
+De opdracht voor de volgende sessie is: **de ClickUp-fotosynchronisatie**.
 
-**Beveiliging (migratie 020).** Het RPC-oppervlak is teruggebracht van dertien functies die `anon` kon aanroepen naar drie, en die drie zijn er met reden: `get_mijn_rol()` en `get_mijn_tenant()` worden vanuit RLS-policies aangeroepen, `uitnodiging_controleren()` is de kern van het uitnodigingsscherm dat per definitie uitgelogd bezocht wordt. `public.tenants` heeft een expliciete leespolicy gekregen in plaats van RLS-zonder-policy. Twee echte fouten kwamen tijdens dat werk boven water: `taak_opnieuw()` toetste nog op de rolnáám `beheerder` — dezelfde fout die eerder in `mag_bij_werkbon()` zat, waardoor de eigenaar buiten de deur stond — en `clickup_hartslag()` stond open voor élke ingelogde gebruiker zonder enige toets. Beide toetsen nu op bevoegdheid.
+De eigenaar wil deze keten, in deze volgorde:
 
-**Tests (nieuw).** Vitest, 47 tests, `npm test`. Ze dekken de parser, het planningsrekenwerk, de statusregels, het uitlezen van een ClickUp-link en de CSV-export. Elke test hoort bij een fout die daadwerkelijk is voorgekomen. `.github/workflows/controle.yml` draait typecheck, tests en build bij elke push. Om dit mogelijk te maken zijn de pure delen losgetrokken: `supabase/functions/verwerker/ontleden.ts` en `statusregels.ts` (zonder Deno-afhankelijkheden), en `src/lib/planning.ts` (het rekenwerk dat eerst in de schermen zat).
+```
+foto's staan in NMZ GO
+  -> foto's gaan als attachment naar de gekoppelde ClickUp-taak
+  -> klus wordt opgeleverd in NMZ GO
+  -> status in ClickUp gaat naar "opgeleverd"
+  -> pas daarna mag de bucket opgeruimd worden
+```
 
-**Een bug die de sync al die tijd stilhield (migratie 022).** Twee ClickUp-taken vielen elke ronde af op `werkbonnen_bonnummer_key`. Het bonnummer komt uit het opdrachtnummer, en dat hoort bij de ópdracht — één opdracht kan twee klussen opleveren. De uniciteitseis dwong daar één van te maken en het gevolg was dat de tweede helemaal niet binnenkwam. Constraint eruit; uniciteit zit waar hij hoort, op `(tenant_id, clickup_taak_id)`. Direct resultaat: twee werkbonnen erbij, overgeslagen taken van zeven naar vijf.
+Het punt van die laatste stap: als ClickUp de foto's heeft, is Supabase
+Storage nog maar een doorgeefluik en hoeven ze daar geen maanden te
+blijven staan.
 
-**Foutmonitoring (migratie 021).** Een `fouten`-tabel, een `Foutvanger` rond de app en een luisteraar op losse scriptfouten en afgewezen beloftes. Kantoor ziet ze op het dashboard, maar alleen als er iets is — een kaart die altijd nul meldt wordt niet gelezen. Melden mag iedereen die is ingelogd, lezen alleen kantoor.
+**Concreet te bouwen, in volgorde:**
 
-**Ontbrekende schermen gebouwd.** `/archief` (terugzoeken op adres met de foto's en afgevinkte punten erbij, server-side zoeken), `/uitloop` (wat staat over de planning heen, wat ligt stil, en waaróm er is stilgelegd). Beide stonden als expliciet gemist in de audit.
+1. **`clickup.fotos_uploaden`** als nieuwe wachtrijtaak in
+   `supabase/functions/verwerker/`. Haalt de foto's uit de bucket
+   `werkbon-fotos` en zet ze via `POST /task/{id}/attachment`
+   (multipart) op de ClickUp-taak. Per foto een stempel wegschrijven,
+   zodat een tweede ronde niets dubbel doet — dezelfde aanpak als
+   `rapportages.clickup_geupload_op`.
+2. **Koppelen aan opleveren.** `werkbon_opleveren()` zet nu al een
+   `clickup.status_bijwerken`-taak klaar. De foto-upload moet dáárvóór,
+   zodat de bijlagen er staan op het moment dat de status springt.
+3. **Pas daarna opruimen.** Alleen wissen als het uploadstempel gevuld
+   is, en met een wachttijd van een week of twee. Zonder dat stempel
+   gooi je bewijs weg dat nergens anders staat.
+4. **Dan pas de PDF-generatie** van het opleverrapport, want die leest
+   dezelfde foto's.
 
-**Handmatig ingrijpen op de sync.** Een knop "Nu synchroniseren" en een knop om één ClickUp-taak op te halen ongeacht status — die laatste liep tot nu toe alleen via het verzetten van de status in ClickUp, wat het planbord voor iedereen verandert. Beide lopen langs precies dezelfde weg als de automatische ronde: `verwerkTaak()` is losgetrokken uit `synchroniseer()` zodat er geen tweede implementatie ontstaat.
+**Waarschuwing uit ervaring:** de Edge Function moet in zijn geheel
+opnieuw worden uitgerold — alle vijf bestanden in één
+`deploy_edge_function`-aanroep. Eén keer half uitrollen heeft de
+verwerker plat gelegd. Rol nooit één bestand uit.
 
-**Rapporten.** De exportknop toonde "volgt in een volgende versie". Die doet nu wat kantoor er daadwerkelijk mee moet: CSV naar Excel, met periodefilter. Ook opgeleverde bonnen tellen nu mee — die vielen erbuiten omdat alleen op `status = 'voltooid'` werd gefilterd.
+---
 
-**Bundel.** Alle schermen laden apart (`React.lazy`), bibliotheken in eigen brokken. Van één bestand van 531 kB naar een startpakket van ±134 kB gzip plus het scherm dat je opent. Een zwamsaneerder haalt het dashboard, de planning en het medewerkersbeheer niet meer op.
+## Wat er sinds de audit is gebouwd
 
-**Drift weg.** Migraties 016 en 019 draaiden wel op de database maar hadden geen bestand in de repo. Die zijn alsnog vastgelegd.
+**Beveiliging.** Het RPC-oppervlak is van dertien anon-aanroepbare
+functies terug naar drie (`get_mijn_rol`, `get_mijn_tenant`,
+`uitnodiging_controleren` — die drie zijn er met reden). `tenants` heeft
+een expliciete leespolicy. `taak_opnieuw()` toetste nog op de rolnáám
+"beheerder" en sloot de eigenaar buiten; `clickup_hartslag()` stond open
+voor elke ingelogde gebruiker. Beide toetsen nu op bevoegdheid.
 
-**Nog steeds open, en waarom:**
-- **Lekwachtwoord-controle** staat uit. Dat is een schakelaar in het Supabase-dashboard (Authentication → Policies) waar geen API voor beschikbaar is in deze omgeving.
-- **Eigen SMTP** vraagt om inloggegevens van een mailprovider; die keuze is aan de eigenaar.
-- **De twee P0's uit de audit staan er nog:** de terugkoppeling naar ClickUp is nooit live uitgevoerd, en er heeft nog geen zwamsaneerder ingelogd. Dat zijn geen codeproblemen — het zijn handelingen.
+**Een bug die de sync stilhield.** `werkbonnen_bonnummer_key` liet twee
+ClickUp-taken elke ronde afvallen. Het bonnummer komt uit het
+opdrachtnummer en dat hoort bij de ópdracht, niet bij de klus.
+Constraint eruit (migratie 022). Resultaat: 28 -> 30 werkbonnen,
+378 -> 405 punten, overgeslagen van 7 naar 5 — en die vijf zijn echte
+gaten in de brongegevens.
+
+**Tests.** Vitest, 93 tests, `npm test`. Parser, planningsrekenwerk,
+statusregels, ClickUp-link, CSV-export, rollen, foutfilter. Elke test
+hoort bij een fout die daadwerkelijk is voorgekomen. CI draait
+typecheck, tests en build bij elke push. Let op: `npm run build`
+typecheckt bewust alleen `src/`; `npm run controle` en de CI doen ook
+`tests/`. Een fout in een test hoort geen uitrol tegen te houden.
+
+**Foutmonitoring.** Een `fouten`-tabel, een `Foutvanger` rond de app, en
+een filter (`lib/foutfilter.ts`) dat rommel van browserextensies buiten
+de storingenlijst houdt. Zichtbaar op het dashboard, maar alleen als er
+iets is.
+
+**Nieuwe schermen.** `/archief` (terugzoeken op adres met foto's),
+`/uitloop` (wat staat over de planning heen en waarom),
+`/medewerkers/:id` (dossier per man met cijfers, en rol wijzigen /
+wachtwoord resetten / op non-actief zetten).
+
+**Weekbeeld.** Eén `Weekkiezer` met weeknummer op planning, werkbonnen
+en mijn week. Een klus die meerdere weken duurt staat in élke week
+waarin hij loopt, met "loopt door" erbij. `maandagVanWerkweek()` rolt op
+zondag door naar de komende maandag — zonder dat opende de planning in
+het weekend op de week die net voorbij was.
+
+**Zaterdag** is een volwaardige werkdag: `WERKDAGEN = 6`. Zondag niet.
+
+**Planner** is de zesde rol (migratie 024), met dezelfde bevoegdheden als
+uitvoerder en werkvoorbereider. Dat dit één migratie was en niet
+zevenenveertig, is precies waarom de policies op bevoegdheid toetsen en
+niet op rolnaam.
+
+**Navigatie op een telefoon:** tabbalk onderin plus een "Meer"-blad.
+Bewust geen hamburgermenu — dat verstopt alles achter één knop en kost
+twee tikken voor werk dat je twintig keer per dag doet.
+
+**Opleverrapportage — fundament** (migratie 025). De twee regels staan
+in de database, niet in de knop: uitvoerder of hoger, én minstens één
+foto. Er is bewust géén insert-policy op `rapportages`; aanmaken kan
+alleen via `rapportage_aanvragen()`. Geverifieerd met een rollentest:
+zwamsaneerder -> 42501, kantoor zonder foto -> 23514, directe insert ->
+42501.
+
+## Het opleverrapport — structuur uit het echte document
+
+Uitgelezen uit `Opleverrapport Scheibeekstraat 9 te Assendelft` (5
+pagina's):
+
+1. **Titelblad** — "OPLEVERRAPPORT ALGEMEEN", adres, datum, opgemaakt door
+2. **Projectgegevens** — opdrachtgever, vaste juridische alinea,
+   projectnummer, werkadres met postcode, opleverdatum, opmerkingen
+   bewoners, vaste alinea over uitgevoerde werkzaamheden, extra
+   werkzaamheden, kwaliteitschecklist, opmerkingen/bijzonderheden
+3. **"Fotorapportage"** als sectiekop, daarna de foto's
+
+**Beslissingen van de eigenaar hierover:**
+- De kwaliteitschecklist (zes vaste punten) **hoeft niet**.
+- Drie tekstvelden volstaan: opmerkingen, bijzonderheden, extra
+  uitgevoerde werkzaamheden.
+- Het projectnummer ("C515") is een handmatig veld voor grote projecten;
+  bij losse klussen blijft het leeg en staat alleen het adres op het
+  rapport.
+- Rapport maken is voor **uitvoerder of hoger**. Een zwamsaneerder niet:
+  een rapport wordt pas opgemaakt als kantoor heeft vastgesteld dat het
+  goed is.
+
+## Wat nog openstaat
+
+- **P0** Geen enkele foto ooit gemaakt — de hele fotoketen is onbewezen.
+- **P0** Geen zwamsaneerder heeft ooit ingelogd.
+- **P0** PDF-generatie van het opleverrapport bestaat niet.
+- **P1** ClickUp-terugkoppeling (status + opmerking) is nooit live
+  uitgevoerd, alleen in droogloop.
+- **P1** ClickUp attachment-upload bestaat niet.
+- **P1** De projectenpagina zoekt in de tabel `projecten`, en die heeft
+  nul rijen. Wat de eigenaar "projecten/klussen" noemt zijn de
+  werkbonnen. `postcode`, `plaats` en `opdrachtnummer` zijn bovendien
+  overal leeg (0 van 30) — zoeken op plaats levert dus niets op, ook na
+  de fix. Het adresveld bevat de plaats wél.
+- **P1** Weesbestanden: een foto verwijderen haalt de databaserij weg
+  maar laat het bestand in Storage staan.
+- **P2** Planning visueel, CTA's, eigen SMTP, lekwachtwoord-controle
+  (dat laatste is een vinkje in het Supabase-dashboard, geen API).
+
+## Stand van de gegevens
+
+30 werkbonnen · 405 afvinkpunten · 43 toewijzingen · 33 personen (2 met
+account) · 31 documenten · **0 foto's** · 0 projecten · 0 opgeleverd ·
+25 migraties, allemaal als bestand in Git. Geen drift.
 
 ---
 
