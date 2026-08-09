@@ -7,7 +7,7 @@ import { PageLoader } from '@/components/ui/Spinner'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { Toaster } from '@/components/ui/Toaster'
 import { Foutvanger } from '@/components/layout/Foutvanger'
-import type { Rol } from '@/types'
+import { magWerkBeheren, magGebruikersBeheren, startPad } from '@/lib/rollen'
 
 // Elk scherm apart inladen.
 //
@@ -120,15 +120,17 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 // Twee niveaus, gelijk aan de bevoegdheden in de database (migratie 008).
 // Deze guards bepalen wat je te zíen krijgt; de policies bepalen wat je
 // mág. Dat is bewust dubbel: een guard is gemak, geen beveiliging.
-const WERKBEHEER: Rol[] = ['eigenaar', 'beheerder', 'uitvoerder', 'werkvoorbereider']
-const GEBRUIKERSBEHEER: Rol[] = ['eigenaar', 'beheerder']
+//
+// De lijsten zelf staan in lib/rollen.ts, samen met het slot per route.
+// Ze stonden hier én in useAuth.ts en liepen uit de pas — het gevolg was
+// een menuknop die je terugstuurde naar het dashboard.
 
 /** Werkbonnen, projecten, planning, rapporten — alles rond het werk. */
 function KantoorGuard({ children }: { children: React.ReactNode }) {
   const { profile, loading } = useAuthStore()
   if (loading) return <PageLoader />
   if (!profile) return <Navigate to="/login" replace />
-  if (!WERKBEHEER.includes(profile.rol)) return <Navigate to="/mijn-werkbonnen" replace />
+  if (!magWerkBeheren(profile.rol)) return <Navigate to="/mijn-werkbonnen" replace />
   return <>{children}</>
 }
 
@@ -137,7 +139,7 @@ function GebruikersbeheerGuard({ children }: { children: React.ReactNode }) {
   const { profile, loading } = useAuthStore()
   if (loading) return <PageLoader />
   if (!profile) return <Navigate to="/login" replace />
-  if (!GEBRUIKERSBEHEER.includes(profile.rol)) return <Navigate to="/dashboard" replace />
+  if (!magGebruikersBeheren(profile.rol)) return <Navigate to="/dashboard" replace />
   return <>{children}</>
 }
 
@@ -145,7 +147,7 @@ function RootRedirect() {
   const { profile, loading } = useAuthStore()
   if (loading) return <PageLoader />
   if (!profile) return <Navigate to="/login" replace />
-  return <Navigate to={WERKBEHEER.includes(profile.rol) ? '/dashboard' : '/mijn-werkbonnen'} replace />
+  return <Navigate to={startPad(profile.rol)} replace />
 }
 
 export default function App() {
