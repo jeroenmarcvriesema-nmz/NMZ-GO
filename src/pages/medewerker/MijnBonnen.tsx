@@ -8,6 +8,8 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useWerkbonnen } from '@/hooks/useWerkbonnen'
 import { berekenVoortgang, formatDatum, cn } from '@/lib/utils'
+import { groepeerPerWeek } from '@/lib/planning'
+import { Weekkop } from '@/components/layout/Weekkop'
 import type { Werkbon } from '@/types'
 import {
   IconClipboardList, IconMapPin, IconListCheck, IconKey,
@@ -97,9 +99,19 @@ export default function MijnBonnen() {
             />
           </Card>
         ) : (
-          <div className="space-y-3">
-            {gefilterd.map((w) => (
-              <BonRegel key={w.id} werkbon={w} onOpen={() => navigate(`/werkbon/${w.id}`)} />
+          /* Per week gegroepeerd, nieuwste bovenaan. Een lijst van
+             twintig adressen onder elkaar zegt niets over wanneer je
+             ergens moet zijn; met de weekkop erboven wel. */
+          <div className="space-y-5">
+            {groepeerPerWeek(gefilterd).map((blok) => (
+              <div key={blok.maandag.toISOString()}>
+                <Weekkop maandag={blok.maandag} nummer={blok.nummer} />
+                <div className="space-y-3 mt-3">
+                  {blok.bonnen.map((w) => (
+                    <BonRegel key={w.id} werkbon={w} onOpen={() => navigate(`/werkbon/${w.id}`)} />
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         )}

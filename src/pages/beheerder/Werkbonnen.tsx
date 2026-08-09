@@ -9,7 +9,8 @@ import { useWerkbonnen } from '@/hooks/useWerkbonnen'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Synchronisatie } from '@/components/werkbon/Synchronisatie'
 import { ErrorState } from '@/components/ui/ErrorState'
-import { inWeek, maandagVerschoven } from '@/lib/planning'
+import { inWeek, maandagVerschoven, groepeerPerWeek } from '@/lib/planning'
+import { Weekkop } from '@/components/layout/Weekkop'
 import { cn } from '@/lib/utils'
 import { IconPlus, IconSearch, IconClipboardList, IconCalendarWeek, IconList } from '@tabler/icons-react'
 import type { WerkbonStatus } from '@/types'
@@ -164,9 +165,23 @@ export default function Werkbonnen() {
                 : undefined
           }
         />
-      ) : (
+      ) : inHuidigeWeek ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {gefilterd.map((w) => <WerkbonKaart key={w.id} werkbon={w} />)}
+        </div>
+      ) : (
+        /* Volledige lijst: per week gegroepeerd met een kop erboven.
+           Zonder die koppen is dit een rij adressen zonder tijd erin —
+           je ziet wél dat er werk staat, maar niet wannéér. */
+        <div className="space-y-6">
+          {groepeerPerWeek(gefilterd).map((blok) => (
+            <div key={blok.maandag.toISOString()}>
+              <Weekkop maandag={blok.maandag} nummer={blok.nummer} />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                {blok.bonnen.map((w) => <WerkbonKaart key={w.id} werkbon={w} />)}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </PageWrapper>

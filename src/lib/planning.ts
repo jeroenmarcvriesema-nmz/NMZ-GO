@@ -74,17 +74,48 @@ export function weeknummer(d: Date): number {
  * de muur. Verder weg dan een week of twee zegt "deze/volgende" niets
  * meer en blijft alleen het nummer over.
  */
-export function weekLabel(verschuiving: number): string {
-  if (verschuiving === 0) return 'Deze week'
-  if (verschuiving === 1) return 'Volgende week'
-  if (verschuiving === -1) return 'Vorige week'
+export function weekLabel(verschuiving: number, vanaf: Date = new Date()): string {
+  const dag = vanaf.getDay()
+  const weekend = dag === 0 || dag === 6
+
+  if (verschuiving === 0) {
+    // In het weekend is "deze week" de week die maandag begint. Hem
+    // "deze week" noemen is dan verwarrend — je staat er nog niet in.
+    return weekend ? 'Komende week' : 'Deze week'
+  }
+  if (verschuiving === 1) return weekend ? 'De week daarna' : 'Volgende week'
+  if (verschuiving === -1) return weekend ? 'Afgelopen week' : 'Vorige week'
   if (verschuiving > 1) return `Over ${verschuiving} weken`
   return `${Math.abs(verschuiving)} weken terug`
 }
 
-/** De maandag van de week die `verschuiving` weken van vandaag ligt. */
+/**
+ * De maandag van de wérkweek waar je op dit moment naar kijkt.
+ *
+ * In het weekend is dat de week die eraan komt, niet de week die net
+ * is afgelopen. Dat wijkt bewust af van de ISO-regel die `maandagVan()`
+ * volgt — daar hoort zondag nog bij de week ervoor, en dat klopt voor
+ * een weeknummer.
+ *
+ * Maar niemand kijkt op zondagavond naar de planning van de week die
+ * vrijdag is geëindigd. Wie in het weekend de app opent wil weten wat
+ * er maandag staat. Zonder deze regel opende de planning op zondag op
+ * een lege week terwijl al het werk in de week erna stond, en dan lijkt
+ * het alsof er niets is ingepland.
+ */
+export function maandagVanWerkweek(vanaf: Date = new Date()): Date {
+  const dag = vanaf.getDay() // 0 = zondag, 6 = zaterdag
+  if (dag === 0 || dag === 6) {
+    const komende = new Date(vanaf)
+    komende.setDate(komende.getDate() + (dag === 6 ? 2 : 1))
+    return maandagVan(komende)
+  }
+  return maandagVan(vanaf)
+}
+
+/** De maandag van de week die `verschuiving` werkweken van nu ligt. */
 export function maandagVerschoven(verschuiving: number, vanaf: Date = new Date()): Date {
-  const ma = maandagVan(vanaf)
+  const ma = maandagVanWerkweek(vanaf)
   ma.setDate(ma.getDate() + verschuiving * 7)
   return ma
 }
@@ -162,6 +193,41 @@ export function kiesVandaag<T extends Ingepland>(bonnen: T[], nu: string = isoDa
 
   // Alles ligt in het verleden en is niet af: uitgelopen werk.
   return [...open].sort((a, b) => eindVan(b).localeCompare(eindVan(a)))[0]
+}
+
+/**
+ * Zet een lijst klussen op volgorde, in blokken per week.
+ *
+ * Een lijst van dertig bonnen achter elkaar zegt niets over wanneer
+ * iets staat — dat was precies de klacht: "ik zie alles staan maar niet
+ * bij welke week het hoort". Een klus wordt ingedeeld op de week waarin
+ * hij begint; loopt hij door, dan zegt zijn eigen datumregel de rest.
+ *
+ * Nieuwste week bovenaan, want de vraag gaat vrijwel altijd over wat
+ * eraan komt en niet over wat is geweest.
+ */
+export function groepeerPerWeek<T extends Ingepland>(
+  bonnen: T[],
+): { maandag: Date; nummer: number; bonnen: T[] }[] {
+  const blokken = new Map<string, { maandag: Date; nummer: number; bonnen: T[] }>()
+
+  for (const b of bonnen) {
+    const ma = maandagVan(new Date(startVan(b)))
+    const sleutel = isoDatum(ma)
+    let blok = blokken.get(sleutel)
+    if (!blok) {
+      blok = { maandag: ma, nummer: weeknummer(ma), bonnen: [] }
+      blokken.set(sleutel, blok)
+    }
+    blok.bonnen.push(b)
+  }
+
+  return [...blokken.values()]
+    .sort((a, b) => b.maandag.getTime() - a.maandag.getTime())
+    .map((blok) => ({
+      ...blok,
+      bonnen: blok.bonnen.sort((a, b) => startVan(a).localeCompare(startVan(b))),
+    }))
 }
 
 /**

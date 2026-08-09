@@ -3,11 +3,19 @@ import { Card } from '@/components/ui/Card'
 import { Badge, StatusBadge } from '@/components/ui/Badge'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { berekenVoortgang, formatDatumKort } from '@/lib/utils'
+import { weeknummer } from '@/lib/planning'
 import type { Werkbon } from '@/types'
 import {
   IconCalendar, IconUsers, IconListCheck, IconPhoto,
   IconKey, IconAlertTriangle, IconFileText, IconMap2,
 } from '@tabler/icons-react'
+
+/** "wk 33" of "wk 32–34" als de klus over meerdere weken loopt. */
+function weekBereik(w: Werkbon): string {
+  const start = weeknummer(new Date(w.geplande_start ?? w.datum))
+  const eind = weeknummer(new Date(w.geplande_eind ?? w.geplande_start ?? w.datum))
+  return start === eind ? `wk ${start}` : `wk ${start}–${eind}`
+}
 
 interface WerkbonKaartProps {
   werkbon: Werkbon
@@ -65,10 +73,18 @@ export function WerkbonKaart({ werkbon, linkPrefix = '/werkbonnen' }: WerkbonKaa
       )}
 
       <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-400 dark:text-white/40 mb-3">
+        {/* Het weeknummer erbij. In een lijst met dertig bonnen zeggen
+            twee losse datums weinig; "wk 33" is waar in gepland wordt en
+            wat er in ClickUp staat. Loopt een klus over meer weken, dan
+            staat de reeks er — dat is precies het geval waarin je je
+            anders vergist. */}
         <span className="flex items-center gap-1">
           <IconCalendar className="w-3.5 h-3.5" />
-          {formatDatumKort(werkbon.geplande_start ?? werkbon.datum)}
-          {werkbon.geplande_eind && ` – ${formatDatumKort(werkbon.geplande_eind)}`}
+          <span className="font-semibold text-gray-500 dark:text-white/50">{weekBereik(werkbon)}</span>
+          <span>
+            {formatDatumKort(werkbon.geplande_start ?? werkbon.datum)}
+            {werkbon.geplande_eind && ` – ${formatDatumKort(werkbon.geplande_eind)}`}
+          </span>
         </span>
 
         {(werkbon.medewerkers || []).length > 0 && (

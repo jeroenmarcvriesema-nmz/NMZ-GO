@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   isoDatum, maandagVan, weekDagen, kiesVandaag, looptOp, dagenUitloop,
   weeknummer, weekLabel, maandagVerschoven, inWeek,
+  maandagVanWerkweek, groepeerPerWeek,
 } from '@/lib/planning'
 
 // Een minimale bon: precies de velden waar het rekenwerk naar kijkt.
@@ -178,15 +179,19 @@ describe('weeknummer', () => {
 })
 
 describe('weekLabel', () => {
+  // Altijd met een vaste dag: het label hangt af van of het weekend is,
+  // en een test die op zaterdag omvalt is geen test maar een verrassing.
+  const woensdag = new Date(2026, 7, 12)
+
   it('gebruikt de woorden die iedereen gebruikt', () => {
-    expect(weekLabel(0)).toBe('Deze week')
-    expect(weekLabel(1)).toBe('Volgende week')
-    expect(weekLabel(-1)).toBe('Vorige week')
+    expect(weekLabel(0, woensdag)).toBe('Deze week')
+    expect(weekLabel(1, woensdag)).toBe('Volgende week')
+    expect(weekLabel(-1, woensdag)).toBe('Vorige week')
   })
 
   it('valt terug op tellen zodra dat niets meer zegt', () => {
-    expect(weekLabel(3)).toBe('Over 3 weken')
-    expect(weekLabel(-2)).toBe('2 weken terug')
+    expect(weekLabel(3, woensdag)).toBe('Over 3 weken')
+    expect(weekLabel(-2, woensdag)).toBe('2 weken terug')
   })
 })
 
@@ -233,5 +238,88 @@ describe('inWeek', () => {
   it('valt terug op datum als er geen planning staat', () => {
     expect(inWeek(bon({ id: 'a', datum: '2026-08-11' }), maandag)).toBe(true)
     expect(inWeek(bon({ id: 'b', datum: '2026-09-01' }), maandag)).toBe(false)
+  })
+})
+
+describe('maandagVanWerkweek', () => {
+  // Dit was een echte fout. Op zondag 9 augustus opende de planning op
+  // de week van 3 t/m 7 augustus — de week die vrijdag was geëindigd —
+  // terwijl al het werk in de week erna stond. Het leek daardoor alsof
+  // er niets was ingepland.
+  it('rolt in het weekend door naar de week die eraan komt', () => {
+    const zondag = new Date(2026, 7, 9)
+    expect(isoDatum(maandagVanWerkweek(zondag))).toBe('2026-08-10')
+
+    const zaterdag = new Date(2026, 7, 8)
+    expect(isoDatum(maandagVanWerkweek(zaterdag))).toBe('2026-08-10')
+  })
+
+  it('laat een doordeweekse dag met rust', () => {
+    for (const dag of [10, 11, 12, 13, 14]) {
+      expect(isoDatum(maandagVanWerkweek(new Date(2026, 7, dag)))).toBe('2026-08-10')
+    }
+  })
+
+  it('wijkt bewust af van de ISO-regel die maandagVan volgt', () => {
+    // maandagVan blijft zuiver ISO — die wordt voor het weeknummer
+    // gebruikt en daar hoort zondag wél bij de week ervoor.
+    const zondag = new Date(2026, 7, 9)
+    expect(isoDatum(maandagVan(zondag))).toBe('2026-08-03')
+    expect(isoDatum(maandagVanWerkweek(zondag))).toBe('2026-08-10')
+  })
+})
+
+describe('maandagVerschoven in het weekend', () => {
+  it('rekent vanaf de komende week, niet vanaf de afgelopen', () => {
+    const zondag = new Date(2026, 7, 9)
+    expect(isoDatum(maandagVerschoven(0, zondag))).toBe('2026-08-10')
+    expect(isoDatum(maandagVerschoven(1, zondag))).toBe('2026-08-17')
+    expect(isoDatum(maandagVerschoven(-1, zondag))).toBe('2026-08-03')
+  })
+})
+
+describe('weekLabel in het weekend', () => {
+  it('noemt de komende week niet "deze week"', () => {
+    // Op zondag sta je nog niet in die week; hem "deze week" noemen
+    // leest als de week die net voorbij is.
+    const zondag = new Date(2026, 7, 9)
+    expect(weekLabel(0, zondag)).toBe('Komende week')
+    expect(weekLabel(1, zondag)).toBe('De week daarna')
+    expect(weekLabel(-1, zondag)).toBe('Afgelopen week')
+  })
+
+  it('gebruikt doordeweeks de gewone woorden', () => {
+    const woensdag = new Date(2026, 7, 12)
+    expect(weekLabel(0, woensdag)).toBe('Deze week')
+    expect(weekLabel(1, woensdag)).toBe('Volgende week')
+  })
+})
+
+describe('groepeerPerWeek', () => {
+  it('deelt in op de week waarin een klus begint', () => {
+    const blokken = groepeerPerWeek([
+      bon({ id: 'a', geplande_start: '2026-08-11', geplande_eind: '2026-08-13' }),
+      bon({ id: 'b', geplande_start: '2026-08-04', geplande_eind: '2026-08-06' }),
+      bon({ id: 'c', geplande_start: '2026-08-12', geplande_eind: '2026-08-12' }),
+    ])
+
+    expect(blokken).toHaveLength(2)
+    // Nieuwste week bovenaan: de vraag gaat over wat eraan komt.
+    expect(blokken[0].nummer).toBe(33)
+    expect(blokken[0].bonnen.map((b) => b.id)).toEqual(['a', 'c'])
+    expect(blokken[1].nummer).toBe(32)
+    expect(blokken[1].bonnen.map((b) => b.id)).toEqual(['b'])
+  })
+
+  it('sorteert binnen een week op startdatum', () => {
+    const blokken = groepeerPerWeek([
+      bon({ id: 'laat',  geplande_start: '2026-08-13' }),
+      bon({ id: 'vroeg', geplande_start: '2026-08-10' }),
+    ])
+    expect(blokken[0].bonnen.map((b) => b.id)).toEqual(['vroeg', 'laat'])
+  })
+
+  it('geeft een lege lijst terug bij niets', () => {
+    expect(groepeerPerWeek([])).toEqual([])
   })
 })
