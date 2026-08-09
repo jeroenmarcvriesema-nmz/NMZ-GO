@@ -1,12 +1,11 @@
-// ============================================================
 // NMZ GO — het ontleden van een werkopdracht
-// ============================================================
+//
 // Dit bestand bevat alleen de tekstverwerking: tekst in, werkbon uit.
 // Geen PDF, geen netwerk, geen Deno. Dat is geen esthetiek maar een
 // vereiste — hierdoor is dit stuk in een gewone testrunner te draaien,
 // en het is precies het stuk waar de fouten zaten.
 //
-// `werkopdracht.ts` ernaast doet het lezen van de PDF en gebruikt wat
+// werkopdracht.ts ernaast doet het lezen van de PDF en gebruikt wat
 // hier staat.
 //
 // Opbouw van het sjabloon:
@@ -24,7 +23,6 @@
 // De kopjes in het naslagdeel (Compartiment 1, Rechterkant, ...)
 // verschillen per inspecteur en worden daarom niet ontleed maar als
 // één blok bewaard.
-// ============================================================
 
 // De echte kop eindigt op een dubbele punt en staat vlak voor de
 // punten. Verderop in het document staat ook "...foto's maken van alle
@@ -71,7 +69,7 @@ export function kopveld(tekst: string, veld: string): string | null {
 
 export function ontleed(tekst: string, uitgesloten: string[]): Werkopdracht {
   // Altijd de laatste treffer: eerdere zinnen in de werkvoorbereiding
-  // kunnen op dezelfde kop lijken. Geen `.at(-1)` — dat vereist een
+  // kunnen op dezelfde kop lijken. Geen .at(-1) — dat vereist een
   // nieuwere taalversie dan waar de rest van dit project op staat, en
   // die grens verleggen we niet voor één index.
   const treffers = [...tekst.matchAll(ANKER_START)]

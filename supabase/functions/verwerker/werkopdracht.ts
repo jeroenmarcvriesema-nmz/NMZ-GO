@@ -1,12 +1,11 @@
-// ============================================================
 // NMZ GO — werkopdracht-PDF lezen
-// ============================================================
+//
 // Alleen het lezen van de PDF staat hier. Het ontleden van de tekst
-// staat in `ontleden.ts`, zonder Deno-afhankelijkheden, zodat dat deel
+// staat in ontleden.ts, zonder Deno-afhankelijkheden, zodat dat deel
 // in een gewone testrunner te draaien is. Deze module blijft dun met
 // opzet: hij doet iets wat je niet zonder echte PDF kunt testen.
 //
-// ── Over het teruglezen van regels ───────────────────────────
+// Over het teruglezen van regels:
 // Een PDF kent geen regels; hij kent stukjes tekst op coördinaten.
 // extractText() plakt die stukjes achter elkaar en levert het hele
 // document als één regel op — daarmee is het verschil tussen "nieuw
@@ -15,7 +14,6 @@
 // groeperen we op y-positie: stukjes op dezelfde hoogte stonden op
 // dezelfde regel. Dat geeft het document terug zoals de inspecteur
 // het heeft opgeschreven.
-// ============================================================
 
 import { getDocumentProxy } from 'npm:unpdf@0.12.1'
 

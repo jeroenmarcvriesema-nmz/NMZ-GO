@@ -1,11 +1,9 @@
-// ============================================================
 // NMZ GO — van een reden naar een ClickUp-status
-// ============================================================
+//
 // Losse module zonder afhankelijkheden, om dezelfde reden als
-// `ontleden.ts`: dit is een regel die klopt of niet klopt, en dat hoort
+// ontleden.ts: dit is een regel die klopt of niet klopt, en dat hoort
 // een test te bewaken in plaats van de eerste keer dat iemand op
 // "stilleggen" drukt.
-// ============================================================
 
 export interface Statussen {
   status_opgeleverd: string | null
