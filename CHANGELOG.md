@@ -1,5 +1,56 @@
 # NMZ GO — Changelog
 
+## Auditronde: alles opgelost, plus wat de audit zelf had gemist
+
+### Beveiliging
+- **[FIX]** Migratie 020: het RPC-oppervlak van dertien functies die `anon` kon aanroepen terug naar drie. Die drie blijven met reden: `get_mijn_rol()` en `get_mijn_tenant()` worden vanuit RLS-policies aangeroepen, `uitnodiging_controleren()` is het uitnodigingsscherm dat per definitie uitgelogd bezocht wordt.
+- **[FIX]** `taak_opnieuw()` toetste nog op de rolnáám `beheerder` — dezelfde fout die eerder in `mag_bij_werkbon()` zat. De eigenaar stond buiten de deur. Toetst nu op bevoegdheid.
+- **[FIX]** `clickup_hartslag()` stond open voor élke ingelogde gebruiker zonder enige toets. Nu dezelfde poortwachter als `taak_aanmaken`: geen `auth.uid()` is achtergrondwerk en mag door, een ingelogde gebruiker moet bevoegd zijn.
+- **[FIX]** `public.tenants` had RLS aan zonder policy. Werkte, maar op een impliciete aanname. Nu een expliciete leesregel.
+
+### De sync haalde twee klussen structureel niet binnen
+- **[FIX]** Migratie 022: `werkbonnen_bonnummer_key` liet Bentinckstraat 63 en Rembrandstraat 79 t/m 129 élke ronde afvallen. Het bonnummer komt uit het opdrachtnummer en dat hoort bij de ópdracht, niet bij de klus — één opdracht kan twee klussen opleveren. Uniciteit zit al waar hij hoort: `(tenant_id, clickup_taak_id)`.
+- **Resultaat:** 28 → **30 werkbonnen**, 378 → **405 afvinkpunten**, overgeslagen taken van 7 naar 5. Die vijf zijn echte gaten in de brongegevens.
+
+### Tests, voor het eerst
+- **[FEATURE]** Vitest met **73 tests**, `npm test`. Parser, planningsrekenwerk, statusregels, ClickUp-link uitlezen, CSV-export, en de rollen. Elke test hoort bij een fout die daadwerkelijk is voorgekomen.
+- **[FEATURE]** `.github/workflows/controle.yml` draait typecheck, tests en build bij elke push. Geen sleutels in de workflow.
+- **[FIX]** `isoDatum()` vervangt `toISOString()` in de schermen: die gaf tussen middernacht en 02:00 Nederlandse tijd de dag ervóór terug.
+- Om dit mogelijk te maken zijn de pure delen losgetrokken: `ontleden.ts` en `statusregels.ts` zonder Deno-afhankelijkheden, en `src/lib/planning.ts` uit de schermen.
+
+### Foutmonitoring
+- **[FEATURE]** Migratie 021 plus een `Foutvanger` rond de app en een luisteraar op losse scriptfouten. Een crash op een werktelefoon bereikte tot nu toe niemand: wit scherm, telefoontje, niets om op terug te kijken. Kantoor ziet ze op het dashboard, maar alleen als er iets is — een kaart die altijd nul meldt wordt niet gelezen.
+
+### Wat ontbrak, gebouwd
+- **[FEATURE]** `/archief`: terugzoeken op adres, met de foto's en afgevinkte punten erbij. Zoekt aan de databasekant, want over twee jaar zijn het duizenden bonnen.
+- **[FEATURE]** `/uitloop`: wat staat over de planning heen, wat ligt stil, en waaróm er is stilgelegd.
+- **[FEATURE]** Knop "Nu synchroniseren" en het ophalen van één ClickUp-taak ongeacht status. Dat laatste liep tot nu toe alleen via het verzetten van de status in ClickUp, wat het planbord voor iedereen verandert. Beide langs precies dezelfde weg als de automatische ronde: `verwerkTaak()` is losgetrokken uit `synchroniseer()`.
+- **[FIX]** De exportknop bij Rapporten toonde "volgt in een volgende versie". Doet nu CSV naar Excel met periodefilter. Opgeleverde bonnen tellen nu ook mee — die vielen erbuiten omdat alleen op `status = 'voltooid'` werd gefilterd.
+
+### Weekbeeld
+- **[FEATURE]** Eén `Weekkiezer` op planning, werkbonnen en mijn week. Weeknummer vooraan — daar wordt in gepland en dat staat ook in ClickUp — met "Deze week" / "Volgende week" ernaast en een telling die over de getóónde week gaat. Op de planning stond die telling op het totaal over alle weken en veranderde dus niet als je bladerde.
+- **[FEATURE]** Werkbonnen had helemaal geen weekbeeld. Twee standen nu: per week om te plannen, "alles" om te zoeken. Zodra je zoekt kijkt hij door alle weken heen, anders mis je een klus omdat hij toevallig vorige maand stond.
+- Het weekfilter kijkt naar overlap en niet naar de startdatum: een klus van drie weken hoort in alle drie die weken te staan.
+
+### Menu en routes liepen uit de pas
+- **[FIX]** Werkbonnen stond niet in de mobiele balk. Kantoor kon op een telefoon dus niet bij de weekkiezer, de syncknop en het importeren van een losse taak. Op de laptop stond hij wél in de zijbalk, dus het viel niet op.
+- **[FIX]** "Team" werd getoond aan uitvoerders en werkvoorbereiders, terwijl `/medewerkers` alleen voor eigenaar en beheerder openstaat. Erop tikken gooide je terug naar het dashboard.
+- **[FIX]** Projecten nam een plek in de mobiele balk terwijl die pagina leeg is. Die plek is nu voor uitloop.
+- Oorzaak weggenomen: de rollijsten stonden in `App.tsx` én in `useAuth.ts`. Nu één bron in `lib/rollen.ts`, met een test die `Sidebar.tsx`, `MobileNav.tsx` en `App.tsx` uitleest en elk menupad tegen de guard van die route houdt.
+
+### Snelheid
+- **[FEATURE]** Code-splitting: elk scherm apart, bibliotheken in eigen brokken. Van één bestand van 531 kB naar een startpakket van ±134 kB gzip plus het scherm dat je opent. Een zwamsaneerder haalt het dashboard, de planning en het medewerkersbeheer niet meer op.
+
+### Onderhoud
+- **[FIX]** De productiebuild typecheckte ook de tests en zou zijn omgevallen op de nieuwe rollentest. Configuraties uit elkaar getrokken: de uitrol checkt de app, `npm run controle` en de CI checken app plus tests.
+- **[FIX]** Migraties 016 en 019 draaiden wel op de database maar hadden geen bestand in de repo. Alsnog vastgelegd.
+
+### Nog open
+- Lekwachtwoord-controle staat uit — dat is een schakelaar in het Supabase-dashboard waar geen API voor beschikbaar is.
+- Eigen SMTP vraagt om inloggegevens van een mailprovider.
+- De twee P0's uit de audit zijn geen codeproblemen maar handelingen: de terugkoppeling naar ClickUp is nooit live uitgevoerd, en er heeft nog geen zwamsaneerder ingelogd.
+
+
 ## Synchronisatie staat aan — eerste echte ronde
 
 - **[FEATURE]** `clickup_instellingen.actief` op `true`. De droogloop is voorbij: NMZ GO haalt de planning nu echt op.
