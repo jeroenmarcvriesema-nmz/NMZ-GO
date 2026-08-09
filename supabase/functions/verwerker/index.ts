@@ -16,7 +16,7 @@
 // ============================================================
 
 import { createClient, SupabaseClient } from 'jsr:@supabase/supabase-js@2'
-import { statusBijwerken, synchroniseer, tekstproef } from './clickup.ts'
+import { importeerTaak, statusBijwerken, synchroniseer, tekstproef } from './clickup.ts'
 
 // Een fout die niet opnieuw geprobeerd moet worden.
 class OnverwerkbaarError extends Error {
@@ -91,6 +91,25 @@ const HANDLERS: Record<string, Handler> = {
       throw new OnverwerkbaarError('tenant_id ontbreekt in de payload')
     }
     return await synchroniseer(db, tenantId)
+  },
+
+  // Eén taak met de hand binnenhalen, ongeacht status.
+  //
+  // De ronde hierboven kijkt alleen naar "deze week" en "volgende
+  // week". Wat daarbuiten valt — werk dat tussendoor komt, een taak die
+  // per ongeluk op een andere status stond — kon alleen binnenkomen
+  // door in ClickUp de status te verzetten, en dat verandert het
+  // planbord voor iedereen alleen om iets in NMZ GO te krijgen.
+  //
+  // Loopt langs precies dezelfde weg als de automatische ronde, dus ook
+  // idempotent: een tweede keer importeren geeft geen tweede bon.
+  'clickup.taak_importeren': async (taak, db) => {
+    const tenantId = String(taak.payload.tenant_id ?? '')
+    const clickupTaakId = String(taak.payload.clickup_taak_id ?? '')
+    if (!tenantId || !clickupTaakId) {
+      throw new OnverwerkbaarError('tenant_id en clickup_taak_id zijn allebei nodig')
+    }
+    return await importeerTaak(db, tenantId, clickupTaakId)
   },
 
   // Diagnose van één opdracht: wat leest de parser er precies uit?

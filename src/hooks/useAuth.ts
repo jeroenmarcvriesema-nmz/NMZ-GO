@@ -1,16 +1,12 @@
 import { useAuthStore } from '@/store/authStore'
-import type { Rol } from '@/types'
+import { magWerkBeheren, magGebruikersBeheren } from '@/lib/rollen'
 
 // Leest uitsluitend uit de global Zustand store.
 // Auth initialisatie gebeurt eenmalig in <AuthInitializer> (App.tsx).
-
-// Deze twee lijsten zijn de tegenhanger van mag_gebruikers_beheren() en
-// mag_werk_beheren() in de database (migratie 008). Ze bepalen wat je
-// te zíen krijgt; de database bepaalt wat je mág. Raken ze uit de pas,
-// dan is het gevolg een knop die een foutmelding geeft — vervelend,
-// maar niet onveilig. Andersom kan niet.
-const GEBRUIKERSBEHEER: Rol[] = ['eigenaar', 'beheerder']
-const WERKBEHEER: Rol[] = ['eigenaar', 'beheerder', 'uitvoerder', 'werkvoorbereider']
+//
+// De rollijsten zelf staan in lib/rollen.ts. Ze stonden hier én in
+// App.tsx, en dat liep uit de pas: de mobiele balk toonde "Team" aan
+// een uitvoerder terwijl die route dicht zat.
 
 export function useAuth() {
   const { profile, loading, error, signOut } = useAuthStore()
@@ -23,10 +19,10 @@ export function useAuth() {
     signOut,
 
     /** Wachtwoorden resetten, uitnodigen, rollen toekennen. */
-    magGebruikersBeheren: !!rol && GEBRUIKERSBEHEER.includes(rol),
+    magGebruikersBeheren: magGebruikersBeheren(rol),
 
     /** Werkbonnen maken en wijzigen, alles inzien, zoeken, plannen. */
-    magWerkBeheren: !!rol && WERKBEHEER.includes(rol),
+    magWerkBeheren: magWerkBeheren(rol),
 
     isEigenaar: rol === 'eigenaar',
   }

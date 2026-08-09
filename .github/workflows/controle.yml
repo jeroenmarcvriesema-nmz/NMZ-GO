@@ -1,0 +1,47 @@
+name: Controle
+
+# Draait op elke push en elke pull request. Doel is bescheiden en
+# expliciet: voorkomen dat iets in main belandt dat niet compileert of
+# dat een van de regels breekt waar eerder al een fout in zat.
+#
+# Wat hier níet gebeurt: praten met Supabase of ClickUp. Er staan geen
+# sleutels in deze workflow en dat blijft zo. De rollentest en de
+# handmatige doorloop staan in .ai/TESTING.md en horen daar thuis.
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  controle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Afhankelijkheden installeren
+        run: npm ci
+
+      - name: Types controleren
+        # Met tsconfig.test.json, zodat ook de tests zelf worden
+        # nagelopen. De productiebuild verderop doet dat bewust niet:
+        # een fout in een test hoort een uitrol niet tegen te houden.
+        run: npx tsc -p tsconfig.test.json --noEmit
+
+      - name: Tests draaien
+        run: npm test
+
+      - name: Bouwen
+        # De build faalt als een import niet klopt of als een pagina
+        # niet te bundelen is — dingen die een typecheck laat passeren.
+        run: npx vite build
+        env:
+          # De app heeft deze tijdens de build nodig. Nepwaarden zijn
+          # genoeg: er wordt niet verbonden, alleen gebundeld.
+          VITE_SUPABASE_URL: https://voorbeeld.supabase.co
+          VITE_SUPABASE_ANON_KEY: bouwsleutel-niet-echt

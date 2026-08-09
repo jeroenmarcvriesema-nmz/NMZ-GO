@@ -14,6 +14,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Avatar } from '@/components/ui/Avatar'
 import { berekenVoortgang, formatDatum, cn } from '@/lib/utils'
+import { kiesVandaag, isoDatum } from '@/lib/planning'
 import {
   IconMapPin, IconCalendar, IconPlayerPlay, IconPlayerStop,
   IconListCheck, IconPhoto, IconClock, IconTrophy, IconChevronRight,
@@ -30,47 +31,6 @@ function groet(): string {
 
 function datumLang(): string {
   return new Date().toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })
-}
-
-function vandaagISO(): string {
-  return new Date().toISOString().split('T')[0]
-}
-
-/**
- * Welke klus is vandaag aan de beurt?
- *
- * Iemand kan op meerdere werkbonnen staan — de planning loopt weken
- * vooruit. "De eerste open bon" was hier ooit goed genoeg omdat er één
- * bon was; met de echte planning erin pakte dat de bon met de láátste
- * datum, dus de klus die het verst weg ligt. Iemand kreeg dan 's
- * ochtends het verkeerde adres te zien.
- *
- * De volgorde die klopt:
- *   1. Een klus die vandaag loopt (vandaag valt binnen start en eind).
- *   2. Anders de eerstvolgende die nog moet beginnen.
- *   3. Anders de laatste die nog niet af is — dan is hij uitgelopen en
- *      moet hij juist bovenaan staan.
- */
-function kiesVandaag(bonnen: Werkbon[]): Werkbon | null {
-  const open = bonnen.filter((w) => w.status !== 'voltooid' && !w.opgeleverd_op)
-  if (open.length === 0) return null
-
-  const nu = vandaagISO()
-  const start = (w: Werkbon) => w.geplande_start ?? w.datum
-  const eind = (w: Werkbon) => w.geplande_eind ?? w.geplande_start ?? w.datum
-
-  const loopt = open
-    .filter((w) => start(w) <= nu && eind(w) >= nu)
-    .sort((a, b) => start(a).localeCompare(start(b)))
-  if (loopt.length > 0) return loopt[0]
-
-  const komt = open
-    .filter((w) => start(w) > nu)
-    .sort((a, b) => start(a).localeCompare(start(b)))
-  if (komt.length > 0) return komt[0]
-
-  // Alles ligt in het verleden en is niet af: uitgelopen werk.
-  return [...open].sort((a, b) => eind(b).localeCompare(eind(a)))[0]
 }
 
 export default function MijnWerkbonnen() {
@@ -346,7 +306,7 @@ function Prestaties() {
  * collega blijft dicht.
  */
 function WaarWerktWie() {
-  const dag = vandaagISO()
+  const dag = isoDatum()
   const { regels, loading } = usePlanningDoorkijk(dag, dag)
 
   if (!loading && regels.length === 0) return null

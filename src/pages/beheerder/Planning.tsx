@@ -3,21 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { PageWrapper } from '@/components/layout/PageWrapper'
 import { Spinner } from '@/components/ui/Spinner'
 import { usePlanning, statusLabel, statusKleur } from '@/hooks/useProjecten'
+import { Weekkiezer } from '@/components/layout/Weekkiezer'
 import { cn, formatDatumKort } from '@/lib/utils'
-import { IconUsers, IconMapPin, IconChevronLeft, IconChevronRight, IconAlertTriangle } from '@tabler/icons-react'
-
-function weekDagen(verschuiving = 0): Date[] {
-  const vandaag = new Date()
-  vandaag.setHours(0, 0, 0, 0)
-  const dag = vandaag.getDay()
-  const ma = new Date(vandaag)
-  ma.setDate(vandaag.getDate() - (dag === 0 ? 6 : dag - 1) + verschuiving * 7)
-  return Array.from({ length: 5 }, (_, i) => {
-    const d = new Date(ma)
-    d.setDate(ma.getDate() + i)
-    return d
-  })
-}
+import { isoDatum, weekDagen, maandagVerschoven } from '@/lib/planning'
+import { IconUsers, IconMapPin, IconAlertTriangle } from '@tabler/icons-react'
 
 const DAG_NAMEN = ['Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag']
 
@@ -28,9 +17,16 @@ export default function Planning() {
   // huidige week, terwijl er werk staat tot ver in de maand — en na een
   // uitloop wil je juist terugkijken.
   const [week, setWeek] = useState(0)
-  const dagen = weekDagen(week)
+  const dagen = weekDagen(maandagVerschoven(week))
   const vandaag = new Date()
   vandaag.setHours(0, 0, 0, 0)
+
+  // Wat staat er in déze week. Hier stond het totaal over alle weken —
+  // dat getal veranderde dus niet als je bladerde, en dat is precies het
+  // moment waarop je niet meer weet welke week je bekijkt.
+  const vanWeek = isoDatum(dagen[0])
+  const totWeek = isoDatum(dagen[4])
+  const dezeWeek = planning.filter((p) => p.datum <= totWeek && (p.eind ?? p.datum) >= vanWeek)
 
   /**
    * Wie staat er op deze dag op meer dan één klus?
@@ -64,49 +60,17 @@ export default function Planning() {
 
   return (
     <PageWrapper title="Weekplanning">
-      <div className="mb-6 flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setWeek(week - 1)}
-            title="Vorige week"
-            className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-surface-dark-2 text-gray-500 dark:text-white/50 hover:border-brand-yellow hover:text-gray-900 dark:hover:text-white transition-colors"
-          >
-            <IconChevronLeft className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setWeek(week + 1)}
-            title="Volgende week"
-            className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-surface-dark-2 text-gray-500 dark:text-white/50 hover:border-brand-yellow hover:text-gray-900 dark:hover:text-white transition-colors"
-          >
-            <IconChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-
-        <p className="text-sm text-gray-500 dark:text-white/60">
-          Week van{' '}
-          <span className="font-semibold text-gray-700 dark:text-white/80">
-            {formatDatumKort(dagen[0])} &ndash; {formatDatumKort(dagen[4])}
-          </span>
-        </p>
-
-        {week !== 0 && (
-          <button
-            onClick={() => setWeek(0)}
-            className="min-h-[36px] px-3 rounded-sm text-sm font-semibold text-gray-500 dark:text-white/50 hover:text-gray-900 dark:hover:text-white hover:bg-surface-2 dark:hover:bg-white/5 transition-colors"
-          >
-            Naar deze week
-          </button>
-        )}
-
-        <span className="sm:ml-auto text-sm text-gray-400 dark:text-white/40">
-          {planning.length} klussen ingepland
-        </span>
-      </div>
+      <Weekkiezer
+        week={week}
+        onWissel={setWeek}
+        telling={`${dezeWeek.length} ${dezeWeek.length === 1 ? 'klus' : 'klussen'}`}
+        className="mb-6"
+      />
 
       {/* Desktop: 5-kolommen grid */}
       <div className="hidden md:grid grid-cols-5 gap-4">
         {dagen.map((dag, i) => {
-          const dagStr = dag.toISOString().split('T')[0]
+          const dagStr = isoDatum(dag)
           const isVandaag = dag.getTime() === vandaag.getTime()
           const dagItems = planning.filter((p) => p.datum <= dagStr && (p.eind ?? p.datum) >= dagStr)
 
@@ -182,7 +146,7 @@ export default function Planning() {
       {/* Mobile: gestapeld per dag */}
       <div className="md:hidden space-y-4">
         {dagen.map((dag, i) => {
-          const dagStr = dag.toISOString().split('T')[0]
+          const dagStr = isoDatum(dag)
           const isVandaag = dag.getTime() === vandaag.getTime()
           const dagItems = planning.filter((p) => p.datum <= dagStr && (p.eind ?? p.datum) >= dagStr)
 

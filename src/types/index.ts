@@ -10,6 +10,8 @@ export interface Profile {
   id: string
   naam: string
   rol: Rol
+  /** Het bedrijf waar dit account bij hoort. Alle RLS-policies hangen hieraan. */
+  tenant_id: string
   /** Functietitel, los van het rechtenniveau. Bijv. "Operationeel Manager". */
   functie: string | null
   /** Gelijkgehouden met auth.users; nodig om een wachtwoordreset te kunnen sturen. */

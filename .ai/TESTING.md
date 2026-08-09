@@ -4,9 +4,31 @@ Dit document is de operationele checklist voor het valideren van werk aan NMZ GO
 
 ---
 
+## Geautomatiseerde tests
+
+Sinds de audit is er een testrunner: **Vitest**, met `npm test` (of `npm run controle` voor typecheck + tests in één). De tests staan in `tests/` en draaien in Node — er zit bewust geen enkele test in die een browser of een database nodig heeft.
+
+Wat er getest wordt is niet willekeurig gekozen. Het is de pure logica op de plekken waar aantoonbaar fouten zaten:
+
+| Bestand | Wat het bewaakt |
+| --- | --- |
+| `tests/ontleden.test.ts` | De werkopdracht-parser: ankers, opsommingstekens, doorlopende zinnen, genummerde punten, het lege kluiscode-veld dat het kopje eronder opslokte. |
+| `tests/planning.test.ts` | `kiesVandaag()` (gaf ooit het adres van de klus die het verst weg lag), weekberekening, en `isoDatum()` dat in UTC de dag ervóór teruggaf. |
+| `tests/statusregels.test.ts` | Van een vrije reden naar de juiste ClickUp-status, inclusief de voorrang van asbest. |
+| `tests/taakid.test.ts` | Het taak-id uit een geplakte ClickUp-link halen. |
+| `tests/export.test.ts` | De CSV-export: puntkomma, BOM, en velden met een puntkomma of aanhalingsteken erin. |
+
+Elke test hoort bij een fout die echt is voorgekomen. Voeg je er een toe, houd die regel dan aan: een test die nooit iets had kunnen vangen, vangt straks ook niets.
+
+`.github/workflows/controle.yml` draait bij elke push `tsc --noEmit`, `npm test` en een productiebuild. Er staan geen sleutels in die workflow en dat blijft zo — hij praat niet met Supabase of ClickUp.
+
+**Wat automatisch testen hier níet dekt:** alles wat door RLS, Storage of ClickUp loopt. Daar is de handmatige procedure hieronder voor, plus `supabase/tests/rollentest.sql`.
+
+---
+
 ## Handmatige testprocedure
 
-Er is **geen geautomatiseerde testsuite** in dit project (geen test-runner in `package.json` — zie `ARCHITECTURE.md`/`ROADMAP.md`). Kwaliteitsborging loopt volledig via deze handmatige procedure, verplicht bij elke taak:
+De geautomatiseerde tests dekken de rekenkundige kant; de procedure hieronder dekt de rest en blijft verplicht bij elke taak:
 
 1. **Build-check:** `npm run build` slaagt zonder TypeScript- of build-fouten.
 2. **Dev-server-check:** `npm run dev`, en de betrokken flow handmatig doorlopen in de browser.

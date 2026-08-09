@@ -8,26 +8,15 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { useWerkbonnen } from '@/hooks/useWerkbonnen'
 import { berekenVoortgang, cn } from '@/lib/utils'
+import { isoDatum, maandagVerschoven, weekDagen, looptOp, inWeek } from '@/lib/planning'
+import { Weekkiezer } from '@/components/layout/Weekkiezer'
 import type { Werkbon } from '@/types'
 import {
   IconCalendarWeek, IconMapPin, IconListCheck,
-  IconChevronRight, IconChevronLeft, IconAlertTriangle, IconKey,
+  IconChevronRight, IconAlertTriangle, IconKey,
 } from '@tabler/icons-react'
 
 const DAGEN = ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag']
-
-function iso(d: Date): string {
-  return d.toISOString().split('T')[0]
-}
-
-/** Maandag van de week waar deze datum in valt. */
-function maandagVan(d: Date): Date {
-  const kopie = new Date(d)
-  const dag = (kopie.getDay() + 6) % 7 // maandag = 0
-  kopie.setDate(kopie.getDate() - dag)
-  kopie.setHours(0, 0, 0, 0)
-  return kopie
-}
 
 /**
  * Mijn week — welke klussen staan er voor me, en wanneer.
@@ -51,23 +40,18 @@ export default function MijnWeek() {
   // donderdag in Haarlem staat, regelt zijn eigen vervoer.
   const [week, setWeek] = useState(0)
 
-  const maandag = maandagVan(new Date())
-  maandag.setDate(maandag.getDate() + week * 7)
-  const dagen = Array.from({ length: 5 }, (_, n) => {
-    const d = new Date(maandag)
-    d.setDate(maandag.getDate() + n)
-    return d
-  })
+  const maandag = maandagVerschoven(week)
+  const dagen = weekDagen(maandag)
 
-  const vandaag = iso(new Date())
+  const vandaag = isoDatum()
+
+  // Hoeveel klussen staan er in de week die je bekijkt. Zonder dat
+  // getal blader je door lege kolommen zonder te weten of dat klopt.
+  const dezeWeek = werkbonnen.filter((w) => inWeek(w, maandag))
 
   const opDag = (dag: Date): Werkbon[] => {
-    const d = iso(dag)
-    return werkbonnen.filter((w) => {
-      const start = w.geplande_start ?? w.datum
-      const eind = w.geplande_eind ?? start
-      return start <= d && eind >= d
-    })
+    const d = isoDatum(dag)
+    return werkbonnen.filter((w) => looptOp(w, d))
   }
 
   // Klussen die buiten deze week vallen maar wél van mij zijn. Zonder
@@ -75,7 +59,7 @@ export default function MijnWeek() {
   // volgende week gewoon werk staat.
   const buitenDeWeek = werkbonnen.filter((w) => {
     const start = w.geplande_start ?? w.datum
-    return start > iso(dagen[4]) && w.status !== 'voltooid'
+    return start > isoDatum(dagen[4]) && w.status !== 'voltooid'
   })
 
   if (loading) {
@@ -89,38 +73,15 @@ export default function MijnWeek() {
   return (
     <PageWrapper title="Mijn week">
       <div className="max-w-6xl space-y-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => setWeek(week - 1)}
-            title="Vorige week"
-            className="flex items-center justify-center w-11 h-11 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-surface-dark-2 text-gray-500 dark:text-white/50 hover:border-brand-yellow transition-colors"
-          >
-            <IconChevronLeft className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setWeek(week + 1)}
-            title="Volgende week"
-            className="flex items-center justify-center w-11 h-11 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-surface-dark-2 text-gray-500 dark:text-white/50 hover:border-brand-yellow transition-colors"
-          >
-            <IconChevronRight className="w-4 h-4" />
-          </button>
-          <span className="text-sm font-semibold text-gray-700 dark:text-white/80">
-            {week === 0 ? 'Deze week' : week === 1 ? 'Volgende week'
-              : week === -1 ? 'Vorige week' : `${dagen[0].getDate()}/${dagen[0].getMonth() + 1}`}
-          </span>
-          {week !== 0 && (
-            <button
-              onClick={() => setWeek(0)}
-              className="min-h-[44px] px-3 rounded-sm text-sm font-semibold text-gray-500 dark:text-white/50 hover:text-gray-900 dark:hover:text-white hover:bg-surface-2 dark:hover:bg-white/5 transition-colors"
-            >
-              Naar deze week
-            </button>
-          )}
-        </div>
+        <Weekkiezer
+          week={week}
+          onWissel={setWeek}
+          telling={`${dezeWeek.length} ${dezeWeek.length === 1 ? 'klus' : 'klussen'}`}
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
           {dagen.map((dag) => {
-            const d = iso(dag)
+            const d = isoDatum(dag)
             const bonnen = opDag(dag)
             const isVandaag = d === vandaag
 

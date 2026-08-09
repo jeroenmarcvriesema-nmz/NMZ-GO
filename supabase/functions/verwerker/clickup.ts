@@ -29,6 +29,10 @@
 
 import { SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 import { leesPdf, ontleed } from './werkopdracht.ts'
+import { statusUitReden, type Statussen } from './statusregels.ts'
+
+export { statusUitReden }
+export type { Statussen }
 
 const API = 'https://api.clickup.com/api/v2'
 
@@ -156,10 +160,195 @@ async function zetPloeg(
   )
 }
 
-export async function synchroniseer(
+/** Wie er op een taak staat, en of die naam bij ons bekend is. */
+interface Ploeglid { id: string; naam: string; heeftAccount: boolean }
+
+/** Alles wat het verwerken van één taak nodig heeft, één keer opgehaald. */
+interface Werkcontext {
+  i: Instellingen
+  token: string
+  perLabel: Map<string, Ploeglid>
+  droogloop: boolean
+  /** Namen uit ClickUp die niet in het personenregister staan. */
+  ongekoppeldeNamen: Set<string>
+}
+
+type TaakUitkomst =
+  | { soort: 'nieuw' | 'bijgewerkt' | 'ongewijzigd' }
+  | { soort: 'proef'; proef: Record<string, unknown> }
+  | { soort: 'overgeslagen'; reden: string }
+
+/**
+ * Eén ClickUp-taak naar een werkbon.
+ *
+ * Stond eerst als lus-inhoud in `synchroniseer`. Losgetrokken toen
+ * kantoor één taak met de hand moest kunnen binnenhalen: die weg hoort
+ * exact dezelfde te zijn als de automatische ronde. Twee keer dezelfde
+ * honderdtwintig regels betekent dat ze een keer uit elkaar gaan lopen,
+ * en dan werkt de ene bon wel en de andere niet zonder dat iemand weet
+ * waarom.
+ */
+async function verwerkTaak(
   db: SupabaseClient,
   tenantId: string,
-): Promise<Record<string, unknown>> {
+  taak: any,
+  ctx: Werkcontext,
+): Promise<TaakUitkomst> {
+  const { i, perLabel, droogloop } = ctx
+  const adres = taak.name ?? '(zonder naam)'
+
+  const namenVooraf = labelNamen(taak, i.veld_medewerkers)
+  const ploegVooraf = namenVooraf
+    .map((n) => perLabel.get(n))
+    .filter(Boolean) as Ploeglid[]
+  for (const n of namenVooraf) if (!perLabel.has(n)) ctx.ongekoppeldeNamen.add(n)
+
+  // Bestaat de bon al en heeft hij zijn documenten, dan is hij klaar.
+  // Een werkbon verandert niet meer nadat hij er eenmaal in staat —
+  // meerwerk wordt een aparte ClickUp-taak en dus een aparte bon.
+  // Opnieuw de PDF ophalen, ontleden en wegschrijven levert precies
+  // hetzelfde op en kost bij tweeëntwintig klussen tweeëntwintig
+  // downloads per ronde. Dat was de reden dat de hartslag op een half
+  // uur stond.
+  //
+  // Wat wél verandert is wie er op staat: iemand valt uit, er wordt
+  // iemand bijgezet. Dat is één veld uit de taak die we toch al binnen
+  // hebben, dus dat werken we altijd bij.
+  if (!droogloop) {
+    const { data: alKlaar } = await db
+      .from('werkbonnen')
+      .select('id, opdracht_pad')
+      .eq('tenant_id', tenantId)
+      .eq('clickup_taak_id', taak.id)
+      .maybeSingle()
+
+    if (alKlaar?.opdracht_pad) {
+      await zetPloeg(db, tenantId, alKlaar.id, ploegVooraf)
+      await db.from('werkbonnen')
+        .update({
+          clickup_status: taak.status?.status ?? null,
+          laatst_gesynct: new Date().toISOString(),
+        })
+        .eq('id', alKlaar.id)
+      return { soort: 'ongewijzigd' }
+    }
+  }
+
+  const opdracht = bijlage(taak, i.veld_werkopdracht, OPDRACHT_VELD)
+  if (!opdracht) {
+    return { soort: 'overgeslagen', reden: 'geen werkopdracht-PDF op de taak' }
+  }
+
+  const pdfRes = await fetch(opdracht.url)
+  if (!pdfRes.ok) {
+    return { soort: 'overgeslagen', reden: `werkopdracht niet op te halen (${pdfRes.status})` }
+  }
+
+  const pdfBytes = new Uint8Array(await pdfRes.arrayBuffer())
+  const tekst = await leesPdf(pdfBytes)
+  const w = ontleed(tekst, i.uitgesloten_punten)
+
+  const bon = {
+    tenant_id: tenantId,
+    clickup_taak_id: taak.id,
+    clickup_status: taak.status?.status ?? null,
+    bonnummer: veld(taak, i.veld_opdrachtnummer) ?? w.opdrachtnummer ?? taak.id,
+    projectnaam: 'Zwamsanering',
+    adres,
+    datum: datum(taak.start_date) ?? datum(veld(taak, i.veld_startdatum)) ??
+           new Date().toISOString().split('T')[0],
+    geplande_start: datum(veld(taak, i.veld_startdatum)) ?? datum(taak.start_date),
+    geplande_eind: datum(veld(taak, i.veld_opleverdatum)) ?? datum(taak.due_date),
+    uitloopdatum: datum(veld(taak, i.veld_uitloopdatum)),
+    kluiscode: veld(taak, i.veld_kluiscode) ?? w.kluiscode,
+    inspecteur: w.inspecteur,
+    inspecteur_telefoon: w.inspecteurTelefoon,
+    werkvoorbereiding: w.werkvoorbereiding,
+    laatst_gesynct: new Date().toISOString(),
+  }
+
+  // Bij een droogloop rapporteren we wat er zóu ontstaan. Zonder dat is
+  // "25 gezien, 25 goed" een getal zonder betekenis — je wilt zien dát
+  // de punten kloppen voordat je hem aanzet.
+  if (droogloop) {
+    return {
+      soort: 'proef',
+      proef: {
+        adres,
+        bonnummer: bon.bonnummer,
+        punten: w.punten.length,
+        weggelaten: w.weggelaten.length,
+        eerste_punt: w.punten[0]?.slice(0, 80) ?? null,
+        medewerkers: ploegVooraf.map((g) => g.naam + (g.heeftAccount ? '' : ' (nog geen account)')),
+        geplande_start: bon.geplande_start,
+        geplande_eind: bon.geplande_eind,
+        kluiscode: bon.kluiscode,
+        tekening: bijlage(taak, i.veld_werktekening, TEKENING_VELD) ? 'ja' : 'NEE',
+      },
+    }
+  }
+
+  const { data: bestaand } = await db
+    .from('werkbonnen')
+    .select('id')
+    .eq('tenant_id', tenantId)
+    .eq('clickup_taak_id', taak.id)
+    .maybeSingle()
+
+  let bonId: string
+  let uitkomst: TaakUitkomst
+  if (bestaand) {
+    const { error } = await db.from('werkbonnen').update(bon).eq('id', bestaand.id)
+    if (error) throw new Error(`werkbon bijwerken mislukt: ${error.message}`)
+    bonId = bestaand.id
+    uitkomst = { soort: 'bijgewerkt' }
+  } else {
+    const { data, error } = await db.from('werkbonnen').insert(bon).select('id').single()
+    if (error) throw new Error(`werkbon aanmaken mislukt: ${error.message}`)
+    bonId = data.id
+    uitkomst = { soort: 'nieuw' }
+  }
+
+  // Punten alleen bij een nieuwe bon. Bij een bestaande zou opnieuw
+  // invoegen het afvinkwerk van een zwamsaneerder wissen.
+  const { count } = await db
+    .from('taken')
+    .select('id', { count: 'exact', head: true })
+    .eq('werkbon_id', bonId)
+
+  if ((count ?? 0) === 0) {
+    const rijen = w.punten.map((titel, n) => ({
+      tenant_id: tenantId,
+      werkbon_id: bonId,
+      titel,
+      volgorde: n,
+    }))
+    const { error } = await db.from('taken').insert(rijen)
+    if (error) throw new Error(`punten aanmaken mislukt: ${error.message}`)
+  }
+
+  await zetPloeg(db, tenantId, bonId, ploegVooraf)
+
+  // Documenten kopiëren. De URL's van ClickUp zijn kortlevend, dus een
+  // link opslaan heeft geen zin.
+  await bewaarDocument(db, bonId, pdfBytes, 'werkopdracht.pdf', 'opdracht_pad')
+  const tekening = bijlage(taak, i.veld_werktekening, TEKENING_VELD)
+  if (tekening) {
+    const t = await fetch(tekening.url)
+    if (t.ok) {
+      await bewaarDocument(db, bonId, new Uint8Array(await t.arrayBuffer()),
+                           'werktekening.pdf', 'tekening_pad')
+    }
+  }
+
+  return uitkomst
+}
+
+/**
+ * Alles ophalen wat het verwerken van taken nodig heeft: instellingen,
+ * het token uit Vault en de koppeling ClickUp-naam → persoon.
+ */
+async function maakContext(db: SupabaseClient, tenantId: string): Promise<Werkcontext> {
   const { data: inst, error: instFout } = await db
     .from('clickup_instellingen')
     .select('*')
@@ -169,12 +358,9 @@ export async function synchroniseer(
   if (instFout) throw new Error(`instellingen lezen mislukt: ${instFout.message}`)
   if (!inst) throw new Error(`geen ClickUp-instellingen voor tenant ${tenantId}`)
 
-  const i = inst as Instellingen
-  const droogloop = !i.actief
-
   // Het token staat in Vault, net als de service-role-sleutel. Deze
-  // functie is de enige doorgang en is alleen voor service_role —
-  // een browser of ingelogde gebruiker komt er niet bij.
+  // functie is de enige doorgang en is alleen voor service_role — een
+  // browser of ingelogde gebruiker komt er niet bij.
   const { data: token, error: tokenFout } = await db.rpc('geef_clickup_token')
   if (tokenFout) throw new Error(`ClickUp-token lezen mislukt: ${tokenFout.message}`)
   if (!token) {
@@ -195,7 +381,7 @@ export async function synchroniseer(
     .eq('actief', true)
     .not('clickup_label', 'is', null)
 
-  const perLabel = new Map<string, { id: string; naam: string; heeftAccount: boolean }>()
+  const perLabel = new Map<string, Ploeglid>()
   for (const p of personen ?? []) {
     if (p.clickup_label) {
       perLabel.set(p.clickup_label, {
@@ -206,13 +392,64 @@ export async function synchroniseer(
     }
   }
 
+  return {
+    i: inst as Instellingen,
+    token,
+    perLabel,
+    droogloop: !(inst as Instellingen).actief,
+    ongekoppeldeNamen: new Set<string>(),
+  }
+}
+
+/**
+ * Eén taak met de hand binnenhalen, ongeacht status.
+ *
+ * De automatische ronde kijkt alleen naar "deze week" en "volgende
+ * week". Er is altijd het geval dat daarbuiten valt: werk dat vandaag
+ * tussendoor komt, een taak die per ongeluk op een andere status stond,
+ * een klus die vooruit gehaald wordt. Daar hoefde tot nu toe iemand van
+ * kantoor de status in ClickUp voor te verzetten — en dat verandert het
+ * planbord voor iedereen, alleen om iets in NMZ GO te krijgen.
+ */
+export async function importeerTaak(
+  db: SupabaseClient,
+  tenantId: string,
+  clickupTaakId: string,
+): Promise<Record<string, unknown>> {
+  const ctx = await maakContext(db, tenantId)
+  const taak = await haal(`/task/${encodeURIComponent(clickupTaakId)}`, ctx.token)
+
+  if (!taak?.id) {
+    throw new Error(`ClickUp kent geen taak met id ${clickupTaakId}`)
+  }
+
+  const uit = await verwerkTaak(db, tenantId, taak, ctx)
+
+  return {
+    taak: taak.id,
+    adres: taak.name ?? null,
+    clickup_status: taak.status?.status ?? null,
+    droogloop: ctx.droogloop,
+    uitkomst: uit.soort,
+    ...(uit.soort === 'overgeslagen' ? { reden: uit.reden } : {}),
+    ...(uit.soort === 'proef' ? { proef: uit.proef } : {}),
+    namen_zonder_persoon: [...ctx.ongekoppeldeNamen],
+  }
+}
+
+export async function synchroniseer(
+  db: SupabaseClient,
+  tenantId: string,
+): Promise<Record<string, unknown>> {
+  const ctx = await maakContext(db, tenantId)
+  const { i, token, droogloop } = ctx
+
   let gezien = 0
   let nieuw = 0
   let bijgewerkt = 0
   let ongewijzigd = 0
   const proef: Record<string, unknown>[] = []
   const overgeslagen: Bevinding[] = []
-  const ongekoppeldeNamen = new Set<string>()
 
   // Meerdere statussen, want een taak schuift in het weekend van
   // "volgende week" naar "deze week". Alleen op de eerste filteren
@@ -235,175 +472,20 @@ export async function synchroniseer(
       const adres = taak.name ?? '(zonder naam)'
 
       try {
-        const namenVooraf = labelNamen(taak, i.veld_medewerkers)
-        const ploegVooraf = namenVooraf
-          .map((n) => perLabel.get(n))
-          .filter(Boolean) as { id: string; naam: string; heeftAccount: boolean }[]
-        for (const n of namenVooraf) if (!perLabel.has(n)) ongekoppeldeNamen.add(n)
-
-        // Bestaat de bon al en heeft hij zijn documenten, dan is hij
-        // klaar. Een werkbon verandert niet meer nadat hij er eenmaal
-        // in staat — meerwerk wordt een aparte ClickUp-taak en dus een
-        // aparte bon. Opnieuw de PDF ophalen, ontleden en wegschrijven
-        // levert precies hetzelfde op en kost bij tweeëntwintig klussen
-        // tweeëntwintig downloads per ronde. Dat was de reden dat de
-        // hartslag op een half uur stond.
-        //
-        // Wat wél verandert is wie er op staat: iemand valt uit, er
-        // wordt iemand bijgezet. Dat is één veld uit de taak die we
-        // toch al binnen hebben, dus dat werken we altijd bij.
-        if (!droogloop) {
-          const { data: alKlaar } = await db
-            .from('werkbonnen')
-            .select('id, opdracht_pad')
-            .eq('tenant_id', tenantId)
-            .eq('clickup_taak_id', taak.id)
-            .maybeSingle()
-
-          if (alKlaar?.opdracht_pad) {
-            await zetPloeg(db, tenantId, alKlaar.id, ploegVooraf)
-            await db.from('werkbonnen')
-              .update({
-                clickup_status: taak.status?.status ?? null,
-                laatst_gesynct: new Date().toISOString(),
-              })
-              .eq('id', alKlaar.id)
-            ongewijzigd++
-            continue
-          }
-        }
-
-        const opdracht = bijlage(taak, i.veld_werkopdracht, OPDRACHT_VELD)
-        if (!opdracht) {
-          overgeslagen.push({ taak: taak.id, adres, reden: 'geen werkopdracht-PDF op de taak' })
-          continue
-        }
-
-        const pdfRes = await fetch(opdracht.url)
-        if (!pdfRes.ok) {
-          overgeslagen.push({ taak: taak.id, adres, reden: `werkopdracht niet op te halen (${pdfRes.status})` })
-          continue
-        }
-        const pdfBytes = new Uint8Array(await pdfRes.arrayBuffer())
-        const tekst = await leesPdf(pdfBytes)
-        const w = ontleed(tekst, i.uitgesloten_punten)
-
-        const gekoppeld = ploegVooraf
-
-        const bon = {
-          tenant_id: tenantId,
-          clickup_taak_id: taak.id,
-          clickup_status: taak.status?.status ?? null,
-          bonnummer: veld(taak, i.veld_opdrachtnummer) ?? w.opdrachtnummer ?? taak.id,
-          projectnaam: 'Zwamsanering',
-          adres,
-          datum: datum(taak.start_date) ?? datum(veld(taak, i.veld_startdatum)) ??
-                 new Date().toISOString().split('T')[0],
-          geplande_start: datum(veld(taak, i.veld_startdatum)) ?? datum(taak.start_date),
-          geplande_eind: datum(veld(taak, i.veld_opleverdatum)) ?? datum(taak.due_date),
-          uitloopdatum: datum(veld(taak, i.veld_uitloopdatum)),
-          kluiscode: veld(taak, i.veld_kluiscode) ?? w.kluiscode,
-          inspecteur: w.inspecteur,
-          inspecteur_telefoon: w.inspecteurTelefoon,
-          werkvoorbereiding: w.werkvoorbereiding,
-          laatst_gesynct: new Date().toISOString(),
-        }
-
-        // Bij een droogloop rapporteren we wat er zóu ontstaan. Zonder
-        // dat is "25 gezien, 25 goed" een getal zonder betekenis — je
-        // wilt zien dát de punten kloppen voordat je hem aanzet.
-        if (droogloop) {
-          nieuw++
-          proef.push({
-            adres,
-            bonnummer: bon.bonnummer,
-            punten: w.punten.length,
-            weggelaten: w.weggelaten.length,
-            eerste_punt: w.punten[0]?.slice(0, 80) ?? null,
-            medewerkers: gekoppeld.map((g) => g.naam + (g.heeftAccount ? '' : ' (nog geen account)')),
-            geplande_start: bon.geplande_start,
-            geplande_eind: bon.geplande_eind,
-            kluiscode: bon.kluiscode,
-            tekening: bijlage(taak, i.veld_werktekening, TEKENING_VELD) ? 'ja' : 'NEE',
-          })
-          continue
-        }
-
-        const { data: bestaand } = await db
-          .from('werkbonnen')
-          .select('id')
-          .eq('tenant_id', tenantId)
-          .eq('clickup_taak_id', taak.id)
-          .maybeSingle()
-
-        let bonId: string
-        if (bestaand) {
-          const { error } = await db.from('werkbonnen').update(bon).eq('id', bestaand.id)
-          if (error) throw new Error(`werkbon bijwerken mislukt: ${error.message}`)
-          bonId = bestaand.id
-          bijgewerkt++
-        } else {
-          const { data, error } = await db.from('werkbonnen').insert(bon).select('id').single()
-          if (error) throw new Error(`werkbon aanmaken mislukt: ${error.message}`)
-          bonId = data.id
-          nieuw++
-        }
-
-        // Punten alleen bij een nieuwe bon. Bij een bestaande zou
-        // opnieuw invoegen het afvinkwerk van een zwamsaneerder wissen.
-        const { count } = await db
-          .from('taken')
-          .select('id', { count: 'exact', head: true })
-          .eq('werkbon_id', bonId)
-
-        if ((count ?? 0) === 0) {
-          const rijen = w.punten.map((titel, n) => ({
-            tenant_id: tenantId,
-            werkbon_id: bonId,
-            titel,
-            volgorde: n,
-          }))
-          const { error } = await db.from('taken').insert(rijen)
-          if (error) throw new Error(`punten aanmaken mislukt: ${error.message}`)
-        }
-
-        // Toewijzing: eerst weg, dan opnieuw — ClickUp is leidend.
-        //
-        // Maar alleen over zijn eigen toewijzingen. Wie hier handmatig
-        // iemand aan een klus hangt, doet dat omdat er iets is gebeurd
-        // wat ClickUp nog niet weet: iemand valt uit, er komt werk
-        // tussendoor. Die keuze wegvegen bij de volgende ronde is stil
-        // en onvindbaar — iemand denkt dat hij is ingepland en staat er
-        // de volgende ochtend niet meer op.
-        await db.from('werkbon_medewerkers')
-          .delete()
-          .eq('werkbon_id', bonId)
-          .eq('handmatig', false)
-
-        if (gekoppeld.length > 0) {
-          // upsert en niet insert: een handmatige toewijzing van
-          // iemand die inmiddels óók in ClickUp staat, botst anders op
-          // de primaire sleutel en laat de hele bon mislukken.
-          await db.from('werkbon_medewerkers').upsert(
-            gekoppeld.map((g) => ({
-              tenant_id: tenantId, werkbon_id: bonId, persoon_id: g.id, handmatig: false,
-            })),
-            { onConflict: 'werkbon_id,persoon_id', ignoreDuplicates: true },
-          )
-        }
-
-        // Documenten kopiëren. De URL's van ClickUp zijn kortlevend,
-        // dus een link opslaan heeft geen zin.
-        await bewaarDocument(db, bonId, pdfBytes, 'werkopdracht.pdf', 'opdracht_pad')
-        const tekening = bijlage(taak, i.veld_werktekening, TEKENING_VELD)
-        if (tekening) {
-          const t = await fetch(tekening.url)
-          if (t.ok) {
-            await bewaarDocument(db, bonId, new Uint8Array(await t.arrayBuffer()),
-                                 'werktekening.pdf', 'tekening_pad')
-          }
+        const uit = await verwerkTaak(db, tenantId, taak, ctx)
+        switch (uit.soort) {
+          case 'nieuw':       nieuw++; break
+          case 'bijgewerkt':  bijgewerkt++; break
+          case 'ongewijzigd': ongewijzigd++; break
+          case 'proef':       nieuw++; proef.push(uit.proef); break
+          case 'overgeslagen':
+            overgeslagen.push({ taak: taak.id, adres, reden: uit.reden })
+            break
         }
       } catch (e) {
+        // Nooit stil overslaan: een taak die klapt komt terug in het
+        // resultaat, met reden. Stil overslaan betekent maandagochtend
+        // iemand zonder werkbon.
         overgeslagen.push({
           taak: taak.id,
           adres,
@@ -420,9 +502,9 @@ export async function synchroniseer(
     bijgewerkt,
     ongewijzigd,
     overgeslagen,
-    namen_zonder_persoon: [...ongekoppeldeNamen],
+    namen_zonder_persoon: [...ctx.ongekoppeldeNamen],
     zonder_account: [...new Set(
-      [...perLabel.values()].filter((p) => !p.heeftAccount).map((p) => p.naam),
+      [...ctx.perLabel.values()].filter((p) => !p.heeftAccount).map((p) => p.naam),
     )],
     ...(droogloop ? { proef } : {}),
   }
@@ -508,33 +590,8 @@ async function bewaarDocument(
 // opnieuw geprobeerd. Een zwamsaneerder die een klus stillegt hoort
 // daar nooit op te wachten.
 
-interface Statussen {
-  status_opgeleverd: string | null
-  status_wacht_op_fotos: string | null
-  status_stilgelegd: string | null
-  status_asbest: string | null
-  status_opnieuw_inplannen: string | null
-}
-
-/**
- * Welke ClickUp-status hoort bij een stilgelegde klus?
- *
- * Geen keuzelijst in het scherm — wie een klus stillegt heeft haast en
- * moet kunnen opschrijven wat er is. De status volgt uit de tekst.
- * Herkent de tekst niets bijzonders, dan is het gewoon "on hold"; dat
- * is de eerlijke uitkomst en niet een gok.
- */
-export function statusUitReden(reden: string, s: Statussen): string {
-  const tekst = reden.toLowerCase()
-  if (tekst.includes('asbest')) {
-    return s.status_asbest ?? s.status_stilgelegd ?? 'on hold'
-  }
-  if (tekst.includes('opnieuw inplannen') || tekst.includes('opnieuw plannen')) {
-    return s.status_opnieuw_inplannen ?? s.status_stilgelegd ?? 'on hold'
-  }
-  return s.status_stilgelegd ?? 'on hold'
-}
-
+// De regel zelf staat in `statusregels.ts` — losse module zonder
+// afhankelijkheden, zodat een test hem kan draaien zonder Deno.
 async function schrijf(pad: string, token: string, body: unknown): Promise<void> {
   const res = await fetch(`${API}${pad}`, {
     method: 'PUT',
