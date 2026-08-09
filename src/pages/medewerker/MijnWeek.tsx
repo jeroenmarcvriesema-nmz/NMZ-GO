@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { useWerkbonnen } from '@/hooks/useWerkbonnen'
 import { berekenVoortgang, cn } from '@/lib/utils'
+import { isoDatum, maandagVan, weekDagen, looptOp } from '@/lib/planning'
 import type { Werkbon } from '@/types'
 import {
   IconCalendarWeek, IconMapPin, IconListCheck,
@@ -15,19 +16,6 @@ import {
 } from '@tabler/icons-react'
 
 const DAGEN = ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag']
-
-function iso(d: Date): string {
-  return d.toISOString().split('T')[0]
-}
-
-/** Maandag van de week waar deze datum in valt. */
-function maandagVan(d: Date): Date {
-  const kopie = new Date(d)
-  const dag = (kopie.getDay() + 6) % 7 // maandag = 0
-  kopie.setDate(kopie.getDate() - dag)
-  kopie.setHours(0, 0, 0, 0)
-  return kopie
-}
 
 /**
  * Mijn week — welke klussen staan er voor me, en wanneer.
@@ -53,21 +41,13 @@ export default function MijnWeek() {
 
   const maandag = maandagVan(new Date())
   maandag.setDate(maandag.getDate() + week * 7)
-  const dagen = Array.from({ length: 5 }, (_, n) => {
-    const d = new Date(maandag)
-    d.setDate(maandag.getDate() + n)
-    return d
-  })
+  const dagen = weekDagen(maandag)
 
-  const vandaag = iso(new Date())
+  const vandaag = isoDatum()
 
   const opDag = (dag: Date): Werkbon[] => {
-    const d = iso(dag)
-    return werkbonnen.filter((w) => {
-      const start = w.geplande_start ?? w.datum
-      const eind = w.geplande_eind ?? start
-      return start <= d && eind >= d
-    })
+    const d = isoDatum(dag)
+    return werkbonnen.filter((w) => looptOp(w, d))
   }
 
   // Klussen die buiten deze week vallen maar wél van mij zijn. Zonder
@@ -75,7 +55,7 @@ export default function MijnWeek() {
   // volgende week gewoon werk staat.
   const buitenDeWeek = werkbonnen.filter((w) => {
     const start = w.geplande_start ?? w.datum
-    return start > iso(dagen[4]) && w.status !== 'voltooid'
+    return start > isoDatum(dagen[4]) && w.status !== 'voltooid'
   })
 
   if (loading) {
@@ -120,7 +100,7 @@ export default function MijnWeek() {
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
           {dagen.map((dag) => {
-            const d = iso(dag)
+            const d = isoDatum(dag)
             const bonnen = opDag(dag)
             const isVandaag = d === vandaag
 

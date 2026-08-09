@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/authStore'
@@ -6,26 +6,41 @@ import { useThemeStore } from '@/store/themeStore'
 import { PageLoader } from '@/components/ui/Spinner'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { Toaster } from '@/components/ui/Toaster'
+import { Foutvanger } from '@/components/layout/Foutvanger'
 import type { Rol } from '@/types'
 
-import Login            from '@/pages/auth/Login'
-import Registreer       from '@/pages/auth/Registreer'
-import WachtwoordVergeten   from '@/pages/auth/WachtwoordVergeten'
+// Elk scherm apart inladen.
+//
+// Alles zat in één bestand van een halve megabyte. Op kantoorwifi merk
+// je dat niet; op 4G voor een deur in Rotterdam wel, en dat is precies
+// waar deze app geopend wordt. Nu haalt een zwamsaneerder alleen het
+// scherm op dat hij nodig heeft — hij krijgt de planning van kantoor,
+// de projectenpagina en het medewerkersbeheer niet meer mee.
+//
+// De inlogschermen blijven bewust gewoon geïmporteerd: dat is het
+// eerste wat iedereen ziet, en daar een extra netwerkrondje voor doen
+// maakt juist het traagste moment trager.
+import Login from '@/pages/auth/Login'
+import Registreer from '@/pages/auth/Registreer'
+import WachtwoordVergeten from '@/pages/auth/WachtwoordVergeten'
 import WachtwoordHerstellen from '@/pages/auth/WachtwoordHerstellen'
-import Dashboard        from '@/pages/beheerder/Dashboard'
-import Projecten        from '@/pages/beheerder/Projecten'
-import ProjectDetail    from '@/pages/beheerder/ProjectDetail'
-import Planning         from '@/pages/beheerder/Planning'
-import Werkbonnen       from '@/pages/beheerder/Werkbonnen'
-import WerkbonNieuw     from '@/pages/beheerder/WerkbonNieuw'
-import WerkbonDetail    from '@/pages/beheerder/WerkbonDetail'
-import Medewerkers      from '@/pages/beheerder/Medewerkers'
-import Rapporten        from '@/pages/beheerder/Rapporten'
-import MijnWerkbonnen   from '@/pages/medewerker/MijnWerkbonnen'
-import MijnWeek         from '@/pages/medewerker/MijnWeek'
-import MijnBonnen       from '@/pages/medewerker/MijnBonnen'
-import WerkbonUitvoeren from '@/pages/medewerker/WerkbonUitvoeren'
-import Afgerond         from '@/pages/medewerker/Afgerond'
+
+const Dashboard        = lazy(() => import('@/pages/beheerder/Dashboard'))
+const Projecten        = lazy(() => import('@/pages/beheerder/Projecten'))
+const ProjectDetail    = lazy(() => import('@/pages/beheerder/ProjectDetail'))
+const Planning         = lazy(() => import('@/pages/beheerder/Planning'))
+const Werkbonnen       = lazy(() => import('@/pages/beheerder/Werkbonnen'))
+const WerkbonNieuw     = lazy(() => import('@/pages/beheerder/WerkbonNieuw'))
+const WerkbonDetail    = lazy(() => import('@/pages/beheerder/WerkbonDetail'))
+const Medewerkers      = lazy(() => import('@/pages/beheerder/Medewerkers'))
+const Rapporten        = lazy(() => import('@/pages/beheerder/Rapporten'))
+const Archief          = lazy(() => import('@/pages/beheerder/Archief'))
+const Uitloop          = lazy(() => import('@/pages/beheerder/Uitloop'))
+const MijnWerkbonnen   = lazy(() => import('@/pages/medewerker/MijnWerkbonnen'))
+const MijnWeek         = lazy(() => import('@/pages/medewerker/MijnWeek'))
+const MijnBonnen       = lazy(() => import('@/pages/medewerker/MijnBonnen'))
+const WerkbonUitvoeren = lazy(() => import('@/pages/medewerker/WerkbonUitvoeren'))
+const Afgerond         = lazy(() => import('@/pages/medewerker/Afgerond'))
 
 function AuthInitializer() {
   const { fetchProfile, setLoading, setProfile } = useAuthStore()
@@ -135,35 +150,45 @@ function RootRedirect() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthInitializer />
-      <ThemeInitializer />
-      <Toaster />
-      <Routes>
-        <Route path="/login"      element={<Login />} />
-        <Route path="/registreer" element={<Registreer />} />
-        <Route path="/wachtwoord-vergeten"    element={<WachtwoordVergeten />} />
-        <Route path="/wachtwoord-herstellen"  element={<WachtwoordHerstellen />} />
-        <Route path="/"           element={<RootRedirect />} />
+    // Het vangnet staat buiten de router: valt er iets om tijdens het
+    // navigeren zelf, dan is er nog steeds een scherm met een uitweg.
+    <Foutvanger plek="app">
+      <BrowserRouter>
+        <AuthInitializer />
+        <ThemeInitializer />
+        <Toaster />
+        {/* Elk scherm komt apart binnen; tot het er is staat de gewone
+            laadindicator, dezelfde als bij het ophalen van gegevens. */}
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/login"      element={<Login />} />
+            <Route path="/registreer" element={<Registreer />} />
+            <Route path="/wachtwoord-vergeten"    element={<WachtwoordVergeten />} />
+            <Route path="/wachtwoord-herstellen"  element={<WachtwoordHerstellen />} />
+            <Route path="/"           element={<RootRedirect />} />
 
-        <Route path="/dashboard"        element={<KantoorGuard><Dashboard /></KantoorGuard>} />
-        <Route path="/projecten"        element={<KantoorGuard><Projecten /></KantoorGuard>} />
-        <Route path="/projecten/:id"    element={<KantoorGuard><ProjectDetail /></KantoorGuard>} />
-        <Route path="/planning"         element={<KantoorGuard><Planning /></KantoorGuard>} />
-        <Route path="/werkbonnen"       element={<KantoorGuard><Werkbonnen /></KantoorGuard>} />
-        <Route path="/werkbonnen/nieuw" element={<KantoorGuard><WerkbonNieuw /></KantoorGuard>} />
-        <Route path="/werkbonnen/:id"   element={<KantoorGuard><WerkbonDetail /></KantoorGuard>} />
-        <Route path="/medewerkers"      element={<GebruikersbeheerGuard><Medewerkers /></GebruikersbeheerGuard>} />
-        <Route path="/rapporten"        element={<KantoorGuard><Rapporten /></KantoorGuard>} />
+            <Route path="/dashboard"        element={<KantoorGuard><Dashboard /></KantoorGuard>} />
+            <Route path="/projecten"        element={<KantoorGuard><Projecten /></KantoorGuard>} />
+            <Route path="/projecten/:id"    element={<KantoorGuard><ProjectDetail /></KantoorGuard>} />
+            <Route path="/planning"         element={<KantoorGuard><Planning /></KantoorGuard>} />
+            <Route path="/werkbonnen"       element={<KantoorGuard><Werkbonnen /></KantoorGuard>} />
+            <Route path="/werkbonnen/nieuw" element={<KantoorGuard><WerkbonNieuw /></KantoorGuard>} />
+            <Route path="/werkbonnen/:id"   element={<KantoorGuard><WerkbonDetail /></KantoorGuard>} />
+            <Route path="/medewerkers"      element={<GebruikersbeheerGuard><Medewerkers /></GebruikersbeheerGuard>} />
+            <Route path="/rapporten"        element={<KantoorGuard><Rapporten /></KantoorGuard>} />
+            <Route path="/archief"          element={<KantoorGuard><Archief /></KantoorGuard>} />
+            <Route path="/uitloop"          element={<KantoorGuard><Uitloop /></KantoorGuard>} />
 
-        <Route path="/mijn-werkbonnen" element={<AuthGuard><MijnWerkbonnen /></AuthGuard>} />
-        <Route path="/werkbon/:id"     element={<AuthGuard><WerkbonUitvoeren /></AuthGuard>} />
-        <Route path="/mijn-week"       element={<AuthGuard><MijnWeek /></AuthGuard>} />
-        <Route path="/mijn-bonnen"     element={<AuthGuard><MijnBonnen /></AuthGuard>} />
-        <Route path="/afgerond"        element={<AuthGuard><Afgerond /></AuthGuard>} />
+            <Route path="/mijn-werkbonnen" element={<AuthGuard><MijnWerkbonnen /></AuthGuard>} />
+            <Route path="/werkbon/:id"     element={<AuthGuard><WerkbonUitvoeren /></AuthGuard>} />
+            <Route path="/mijn-week"       element={<AuthGuard><MijnWeek /></AuthGuard>} />
+            <Route path="/mijn-bonnen"     element={<AuthGuard><MijnBonnen /></AuthGuard>} />
+            <Route path="/afgerond"        element={<AuthGuard><Afgerond /></AuthGuard>} />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
+      </BrowserRouter>
+    </Foutvanger>
   )
 }

@@ -15,6 +15,8 @@ import {
   IconHome,
   IconClipboardList,
   IconClipboardCheck,
+  IconArchive,
+  IconClockExclamation,
   IconLogout,
   IconSun,
   IconMoon,
@@ -77,9 +79,12 @@ export function Sidebar() {
             <NavItem to="/projecten" icon={<IconFolderOpen />}      label="Projecten" />
             <NavItem to="/planning"  icon={<IconCalendarWeek />}    label="Planning" />
 
+            <NavItem to="/uitloop"   icon={<IconClockExclamation />} label="Uitloop" />
+
             <NavSection label="Werkbonnen" />
             <NavItem to="/werkbonnen"       icon={<IconMapPin />} label="Alle werkbonnen" />
             <NavItem to="/werkbonnen/nieuw" icon={<IconPlus />}   label="Nieuwe werkbon" />
+            <NavItem to="/archief"          icon={<IconArchive />} label="Archief" />
 
             <NavSection label="Beheer" />
             <NavItem to="/rapporten"   icon={<IconFileExport />} label="Rapporten" />

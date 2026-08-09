@@ -5,6 +5,7 @@ import { KpiCard } from '@/components/dashboard/KpiCard'
 import { MeldingItem } from '@/components/dashboard/MeldingItem'
 import { ProjectTabel } from '@/components/dashboard/ProjectTabel'
 import { ActivityFeed } from '@/components/dashboard/ActivityFeed'
+import { Storingen } from '@/components/dashboard/Storingen'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { useDashboard } from '@/hooks/useDashboard'
@@ -128,6 +129,10 @@ export default function Dashboard() {
         <KpiCard label="Afgerond" value={opleveringen} icon={<IconCircleCheck />} variant="green" />
         <KpiCard label="Gem. voortgang" value={`${gemVoortgang}%`} icon={<IconTrendingUp />} variant="neutral" />
       </div>
+
+      {/* Storingen uit de app zelf. Verschijnt alleen als er iets is —
+          een kaart die altijd nul meldt wordt niet meer gelezen. */}
+      <Storingen />
 
       {/* Operationele meldingen */}
       {data.meldingen.length > 0 && (

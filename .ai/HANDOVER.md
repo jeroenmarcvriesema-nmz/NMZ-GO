@@ -8,7 +8,36 @@ Lees hoofdstuk 0 als eerste — dat is de actuele stand. De hoofdstukken daarna 
 
 # 0. Actuele stand — augustus 2026
 
-**De laatste sessie stond volledig in het teken van Epic 4: Intelligent Work Preparation.** Dat is de koppeling tussen ClickUp en NMZ GO, plus de intelligentielaag daarbovenop.
+## Auditronde — wat er is opgelost
+
+Na de volledige technische en functionele audit is de lijst met bevindingen afgewerkt. Wat hieronder staat is de nieuwe uitgangspositie; de tekst daaronder beschrijft de stand van vóór die ronde.
+
+**Beveiliging (migratie 020).** Het RPC-oppervlak is teruggebracht van dertien functies die `anon` kon aanroepen naar drie, en die drie zijn er met reden: `get_mijn_rol()` en `get_mijn_tenant()` worden vanuit RLS-policies aangeroepen, `uitnodiging_controleren()` is de kern van het uitnodigingsscherm dat per definitie uitgelogd bezocht wordt. `public.tenants` heeft een expliciete leespolicy gekregen in plaats van RLS-zonder-policy. Twee echte fouten kwamen tijdens dat werk boven water: `taak_opnieuw()` toetste nog op de rolnáám `beheerder` — dezelfde fout die eerder in `mag_bij_werkbon()` zat, waardoor de eigenaar buiten de deur stond — en `clickup_hartslag()` stond open voor élke ingelogde gebruiker zonder enige toets. Beide toetsen nu op bevoegdheid.
+
+**Tests (nieuw).** Vitest, 47 tests, `npm test`. Ze dekken de parser, het planningsrekenwerk, de statusregels, het uitlezen van een ClickUp-link en de CSV-export. Elke test hoort bij een fout die daadwerkelijk is voorgekomen. `.github/workflows/controle.yml` draait typecheck, tests en build bij elke push. Om dit mogelijk te maken zijn de pure delen losgetrokken: `supabase/functions/verwerker/ontleden.ts` en `statusregels.ts` (zonder Deno-afhankelijkheden), en `src/lib/planning.ts` (het rekenwerk dat eerst in de schermen zat).
+
+**Een bug die de sync al die tijd stilhield (migratie 022).** Twee ClickUp-taken vielen elke ronde af op `werkbonnen_bonnummer_key`. Het bonnummer komt uit het opdrachtnummer, en dat hoort bij de ópdracht — één opdracht kan twee klussen opleveren. De uniciteitseis dwong daar één van te maken en het gevolg was dat de tweede helemaal niet binnenkwam. Constraint eruit; uniciteit zit waar hij hoort, op `(tenant_id, clickup_taak_id)`. Direct resultaat: twee werkbonnen erbij, overgeslagen taken van zeven naar vijf.
+
+**Foutmonitoring (migratie 021).** Een `fouten`-tabel, een `Foutvanger` rond de app en een luisteraar op losse scriptfouten en afgewezen beloftes. Kantoor ziet ze op het dashboard, maar alleen als er iets is — een kaart die altijd nul meldt wordt niet gelezen. Melden mag iedereen die is ingelogd, lezen alleen kantoor.
+
+**Ontbrekende schermen gebouwd.** `/archief` (terugzoeken op adres met de foto's en afgevinkte punten erbij, server-side zoeken), `/uitloop` (wat staat over de planning heen, wat ligt stil, en waaróm er is stilgelegd). Beide stonden als expliciet gemist in de audit.
+
+**Handmatig ingrijpen op de sync.** Een knop "Nu synchroniseren" en een knop om één ClickUp-taak op te halen ongeacht status — die laatste liep tot nu toe alleen via het verzetten van de status in ClickUp, wat het planbord voor iedereen verandert. Beide lopen langs precies dezelfde weg als de automatische ronde: `verwerkTaak()` is losgetrokken uit `synchroniseer()` zodat er geen tweede implementatie ontstaat.
+
+**Rapporten.** De exportknop toonde "volgt in een volgende versie". Die doet nu wat kantoor er daadwerkelijk mee moet: CSV naar Excel, met periodefilter. Ook opgeleverde bonnen tellen nu mee — die vielen erbuiten omdat alleen op `status = 'voltooid'` werd gefilterd.
+
+**Bundel.** Alle schermen laden apart (`React.lazy`), bibliotheken in eigen brokken. Van één bestand van 531 kB naar een startpakket van ±134 kB gzip plus het scherm dat je opent. Een zwamsaneerder haalt het dashboard, de planning en het medewerkersbeheer niet meer op.
+
+**Drift weg.** Migraties 016 en 019 draaiden wel op de database maar hadden geen bestand in de repo. Die zijn alsnog vastgelegd.
+
+**Nog steeds open, en waarom:**
+- **Lekwachtwoord-controle** staat uit. Dat is een schakelaar in het Supabase-dashboard (Authentication → Policies) waar geen API voor beschikbaar is in deze omgeving.
+- **Eigen SMTP** vraagt om inloggegevens van een mailprovider; die keuze is aan de eigenaar.
+- **De twee P0's uit de audit staan er nog:** de terugkoppeling naar ClickUp is nooit live uitgevoerd, en er heeft nog geen zwamsaneerder ingelogd. Dat zijn geen codeproblemen — het zijn handelingen.
+
+---
+
+**De sessie daarvóór stond volledig in het teken van Epic 4: Intelligent Work Preparation.** Dat is de koppeling tussen ClickUp en NMZ GO, plus de intelligentielaag daarbovenop.
 
 ## Het architectuurdocument
 

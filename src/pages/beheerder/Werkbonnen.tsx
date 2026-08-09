@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { useWerkbonnen } from '@/hooks/useWerkbonnen'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { Synchronisatie } from '@/components/werkbon/Synchronisatie'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { IconPlus, IconSearch, IconClipboardList } from '@tabler/icons-react'
 import type { WerkbonStatus } from '@/types'
@@ -31,9 +32,14 @@ export default function Werkbonnen() {
 
   return (
     <PageWrapper title="Werkbonnen" actions={
-      <Button variant="primary" onClick={() => navigate('/werkbonnen/nieuw')}>
-        <IconPlus className="w-4 h-4" /> Nieuwe werkbon
-      </Button>
+      <div className="flex flex-wrap items-center gap-2">
+        {/* Kantoor kon tot nu toe alleen wachten op de hartslag, en werk
+            buiten "deze week"/"volgende week" kwam helemaal niet binnen. */}
+        <Synchronisatie onKlaar={refetch} />
+        <Button variant="primary" onClick={() => navigate('/werkbonnen/nieuw')}>
+          <IconPlus className="w-4 h-4" /> Nieuwe werkbon
+        </Button>
+      </div>
     }>
       <div className="flex flex-col sm:flex-row gap-3 mb-5">
         <div className="relative flex-1">
