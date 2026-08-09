@@ -1,0 +1,17 @@
+{
+  // De tests apart typechecken en niet in `npm run build`.
+  //
+  // Ze stonden in tsconfig.json, en daarmee draaide de productiebuild op
+  // Netlify ook over `tests/`. Eén ontbrekend testtype daar en de hele
+  // uitrol valt om, terwijl er aan de app niets mis is. De build hoort
+  // alleen te struikelen over de app zelf.
+  //
+  // `npm run controle` en de CI draaien deze wél.
+  "extends": "./tsconfig.json",
+  // De rollentest leest Sidebar.tsx en MobileNav.tsx van schijf om het
+  // menu tegen de routes te houden; daar zijn de Node-types voor nodig.
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["src", "tests"]
+}

@@ -28,7 +28,10 @@ jobs:
         run: npm ci
 
       - name: Types controleren
-        run: npx tsc --noEmit
+        # Met tsconfig.test.json, zodat ook de tests zelf worden
+        # nagelopen. De productiebuild verderop doet dat bewust niet:
+        # een fout in een test hoort een uitrol niet tegen te houden.
+        run: npx tsc -p tsconfig.test.json --noEmit
 
       - name: Tests draaien
         run: npm test
