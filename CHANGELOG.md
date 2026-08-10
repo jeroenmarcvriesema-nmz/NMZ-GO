@@ -6,6 +6,14 @@
 - Opgelost zonder de overzichtslijst zwaarder te maken. Daar `fotos(*)` bij zetten betekent dertig bonnen inclusief elke foto op een telefoon in een kruipruimte, terwijl geen enkel overzichtsscherm die foto's tekent. Vandaag kiest nu eerst de bon van vandaag uit de lichte lijst en haalt daarná díé ene bon op met dezelfde hook die `/werkbon/:id` gebruikt: één rij extra, geen dertig.
 - **[FIX]** Bijkomend: na een foto knippert Vandaag niet meer weg. Het scherm ververste zich met de lijst-refetch — die zet de laadstatus aan en gooit de hele pagina terug naar een spinner. Het gebruikt nu de stille ophaalronde die `/werkbon/:id` al had.
 
+### Eén scherm voor één werkbon
+- **[FIX]** Vandaag bouwde de checklist zelf op, `/werkbon/:id` deed hetzelfde werk in een nettere opbouw, en onderaan Vandaag stond een knop "Werkbon openen" die van de een naar de ander sprong. Woorden van de eigenaar: "ik doe werkdag starten, ik kom bij de werkbon, en daarna klik ik op werkbon openen en kom ik bij dezelfde werkbon maar dan werkt het iets mooier." Beide schermen tekenen nu hetzelfde blok — `Klusuitvoering` — in de opmaak van `/werkbon/:id`. De knop is weg.
+- De route `/werkbon/:id` blijft: vanuit "Mijn bonnen" en "Mijn week" open je daarmee een bon die níét die van vandaag is. Wat daar ontbreekt is de werkdag — starten en stoppen hoort bij de dag, niet bij een bon van volgende week.
+- **[FEATURE]** De werkdagknop staat nu in alle drie de fasen op dezelfde plek: een balk onderin, boven de navigatie. Starten stond halverwege de pagina, stoppen vastgezet onderin, hervatten weer bovenaan. Met dertig punten onder je duim is "waar stond die knop ook alweer" een echte vraag.
+- **[FEATURE]** Een werkbon afronden kan nu ook vanaf Vandaag. Dat zat alleen op het andere scherm, dus de laatste handeling van de klus was precies de handeling waarvoor je moest doorklikken.
+- **[FIX]** De schil van Vandaag was een component-in-een-component. Die krijgt bij elke hertekening een nieuwe identiteit, waarna React de hele inhoud opnieuw ophangt: elk afvinkpunt vroeg zijn ondertekende fotolinks dan opnieuw op en de miniaturen knipperden terug naar een grijs vakje.
+- **[FIX]** Het bijschrift bij "Uit te voeren punten" stond ernáást en duwde de kop op een telefoon van 390 pixels over drie regels uiteen. Staat nu eronder.
+
 ---
 
 ## De eerste echte foto's — twee fouten die dat blootlegde
