@@ -1,5 +1,32 @@
 # NMZ GO — Changelog
 
+## Zoeken, projecten, het opleverrapport en filters op de planning
+
+### Zoeken vond de helft niet
+- **[FIX]** Het zoekveld op Werkbonnen keek naar adres, projectnaam en medewerker. Twee daarvan zijn in de praktijk leeg — sinds de ClickUp-koppeling heeft geen enkele bon een projectnaam — dus er bleef er één over. Zoeken op "Assendelft" gaf nul resultaten terwijl daar klussen staan: de plaats zit in een eigen kolom.
+- **[FEATURE]** `src/lib/zoeken.ts` kijkt in adres, plaats, postcode, projectnaam, opdrachtnummer, bonnummer, opdrachtgever, kluiscode, inspecteur en de namen van de ploeg. Meerdere woorden betekent dat ze allemaal moeten voorkomen, niet per se in hetzelfde veld: "assendelft mario" brengt een lijst terug tot één regel. Spaties tellen niet mee, zodat "1566ab" de postcode "1566 AB" vindt.
+- Dezelfde functie draait nu op Werkbonnen, Projecten, Planning en Mijn bonnen. Welk scherm je toevallig openhad maakt niet meer uit.
+
+### De projectenpagina was structureel leeg
+- **[FIX]** De pagina las de tabel `projecten`. Die heeft nul rijen en krijgt er nooit een bij: uit ClickUp komt één taak als één werkbon, nooit als project. Het scherm toonde dus altijd de lege staat — en dát was de reden dat zoeken "niet werkte", niet het zoekveld.
+- **[FEATURE]** De lijst komt nu uit de werkbonnen zelf. Bonnen met hetzelfde opdrachtnummer — het nummer dat kantoor met de hand invult bij een groot project, bijvoorbeeld C515 — staan onder één kaart die openklapt. Al het andere is een losse klus die bij aantikken naar de werkbon gaat. Eén bon met een nummer blijft een klus: openklappen voor één adres is een klik zonder opbrengst.
+- De statusfilters "op schema" en "vertraging" zijn eruit. Niets zette ze ooit, en een filter dat altijd nul oplevert leer je overslaan.
+
+### Opleverrapport — de knop en de tekst
+- **[FEATURE]** `rapportage_aanvragen()` bestond sinds migratie 025 maar was alleen bereikbaar met SQL-toegang. Er staat nu een kaart op de werkbon.
+- **[FEATURE]** De drie tekstvelden van het rapport — opmerkingen bewoners, extra uitgevoerde werkzaamheden, bijzonderheden — hebben voor het eerst een invoerveld. De kolommen bestaan sinds migratie 002; niemand kon ze vullen.
+- De aanvraagknop weigert vooraf wat de database achteraf ook weigert: geen foto, geen rapport. Dat vervangt de regel niet — wie het scherm omzeilt loopt alsnog tegen `42501` of `23514` aan — het zegt het alleen eerder. Beide codes worden vertaald naar gewone taal.
+- De kaart belooft niets wat er niet is: de rapportgenerator bestaat nog niet, dus een aanvraag blijft in de wachtrij staan en dat staat er ook zo.
+
+### Planning
+- **[FEATURE]** Filter op ploeg en een zoekveld. Bladeren was het enige wat kon; "waar staat Mario deze week" en "zit dat adres er al ergens in" waren niet te beantwoorden zonder zes kolommen af te lezen.
+- **[FIX]** Met een filter aan staat er niet langer "Vrij" onder een dag waar wel degelijk werk staat, alleen niet van deze man.
+
+### Tests
+- 24 tests erbij (`zoeken`, `klusgroepen`), **117 in totaal**.
+
+---
+
 ## Auditronde: alles opgelost, plus wat de audit zelf had gemist
 
 ### Beveiliging

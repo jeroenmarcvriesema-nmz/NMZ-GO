@@ -48,6 +48,31 @@ opnieuw worden uitgerold — alle vijf bestanden in één
 `deploy_edge_function`-aanroep. Eén keer half uitrollen heeft de
 verwerker plat gelegd. Rol nooit één bestand uit.
 
+### Twee sessies naast elkaar — wie waar aan zit
+
+Deze opdracht loopt in een eigen sessie, naast de sessie die de
+schermen doet. Dat kan zolang jullie niet in dezelfde bestanden
+schrijven; git voegt dat niet netjes samen.
+
+| Sessie | Werkt in |
+|---|---|
+| ClickUp-fotoketen | `supabase/functions/verwerker/`, nieuwe migraties |
+| Schermen | `src/`, `tests/` |
+
+Afspraken die daarbij horen:
+
+- **Eerst `git pull`, elke keer.** Beide sessies duwen naar `main`.
+- **Migratienummers.** Tot en met 025 is gebruikt. De fotoketen neemt
+  **026**. Zit je in de andere sessie en heb je ook een migratie nodig,
+  pak dan 027 en hoger — nooit een nummer hergebruiken.
+- **De aanvraagknop van het opleverrapport staat al live.** Wie erop
+  drukt maakt een rij in `rapportages` én een wachtrijtaak
+  `rapportage.genereren`. Die taaksoort heeft nog geen handler, dus de
+  verwerker zet hem één keer op onverwerkbaar en laat hem verder met
+  rust — geen vervuilde wachtrij, maar de aanvraag blijft wel liggen.
+  Zodra de PDF-generatie er is, moet je de blijven liggen aanvragen
+  opnieuw aanbieden met `taak_opnieuw()`.
+
 ---
 
 ## Wat er sinds de audit is gebouwd
@@ -138,15 +163,24 @@ pagina's):
 - **P1** ClickUp-terugkoppeling (status + opmerking) is nooit live
   uitgevoerd, alleen in droogloop.
 - **P1** ClickUp attachment-upload bestaat niet.
-- **P1** De projectenpagina zoekt in de tabel `projecten`, en die heeft
-  nul rijen. Wat de eigenaar "projecten/klussen" noemt zijn de
-  werkbonnen. `postcode`, `plaats` en `opdrachtnummer` zijn bovendien
-  overal leeg (0 van 30) — zoeken op plaats levert dus niets op, ook na
-  de fix. Het adresveld bevat de plaats wél.
 - **P1** Weesbestanden: een foto verwijderen haalt de databaserij weg
-  maar laat het bestand in Storage staan.
-- **P2** Planning visueel, CTA's, eigen SMTP, lekwachtwoord-controle
-  (dat laatste is een vinkje in het Supabase-dashboard, geen API).
+  maar laat het bestand in Storage staan. Hoort bij stap 3 van de
+  fotoketen: pas opruimen als het uploadstempel gevuld is.
+- **P1** `postcode`, `plaats` en `opdrachtnummer` zijn in de database
+  overal leeg (0 van 30). Zoeken kijkt er sinds deze ronde wél in, maar
+  vindt er niets zolang de brongegevens leeg blijven — het adresveld
+  bevat de plaats meestal wel, dus zoeken op een plaatsnaam werkt in de
+  praktijk via `adres`. Zodra de ClickUp-parser die velden vult, werkt
+  de rest vanzelf mee. Het opdrachtnummer is bovendien wat een grote
+  klus tot een project maakt op de projectenpagina; zolang het leeg is
+  is elke klus daar een losse kaart.
+- **P2** Eigen SMTP, lekwachtwoord-controle (dat laatste is een vinkje
+  in het Supabase-dashboard, geen API).
+
+**Opgelost in de ronde ná dit hoofdstuk:** de projectenpagina las de
+lege tabel `projecten` (leest nu de werkbonnen), het zoekveld keek maar
+in één gevuld veld (kijkt nu in tien), het opleverrapport had geen knop
+en de drie tekstvelden geen invoerveld, en de planning had geen filters.
 
 ## Stand van de gegevens
 
