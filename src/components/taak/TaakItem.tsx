@@ -116,7 +116,7 @@ export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps
           wijzigen" — op de werkbon van kantoor was de hele
           fotorapportage daardoor onzichtbaar, en na afronden voor de
           ploeg ook. */}
-      {heeftFoto && (
+      {(heeftFoto || !readOnly) && (
         <div className="flex items-center gap-2 mt-3 pl-10 flex-wrap">
           {fotos.map((foto, n) => (
             <button
@@ -140,19 +140,28 @@ export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps
               )}
             </button>
           ))}
+
+          {/* De knop staat achter de foto's die er al zijn, niet op een
+              eigen regel. Zo is het één strook waar je aan ziet dat er
+              nog eentje bij kan — er komen er bij ons vaak meer, voor en
+              na, en van twee kanten. */}
+          {!readOnly && (
+            <label className={cn(
+              'w-16 h-16 rounded-sm border-2 border-dashed border-gray-200 dark:border-white/15 bg-surface-2 dark:bg-white/5 flex flex-col items-center justify-center gap-0.5 cursor-pointer transition-all hover:border-brand-yellow hover:bg-brand-yellow-light dark:hover:bg-brand-yellow/10',
+              uploading && 'opacity-50 cursor-not-allowed'
+            )}>
+              <IconCamera className="w-5 h-5 text-gray-400 dark:text-white/40" />
+              {heeftFoto && (
+                <span className="text-[10px] font-semibold text-gray-400 dark:text-white/40">Nog een</span>
+              )}
+              <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFotoUpload} disabled={uploading} />
+            </label>
+          )}
         </div>
       )}
 
       {!readOnly && (
         <div className="flex items-center gap-2 mt-3 pl-10 flex-wrap">
-          <label className={cn(
-            'w-16 h-16 rounded-sm border-2 border-dashed border-gray-200 dark:border-white/15 bg-surface-2 dark:bg-white/5 flex items-center justify-center cursor-pointer transition-all hover:border-brand-yellow hover:bg-brand-yellow-light dark:hover:bg-brand-yellow/10',
-            uploading && 'opacity-50 cursor-not-allowed'
-          )}>
-            <IconCamera className="w-5 h-5 text-gray-400 dark:text-white/40" />
-            <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFotoUpload} disabled={uploading} />
-          </label>
-
           <Button
             variant={taak.voltooid ? 'secondary' : 'primary'}
             size="sm"
@@ -165,9 +174,20 @@ export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps
             {taak.voltooid ? <><IconCheck className="w-4 h-4" /> Afgevinkt</> : <><IconSquare className="w-4 h-4" /> Afvinken</>}
           </Button>
 
-          {!heeftFoto && taak.foto_vereist && (
+          {/* De stand in woorden, niet alleen in kleur.
+              Een foto uploaden vinkt niets af — dat blijft een aparte
+              handeling, want er kunnen er nog meer bij komen en alleen
+              de man ter plekke weet wanneer het punt klaar is. Wat er
+              gebeurde is dat de knop van grijs naar geel sprong, en dat
+              leest als "gedaan". Nu staat er wat er staat. */}
+          {!taak.voltooid && !heeftFoto && taak.foto_vereist && (
             <span className="text-xs text-gray-400 dark:text-white/40 italic flex items-center gap-1">
               <IconCamera className="w-3.5 h-3.5" /> Foto vereist
+            </span>
+          )}
+          {!taak.voltooid && heeftFoto && (
+            <span className="text-xs text-gray-400 dark:text-white/40 flex items-center gap-1">
+              {fotos.length} {fotos.length === 1 ? 'foto' : "foto's"} · nog niet afgevinkt
             </span>
           )}
 
