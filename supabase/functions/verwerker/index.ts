@@ -23,6 +23,7 @@ import {
   synchroniseer,
   tekstproef,
 } from './clickup.ts'
+import { fotosOpruimen } from './opruimen.ts'
 
 // Een fout die niet opnieuw geprobeerd moet worden.
 class OnverwerkbaarError extends Error {
@@ -145,6 +146,21 @@ const HANDLERS: Record<string, Handler> = {
       throw new OnverwerkbaarError('tenant_id en werkbon_id zijn allebei nodig')
     }
     return await fotosUploaden(db, tenantId, werkbonId)
+  },
+
+  // De bucket opruimen: bestanden waarvan het bewijs inmiddels bij
+  // ClickUp staat, en bestanden waar geen enkele rij meer naar wijst.
+  //
+  // Wélke bestanden weg mogen bepaalt de database; deze handler wist
+  // alleen wat hij aangereikt krijgt. Eerst het bestand, dan het
+  // stempel — andersom zou een rij kunnen beweren dat hij is opgeruimd
+  // terwijl het bestand er nog staat.
+  'onderhoud.fotos_opruimen': async (taak, db) => {
+    const tenantId = String(taak.payload.tenant_id ?? '')
+    if (!tenantId) {
+      throw new OnverwerkbaarError('tenant_id ontbreekt in de payload')
+    }
+    return await fotosOpruimen(db, tenantId, Number(taak.payload.wachttijd_dagen ?? 14))
   },
 
   // Terugkoppeling naar ClickUp: stilgelegd, hervat of opgeleverd.

@@ -65,6 +65,39 @@ Afspraken die daarbij horen:
 - **Migratienummers.** Tot en met 025 is gebruikt. De fotoketen neemt
   **026**. Zit je in de andere sessie en heb je ook een migratie nodig,
   pak dan 027 en hoger — nooit een nummer hergebruiken.
+### Voor de schermen-sessie — twee bevindingen van de eigenaar
+
+Gemeld op 10 augustus, nadat de eerste echte foto's binnen waren. De
+eigenaar heeft alle rollen nagelopen. Beide punten zitten in `src/`, dus
+ze liggen bij de schermen-sessie; de ClickUp-sessie heeft ze alleen
+uitgezocht en niets gewijzigd.
+
+**1. Foto's ontbreken bij "werkdag starten" en bij "hervatten."**
+Er zijn twee componenten die een afvinkpunt tonen. `TaakItem` laat de
+foto's zelf zien (via `Fotoviewer`); `PuntenKaart` niet. Het "aan het
+werk"-scherm en `/werkbon/:id` gebruiken `TaakItem` — daar zie je ze.
+De takken `voor_start` en `gestopt` in `MijnWerkbonnen.tsx` gebruiken
+`PuntenKaart` met `readOnly`, en dat is precies waar de foto's wegvallen.
+De eigenaar wil ze op alle drie de momenten zien: "is ook overzichtelijker
+voor de jongens in het veld."
+
+**2. Twee schermen voor dezelfde werkbon.**
+`MijnWerkbonnen.tsx` bouwt de checklist inline op; `WerkbonUitvoeren.tsx`
+(`/werkbon/:id`) doet hetzelfde werk in een nettere opbouw. De knop
+"Werkbon openen" onderaan springt van de een naar de ander. Woorden van
+de eigenaar: "dan zie ik eigenlijk een veel mooier scherm ook dan gewoon
+bij starten... is het niet onzinnig dat ik werkdag starten doe, ik bij de
+werkbon kom, en daarna klik op werkbon openen, kom ik ook bij dezelfde
+werkbon maar dan werkt het iets mooier." Het hoort één scherm te zijn.
+
+**3. Foto's die zijn opgeruimd.** Zodra de opruiming loopt (zie de
+fotoketen hieronder) blijft de rij in `fotos` staan maar is het bestand
+weg; `fotos.opgeruimd_op` is dan gevuld. Een scherm dat daar een
+signed URL voor opvraagt krijgt niets terug. Dat speelt pas veertien
+dagen ná de eerste oplevering — er is dus tijd — maar het hoort wel
+opgevangen te worden: "staat bij de ClickUp-taak" in plaats van een
+gebroken plaatje.
+
 - **De aanvraagknop van het opleverrapport staat al live.** Wie erop
   drukt maakt een rij in `rapportages` én een wachtrijtaak
   `rapportage.genereren`. Die taaksoort heeft nog geen handler, dus de
