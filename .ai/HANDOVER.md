@@ -72,14 +72,28 @@ eigenaar heeft alle rollen nagelopen. Beide punten zitten in `src/`, dus
 ze liggen bij de schermen-sessie; de ClickUp-sessie heeft ze alleen
 uitgezocht en niets gewijzigd.
 
-**1. Foto's ontbreken bij "werkdag starten" en bij "hervatten."**
-Er zijn twee componenten die een afvinkpunt tonen. `TaakItem` laat de
-foto's zelf zien (via `Fotoviewer`); `PuntenKaart` niet. Het "aan het
-werk"-scherm en `/werkbon/:id` gebruiken `TaakItem` — daar zie je ze.
-De takken `voor_start` en `gestopt` in `MijnWerkbonnen.tsx` gebruiken
-`PuntenKaart` met `readOnly`, en dat is precies waar de foto's wegvallen.
-De eigenaar wil ze op alle drie de momenten zien: "is ook overzichtelijker
-voor de jongens in het veld."
+**1. Foto's ontbreken in de hele werkdagflow.** Op het Vandaag-scherm
+staat bij een punt een leeg cameravakje, terwijl datzelfde punt via
+"Werkbon openen" gewoon twee foto's toont. Zelfde punt, zelfde
+component, ander resultaat — dus het ligt niet aan de opmaak.
+
+De oorzaak staat in `src/hooks/useWerkbonnen.ts`:
+
+| Hook | Selectie | Gebruikt door |
+|---|---|---|
+| `useWerkbonnen()` | `taken(*)` — **zonder foto's** | `MijnWerkbonnen.tsx` (Vandaag) |
+| `useWerkbon(id)`  | `taken(*, fotos(*))` | `WerkbonUitvoeren.tsx` (`/werkbon/:id`) |
+
+`TaakItem` doet `taak.fotos ?? []`, dus zonder die relatie tekent hij
+een leeg uploadvak. Dat raakt alle drie de fasen tegelijk: voor het
+starten, tijdens het werk en na het stoppen. De eigenaar wil ze op alle
+drie de momenten zien: "is ook overzichtelijker voor de jongens in het
+veld."
+
+Let op bij het oplossen: `useWerkbonnen()` haalt álle werkbonnen op.
+Daar zomaar `fotos(*)` bij zetten betekent dertig bonnen inclusief elke
+foto, op een telefoon in een kruipruimte. Kijk of de foto's alleen nodig
+zijn voor de bon van vandaag.
 
 **2. Twee schermen voor dezelfde werkbon.**
 `MijnWerkbonnen.tsx` bouwt de checklist inline op; `WerkbonUitvoeren.tsx`
