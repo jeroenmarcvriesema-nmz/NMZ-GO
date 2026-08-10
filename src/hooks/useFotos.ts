@@ -40,5 +40,30 @@ export function useFotos() {
     return data.signedUrl
   }
 
-  return { upload, getUrl }
+  /**
+   * Ondertekende links voor een hele reeks paden in één aanroep.
+   *
+   * Eén punt kan drie of vier foto's hebben en een werkbon vijftien
+   * punten. Per foto een eigen aanroep is dan zestig ronden naar de
+   * server voordat er iets op het scherm staat — op een telefoon met
+   * een halve streep bereik is dat het verschil tussen "traag" en
+   * "kapot".
+   */
+  const getUrls = async (paden: string[]): Promise<Record<string, string>> => {
+    if (paden.length === 0) return {}
+    const { data, error } = await supabase.storage
+      .from('werkbon-fotos')
+      .createSignedUrls(paden, 3600)
+    if (error || !data) return {}
+
+    const uit: Record<string, string> = {}
+    for (const rij of data) {
+      // `path` kan null zijn als één bestand niet bestaat. De rest van
+      // de reeks hoort daar niet onder te lijden.
+      if (rij.path && rij.signedUrl) uit[rij.path] = rij.signedUrl
+    }
+    return uit
+  }
+
+  return { upload, getUrl, getUrls }
 }

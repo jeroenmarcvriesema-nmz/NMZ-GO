@@ -1,5 +1,18 @@
 # NMZ GO — Changelog
 
+## De eerste echte foto's — twee fouten die dat blootlegde
+
+De eerste twee foto's ooit zijn gemaakt op Bentinckstraat 63. Ze kwamen
+correct in de database en in de bucket terecht; wat eromheen zat klopte niet.
+
+- **[FIX]** Een foto was nooit te zíén. Onder een afvinkpunt stond een geel vakje met een fototeken erin — niet de foto zelf. De enige manier om te controleren of de opname goed was, was hem in een nieuw tabblad openen met een ondertekende link: op een werktelefoon een tabwissel, en soms een geblokkeerd venster. Er staan nu echte miniaturen, en aantikken opent de foto op volle grootte in de app zelf, met pijltjes als er meer zijn.
+- **[FIX]** Elke foto en elk vinkje leek het scherm te verversen. `useWerkbon.refetch()` zette de laadstatus aan, waarna de hele pagina werd vervangen door een spinner en bovenaan terugkwam — je verloor je plek in een lijst van vijftien punten, elke keer opnieuw. Alleen de eerste keer weet je nog niets; daarna blijft het scherm staan terwijl de nieuwe gegevens onderweg zijn.
+- **[FIX]** Kantoor kon de fotorapportage helemaal niet zien. De fotostrook zat achter de `readOnly`-voorwaarde, en die betekende daarmee "niet te zien" in plaats van "niet te wijzigen". Op de werkbon van kantoor was elke foto onzichtbaar, en na het afronden voor de ploeg ook.
+- **[FIX]** Een mislukte ophaalronde was volledig stil: het scherm hield de oude gegevens vast en niemand kreeg iets te zien. Er staat nu een melding dat wat je ziet verouderd kan zijn.
+- **[FIX]** Ondertekende links worden in één aanroep opgehaald voor alle foto's van een punt in plaats van één voor één.
+
+---
+
 ## Zoeken, projecten, het opleverrapport en filters op de planning
 
 ### Zoeken vond de helft niet

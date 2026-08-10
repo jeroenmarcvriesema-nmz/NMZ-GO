@@ -16,7 +16,7 @@ import { IconArrowLeft, IconCheck, IconAlertCircle, IconCircleCheck } from '@tab
 export default function WerkbonUitvoeren() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { werkbon, loading, refetch } = useWerkbon(id!)
+  const { werkbon, loading, error, refetch } = useWerkbon(id!)
   const [voltooien, setVoltooien] = useState(false)
   const [fout, setFout] = useState<string | null>(null)
 
@@ -72,6 +72,17 @@ export default function WerkbonUitvoeren() {
           </div>
           <div className="mt-3"><ProgressBar value={voortgang} size="md" variant={voortgang === 100 ? 'green' : 'yellow'} /></div>
         </Card>
+
+        {/* Een mislukte ophaalronde na een foto of een vinkje bleef stil:
+            het scherm hield de oude gegevens vast en je zag niet dat er
+            iets niet was aangekomen. */}
+        {error && (
+          <div className="flex items-start gap-2 text-xs text-brand-red dark:text-red-400 bg-brand-red-light dark:bg-brand-red/10 border border-brand-red rounded-sm p-3">
+            <IconAlertCircle className="w-4 h-4 flex-shrink-0" />
+            Het scherm kon niet worden bijgewerkt. Wat je ziet kan verouderd
+            zijn — controleer je verbinding en laad de pagina opnieuw.
+          </div>
+        )}
 
         {werkbon.stilgelegd_op && (
           <div className="bg-orange-50 dark:bg-orange-500/10 border border-orange-300 dark:border-orange-500/30 rounded-lg p-4">

@@ -44,11 +44,25 @@ export function useWerkbonnen() {
 export function useWerkbon(id: string) {
   const [werkbon, setWerkbon] = useState<Werkbon | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const fetch = async () => {
+  /**
+   * `stil` betekent: haal opnieuw op zonder het scherm leeg te maken.
+   *
+   * Elke foto en elk vinkje riep hierna `refetch()` aan, en die zette
+   * `loading` op waar. Het scherm werd dan vervangen door een spinner en
+   * kwam bovenaan terug — je verloor je plek in een lijst van vijftien
+   * punten, elke keer opnieuw. Dat zag eruit als een refresh, en dat
+   * was het feitelijk ook.
+   *
+   * Alleen de eerste keer weet je nog niets en hoort er een spinner te
+   * staan. Daarna heb je het scherm al; dat mag blijven staan terwijl
+   * de nieuwe gegevens onderweg zijn.
+   */
+  const fetch = async (stil = false) => {
     if (!id) return
-    setLoading(true)
-    const { data, error } = await supabase
+    if (!stil) setLoading(true)
+    const { data, error: fetchError } = await supabase
       .from('werkbonnen')
       .select(`
         *,
@@ -58,17 +72,23 @@ export function useWerkbon(id: string) {
       .eq('id', id)
       .single()
 
-    if (!error && data) {
+    // Een mislukte ophaalronde bleef hiervoor stil: het scherm hield de
+    // oude gegevens vast en niemand kreeg iets te zien. Een foto die
+    // niet verschijnt hoort een melding op te leveren, geen raadsel.
+    if (fetchError) {
+      setError(fetchError.message)
+    } else if (data) {
+      setError(null)
       setWerkbon({
         ...data,
         medewerkers: (data.medewerkers || []).map((m: any) => m.persoon).filter(Boolean),
         taken: (data.taken || []).sort((a: any, b: any) => a.volgorde - b.volgorde),
       })
     }
-    setLoading(false)
+    if (!stil) setLoading(false)
   }
 
   useEffect(() => { fetch() }, [id])
 
-  return { werkbon, loading, refetch: fetch }
+  return { werkbon, loading, error, refetch: () => fetch(true) }
 }

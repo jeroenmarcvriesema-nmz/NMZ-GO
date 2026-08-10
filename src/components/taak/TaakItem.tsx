@@ -1,6 +1,7 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
+import { Fotoviewer } from '@/components/taak/Fotoviewer'
 import { useTaken } from '@/hooks/useTaken'
 import { useFotos } from '@/hooks/useFotos'
 import { useAuth } from '@/hooks/useAuth'
@@ -16,14 +17,39 @@ interface TaakItemProps {
 
 export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps) {
   const { toggleVoltooid, zetFotoVereist } = useTaken()
-  const { upload, getUrl } = useFotos()
+  const { upload, getUrls } = useFotos()
   const { profile, magWerkBeheren } = useAuth()
   const [uploading, setUploading] = useState(false)
   const [toggling, setToggling] = useState(false)
   const [fout, setFout] = useState<string | null>(null)
   const [fotoplichtBezig, setFotoplichtBezig] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
-  const heeftFoto = (taak.fotos?.length ?? 0) > 0
+  const fotos = taak.fotos ?? []
+  const heeftFoto = fotos.length > 0
+
+  // De foto's zelf, niet een pictogram dat erop lijkt.
+  //
+  // Hier stond een geel vakje met een fototeken in. Wie een foto had
+  // gemaakt zag dus wél dat er íéts stond, maar niet wát — en de enige
+  // manier om het te controleren was hem in een nieuw tabblad openen.
+  // Op een telefoon is dat een tabwissel en soms een geblokkeerd
+  // venster. Het antwoord op "is die foto goed gegaan" hoort op het
+  // scherm te staan waar je hem net maakte.
+  const [urls, setUrls] = useState<Record<string, string>>({})
+  const [bekijk, setBekijk] = useState<number | null>(null)
+  const paden = fotos.map((f) => f.storage_path).join('|')
+
+  useEffect(() => {
+    if (paden === '') { setUrls({}); return }
+    let levend = true
+    getUrls(paden.split('|')).then((gevonden) => {
+      if (levend) setUrls(gevonden)
+    })
+    return () => { levend = false }
+    // Op de paden en niet op de reeks: die krijgt bij elke ophaalronde
+    // een nieuwe identiteit en zou dit eindeloos opnieuw laten lopen.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paden])
   // Fotoplicht kan per punt uit staan — bijvoorbeeld bij een regel uit
   // de offerte waar niets van te fotograferen valt.
   const magAfvinken = heeftFoto || !taak.foto_vereist
@@ -37,20 +63,6 @@ export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps
     setUploading(false)
     if (error) { setFout('De foto kon niet worden opgeslagen. Probeer het opnieuw.'); return }
     await onRefresh()
-  }
-
-  // Het venster wordt geopend vóór de await. Doe je dat erna, dan
-  // ziet de browser het niet meer als gevolg van een tik en blokkeert
-  // de popup-blokkering het — juist op mobiel.
-  const openFoto = async (storagePath: string) => {
-    const venster = window.open('', '_blank')
-    const url = await getUrl(storagePath)
-    if (!url) {
-      venster?.close()
-      setFout('De foto kon niet worden geopend. Probeer het opnieuw.')
-      return
-    }
-    if (venster) venster.location.href = url
   }
 
   const wisselFotoplicht = async () => {
@@ -99,18 +111,40 @@ export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps
         </div>
       </div>
 
+      {/* De foto's staan buiten de readOnly-voorwaarde. Die stond eromheen
+          en betekende daarmee "niet te zien" in plaats van "niet te
+          wijzigen" — op de werkbon van kantoor was de hele
+          fotorapportage daardoor onzichtbaar, en na afronden voor de
+          ploeg ook. */}
+      {heeftFoto && (
+        <div className="flex items-center gap-2 mt-3 pl-10 flex-wrap">
+          {fotos.map((foto, n) => (
+            <button
+              key={foto.id}
+              onClick={() => setBekijk(n)}
+              aria-label={`Foto ${n + 1} bekijken`}
+              className="w-16 h-16 rounded-sm overflow-hidden border border-gray-200 dark:border-white/10 bg-surface-2 dark:bg-white/5 flex items-center justify-center transition-all hover:border-brand-yellow"
+            >
+              {urls[foto.storage_path] ? (
+                <img
+                  src={urls[foto.storage_path]}
+                  alt=""
+                  loading="lazy"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                // Zolang de ondertekende link onderweg is. Geen spinner:
+                // die trekt de aandacht naar het laden in plaats van
+                // naar de foto die er zo staat.
+                <IconPhoto className="w-5 h-5 text-gray-300 dark:text-white/25" />
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
       {!readOnly && (
         <div className="flex items-center gap-2 mt-3 pl-10 flex-wrap">
-          {(taak.fotos || []).map((foto) => (
-            <div
-              key={foto.id}
-              className="w-16 h-16 rounded-sm border border-brand-yellow bg-brand-yellow-light dark:bg-brand-yellow/10 flex items-center justify-center cursor-pointer"
-              onClick={() => openFoto(foto.storage_path)}
-            >
-              <IconPhoto className="w-5 h-5 text-brand-yellow-dark dark:text-brand-yellow" />
-            </div>
-          ))}
-
           <label className={cn(
             'w-16 h-16 rounded-sm border-2 border-dashed border-gray-200 dark:border-white/15 bg-surface-2 dark:bg-white/5 flex items-center justify-center cursor-pointer transition-all hover:border-brand-yellow hover:bg-brand-yellow-light dark:hover:bg-brand-yellow/10',
             uploading && 'opacity-50 cursor-not-allowed'
@@ -164,6 +198,14 @@ export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps
           )}
         </div>
       )}
+
+      <Fotoviewer
+        fotos={fotos.map((f) => ({ id: f.id, url: urls[f.storage_path] ?? null }))}
+        index={bekijk}
+        titel={taak.titel}
+        onSluit={() => setBekijk(null)}
+        onWissel={setBekijk}
+      />
     </div>
   )
 }
