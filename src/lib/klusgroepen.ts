@@ -38,6 +38,40 @@ export interface Klusgroep {
   medewerkers: string[]
 }
 
+/**
+ * De plaats, desnoods uit het adres gevist.
+ *
+ * De kolom `plaats` is in de database bij alle dertig bonnen leeg — de
+ * ClickUp-parser vult hem niet. De plaats staat er wél, alleen in
+ * `adres`: "Stuyvesantstraat 72 te Den Haag", of met een komma erin,
+ * "Boerlagestraat 12, Zandvoort". Zonder deze afleiding blijft het
+ * plaatsregeltje op elke kaart leeg terwijl de informatie er gewoon is.
+ *
+ * Dit vervangt de kolom niet en repareert de brongegevens niet. Zodra
+ * de parser `plaats` wél vult wint die, want die kolom is het antwoord
+ * en dit is een gok op basis van twee schrijfwijzen.
+ */
+export function plaatsUitAdres(adres: string | null | undefined): string | null {
+  if (!adres) return null
+
+  // " te " met spaties eromheen, zodat "79 t/m 129" niet meetelt. De
+  // láátste, want "Van Beuningenstraat te ..." zou anders halverwege
+  // afbreken.
+  const te = adres.lastIndexOf(' te ')
+  if (te !== -1) {
+    const staart = adres.slice(te + 4).trim()
+    if (staart) return staart
+  }
+
+  const komma = adres.lastIndexOf(',')
+  if (komma !== -1) {
+    const staart = adres.slice(komma + 1).trim()
+    if (staart) return staart
+  }
+
+  return null
+}
+
 /** De dag waarop een bon begint, en de dag waarop hij eindigt. */
 function begin(bon: Werkbon): string {
   return bon.geplande_start ?? bon.datum ?? ''
@@ -90,7 +124,7 @@ function maakGroep(sleutel: string, soort: Klusgroep['soort'], bonnen: Werkbon[]
     // `projectnaam` als kop zetten is precies wat de oude kaarten deden.
     naam: soort === 'project' ? sleutel : (bonnen[0]?.adres || 'Zonder adres'),
     opdrachtgever: uniek(bonnen.map((b) => b.opdrachtgever))[0] ?? '',
-    plaatsen: uniek(bonnen.map((b) => b.plaats)),
+    plaatsen: uniek(bonnen.map((b) => b.plaats ?? plaatsUitAdres(b.adres))),
     status: groepsstatus(bonnen),
     van: datums[0] ?? '',
     tot: einddatums[einddatums.length - 1] ?? '',

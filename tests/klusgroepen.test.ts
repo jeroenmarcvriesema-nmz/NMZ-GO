@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { groepeerKlussen, groepsstatus } from '@/lib/klusgroepen'
+import { groepeerKlussen, groepsstatus, plaatsUitAdres } from '@/lib/klusgroepen'
 import type { Werkbon } from '@/types'
 
 // ============================================================
@@ -107,6 +107,48 @@ describe('groepeerKlussen', () => {
       bon({ id: 'nieuw', datum: '2026-08-10' }),
     ])
     expect(groepen[0].bonnen[0].id).toBe('nieuw')
+  })
+})
+
+// De kolom `plaats` is bij alle dertig bonnen leeg; de parser vult hem
+// niet. De plaats staat wél in het adres, in twee schrijfwijzen die
+// allebei in de echte data voorkomen.
+describe('plaatsUitAdres', () => {
+  it('leest de plaats na " te "', () => {
+    expect(plaatsUitAdres('Stuyvesantstraat 72 te Den Haag')).toBe('Den Haag')
+    expect(plaatsUitAdres('Jan van Galenstraat 211HS te Amsterdam')).toBe('Amsterdam')
+  })
+
+  it('leest de plaats na een komma', () => {
+    expect(plaatsUitAdres('Boerlagestraat 12, Zandvoort')).toBe('Zandvoort')
+  })
+
+  // "79 t/m 129" is geen " te ": de spaties eromheen houden dat buiten
+  // de deur. Zonder dat zou de plaats "/m 129" worden.
+  it('trapt niet in "t/m"', () => {
+    expect(plaatsUitAdres('Rembrandstraat 79 t/m 129')).toBeNull()
+  })
+
+  it('geeft niets terug als er geen plaats in staat', () => {
+    expect(plaatsUitAdres('Kerkstraat 1')).toBeNull()
+    expect(plaatsUitAdres('')).toBeNull()
+    expect(plaatsUitAdres(null)).toBeNull()
+  })
+
+  // De kolom is het antwoord zodra hij gevuld is; dit is een gok op
+  // basis van twee schrijfwijzen en hoort te wijken.
+  it('wijkt voor een gevulde plaats-kolom', () => {
+    const [groep] = groepeerKlussen([
+      bon({ adres: 'Kerkstraat 1 te Haarlem', plaats: 'Heemstede' }),
+    ])
+    expect(groep.plaatsen).toEqual(['Heemstede'])
+  })
+
+  it('vult de plaats aan als de kolom leeg is', () => {
+    const [groep] = groepeerKlussen([
+      bon({ adres: 'Kerkstraat 1 te Haarlem', plaats: null }),
+    ])
+    expect(groep.plaatsen).toEqual(['Haarlem'])
   })
 })
 

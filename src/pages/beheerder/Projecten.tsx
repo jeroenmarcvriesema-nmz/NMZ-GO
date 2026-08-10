@@ -160,6 +160,11 @@ function Groepkaart({ groep, open, onKlap, onOpenBon }: GroepkaartProps) {
   const isProject = groep.soort === 'project'
   const voortgang = groep.punten > 0 ? Math.round((groep.puntenKlaar / groep.punten) * 100) : 0
 
+  // Bij een losse klus is de kop het adres, en daar staat de plaats
+  // meestal al in ("Stuyvesantstraat 72 te Den Haag"). Hem eronder
+  // herhalen is ruimte kwijt zonder iets te vertellen.
+  const plaatsen = groep.plaatsen.filter((p) => !groep.naam.includes(p))
+
   return (
     <div className="bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-xl shadow-sm overflow-hidden transition-shadow hover:shadow-md">
       <button
@@ -191,10 +196,10 @@ function Groepkaart({ groep, open, onKlap, onOpenBon }: GroepkaartProps) {
         </div>
 
         <div className="flex flex-wrap gap-x-3 gap-y-1.5 text-xs text-gray-400 dark:text-white/40 mt-3">
-          {groep.plaatsen.length > 0 && (
+          {plaatsen.length > 0 && (
             <span className="flex items-center gap-1 min-w-0">
               <IconMapPin className="w-3.5 h-3.5 flex-shrink-0" />
-              <span className="break-words">{groep.plaatsen.join(', ')}</span>
+              <span className="break-words">{plaatsen.join(', ')}</span>
             </span>
           )}
           {groep.van && (
