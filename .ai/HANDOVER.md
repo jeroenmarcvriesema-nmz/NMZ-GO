@@ -120,6 +120,44 @@ gebroken plaatje.
   Zodra de PDF-generatie er is, moet je de blijven liggen aanvragen
   opnieuw aanbieden met `taak_opnieuw()`.
 
+### Schermen-sessie — de drie punten zijn af (10 augustus)
+
+Alle drie de bevindingen hierboven zijn gebouwd. Alleen in `src/`;
+`supabase/` is niet aangeraakt en er is geen migratie bijgekomen —
+`opgeruimd_op` bestaat al sinds 026.
+
+**1. De foto's staan er.** `useWerkbonnen()` blijft bewust zonder
+`fotos(*)`: dat zijn dertig bonnen, en geen enkel overzichtsscherm
+tekent die foto's. Vandaag kiest met die lichte lijst de bon van vandaag
+en haalt daarna díé ene bon op met `useWerkbon(id)` — één rij. Die hook
+accepteert nu een lege id (`string | null | undefined`), want een scherm
+weet pas ná de lijst welke bon het moet hebben en een hook mag niet
+voorwaardelijk worden aangeroepen. Zonder id: leeg resultaat en
+`loading` op onwaar.
+
+**2. Eén scherm.** Het punten-en-foto's deel zit in
+`src/components/werkbon/Klusuitvoering.tsx`, in de opmaak van
+`/werkbon/:id`. Vandaag én `/werkbon/:id` tekenen dat blok; de knop
+"Werkbon openen" is weg. De route blijft bestaan — "Mijn bonnen" en
+"Mijn week" openen daarmee een bon die *niet* die van vandaag is, en
+daar hoort geen werkdagknop onder. Wat bij de dag hoort staat nog op
+Vandaag: groet, tegels, mijn cijfers, wie waar werkt, en de
+werkdagknoppen. Die laatste staan nu in alle drie de fasen in dezelfde
+balk onderin. Afronden kan voortaan ook vanaf Vandaag.
+
+**3. Opgeruimde foto's.** `Foto.opgeruimd_op` staat in `types/index.ts`.
+`TaakItem` en het archief laten die paden buiten de ondertekening en
+tonen een vakje "bij ClickUp" met de uitleg in de Fotoviewer. In het
+archief verdween zo'n foto eerst stilzwijgend uit de strook terwijl de
+kop er wél bij telde.
+
+Nog niet gedaan, bewust: er zijn geen tests bijgekomen. Dit is
+renderwerk, en er is geen jsdom of testing-library in het project —
+daarvoor zou een dependency erbij moeten, en dat vraagt goedkeuring.
+Gecontroleerd is er met een tijdelijke voorbeeldpagina in Chromium (390
+en 1280 pixels, licht en donker, alle drie de fasen) plus een
+RLS-scoped query als de toegewezen medewerker op Bentinckstraat 63.
+
 ---
 
 ## Wat er sinds de audit is gebouwd
