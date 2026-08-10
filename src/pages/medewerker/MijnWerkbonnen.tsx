@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { useWerkbonnen } from '@/hooks/useWerkbonnen'
+import { useWerkbonnen, useWerkbon } from '@/hooks/useWerkbonnen'
 import { useAuth } from '@/hooks/useAuth'
 import { useWerkdag, formatTijd, geefUren } from '@/hooks/useWerkdag'
 import { useMijnPrestaties } from '@/hooks/useMijnPrestaties'
@@ -35,11 +35,28 @@ function datumLang(): string {
 
 export default function MijnWerkbonnen() {
   const { profile } = useAuth()
-  const { werkbonnen, loading, refetch } = useWerkbonnen()
+  const { werkbonnen, loading } = useWerkbonnen()
   const navigate = useNavigate()
 
   const voornaam = (profile?.naam ?? '').split(' ')[0]
-  const vandaag = kiesVandaag(werkbonnen)
+  const gekozen = kiesVandaag(werkbonnen)
+
+  /**
+   * De lijst hierboven komt zonder foto's binnen — met dertig bonnen
+   * erin hoort dat ook zo te blijven. Van de bon van vandáág wil je ze
+   * wél zien, en die is er maar één. Dus die halen we apart op, met
+   * dezelfde hook die `/werkbon/:id` gebruikt.
+   *
+   * Zonder dit tekende `TaakItem` hier een leeg cameravakje bij een
+   * punt waar gewoon twee foto's onder zaten: `taak.fotos` was er
+   * simpelweg niet, in alle drie de fasen van de werkdag.
+   */
+  const { werkbon: bonMetFotos, loading: bonLaadt, refetch } = useWerkbon(gekozen?.id ?? null)
+
+  // Zolang die ene bon onderweg is werken we door met de versie uit de
+  // lijst: adres, punten en dagknoppen staan er dan al. Alleen de
+  // foto's komen een tel later.
+  const vandaag = bonMetFotos ?? gekozen
   const { state: werkdag, bezig: werkdagBezig, startWerkdag, stopWerkdag, hervatWerkdag } = useWerkdag(vandaag?.id ?? null)
 
   if (loading) {
@@ -115,6 +132,7 @@ export default function MijnWerkbonnen() {
             hij zijn dag begint — dat achter een knop verstoppen maakt
             het scherm leeg zonder reden. */}
         <PuntenKaart taken={taken} werkbonId={vandaag.id} readOnly onRefresh={refetch}
+                     laden={bonLaadt}
                      bijschrift="Lezen kan nu al — afvinken zodra je bent gestart" />
 
         <Tegels aantalKlaar={aantalKlaar} aantalTaken={aantalTaken}
@@ -155,6 +173,7 @@ export default function MijnWerkbonnen() {
         <WerkbonKop werkbon={vandaag} aantalTaken={aantalTaken} />
         <Klusinfo werkbon={vandaag} />
         <PuntenKaart taken={taken} werkbonId={vandaag.id} readOnly onRefresh={refetch}
+                     laden={bonLaadt}
                      bijschrift="Hervat je werkdag om weer af te vinken" />
 
         <Tegels aantalKlaar={aantalKlaar} aantalTaken={aantalTaken} aantalFotos={aantalFotos}
@@ -190,7 +209,9 @@ export default function MijnWerkbonnen() {
             title="Checklist"
             actions={<span className="text-xs text-gray-400 dark:text-white/40">Foto vereist per punt</span>}
           />
-          {taken.length > 0 ? (
+          {bonLaadt ? (
+            <div className="flex justify-center py-6"><Spinner className="w-5 h-5" /></div>
+          ) : taken.length > 0 ? (
             taken.map((taak) => (
               <TaakItem key={taak.id} taak={taak} werkbonId={vandaag.id} onRefresh={refetch} />
             ))
@@ -340,9 +361,9 @@ function WaarWerktWie() {
  * werkdag loopt — dat verschil staat er ook bij, zodat niemand denkt
  * dat de app kapot is als er niets gebeurt bij aantikken.
  */
-function PuntenKaart({ taken, werkbonId, readOnly, onRefresh, bijschrift }: {
+function PuntenKaart({ taken, werkbonId, readOnly, onRefresh, bijschrift, laden }: {
   taken: any[]; werkbonId: string; readOnly?: boolean
-  onRefresh: () => void; bijschrift?: string
+  onRefresh: () => void; bijschrift?: string; laden?: boolean
 }) {
   return (
     <div className="bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-lg shadow-sm p-5">
@@ -352,7 +373,13 @@ function PuntenKaart({ taken, werkbonId, readOnly, onRefresh, bijschrift }: {
           ? <span className="text-xs text-gray-400 dark:text-white/40">{bijschrift}</span>
           : undefined}
       />
-      {taken.length === 0 ? (
+      {/* Wachten tot de foto's er zijn. Zonder dit tekent hij eerst de
+          punten mét een leeg cameravakje en springen de foto's er een
+          tel later in — precies het beeld waarvan gemeld is dat het
+          eruitziet alsof er niets staat. */}
+      {laden ? (
+        <div className="flex justify-center py-6"><Spinner className="w-5 h-5" /></div>
+      ) : taken.length === 0 ? (
         <p className="text-sm text-gray-400 dark:text-white/40 text-center py-4">
           Geen punten op deze bon.
         </p>

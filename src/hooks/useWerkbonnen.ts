@@ -2,6 +2,15 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Werkbon } from '@/types'
 
+/**
+ * Alle werkbonnen, voor lijsten en overzichten.
+ *
+ * Bewust **zonder** `fotos(*)`. Dit haalt dertig bonnen op; daar elke
+ * foto bij zetten is een lijst die vertienvoudigt op een telefoon in
+ * een kruipruimte, terwijl geen enkel overzichtsscherm die foto's
+ * tekent. Wie de foto's van één bon nodig heeft gebruikt `useWerkbon`
+ * hieronder — dat is één rij, geen dertig.
+ */
 export function useWerkbonnen() {
   const [werkbonnen, setWerkbonnen] = useState<Werkbon[]>([])
   const [loading, setLoading] = useState(true)
@@ -41,9 +50,18 @@ export function useWerkbonnen() {
   return { werkbonnen, loading, error, refetch: fetch, verwijder }
 }
 
-export function useWerkbon(id: string) {
+/**
+ * Eén werkbon, inclusief de foto's per afvinkpunt.
+ *
+ * `id` mag leeg zijn. Dat is niet theoretisch: het Vandaag-scherm weet
+ * pas wélke bon het moet ophalen nadat de lijst binnen is, en een hook
+ * mag niet voorwaardelijk aangeroepen worden. Zonder id blijft het
+ * resultaat leeg en staat `loading` op onwaar — anders draait een
+ * scherm dat nog geen bon heeft eeuwig in een spinner.
+ */
+export function useWerkbon(id: string | null | undefined) {
   const [werkbon, setWerkbon] = useState<Werkbon | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!!id)
   const [error, setError] = useState<string | null>(null)
 
   /**
@@ -60,7 +78,7 @@ export function useWerkbon(id: string) {
    * de nieuwe gegevens onderweg zijn.
    */
   const fetch = async (stil = false) => {
-    if (!id) return
+    if (!id) { setWerkbon(null); setError(null); setLoading(false); return }
     if (!stil) setLoading(true)
     const { data, error: fetchError } = await supabase
       .from('werkbonnen')

@@ -1,5 +1,13 @@
 # NMZ GO — Changelog
 
+## Het scherm van de man in het veld
+
+- **[FIX]** In de hele werkdagflow was elke foto onzichtbaar. Op Vandaag stond bij een afvinkpunt een leeg cameravakje, terwijl datzelfde punt via "Werkbon openen" gewoon twee foto's liet zien. De oorzaak zat één regel diep: `useWerkbonnen()` haalde `taken(*)` op en `useWerkbon(id)` haalde `taken(*, fotos(*))` op. `TaakItem` doet `taak.fotos ?? []` en tekende zonder die relatie een leeg uploadvak — in alle drie de fasen van de werkdag: vóór het starten, tijdens het werk en na het stoppen.
+- Opgelost zonder de overzichtslijst zwaarder te maken. Daar `fotos(*)` bij zetten betekent dertig bonnen inclusief elke foto op een telefoon in een kruipruimte, terwijl geen enkel overzichtsscherm die foto's tekent. Vandaag kiest nu eerst de bon van vandaag uit de lichte lijst en haalt daarná díé ene bon op met dezelfde hook die `/werkbon/:id` gebruikt: één rij extra, geen dertig.
+- **[FIX]** Bijkomend: na een foto knippert Vandaag niet meer weg. Het scherm ververste zich met de lijst-refetch — die zet de laadstatus aan en gooit de hele pagina terug naar een spinner. Het gebruikt nu de stille ophaalronde die `/werkbon/:id` al had.
+
+---
+
 ## De eerste echte foto's — twee fouten die dat blootlegde
 
 De eerste twee foto's ooit zijn gemaakt op Bentinckstraat 63. Ze kwamen
