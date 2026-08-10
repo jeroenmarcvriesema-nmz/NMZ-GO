@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { verkleinFoto } from '@/lib/afbeelding'
 
 export function useFotos() {
   const upload = async (
@@ -7,13 +8,19 @@ export function useFotos() {
     uploaderId: string,
     file: File
   ) => {
+    // Eerst verkleinen. Een telefoonfoto van acht megabyte over 4G
+    // vanuit een kruipruimte is een upload van minuten die op een
+    // slechte verbinding halverwege strandt — en daarna moet diezelfde
+    // acht megabyte terugkomen om een miniatuur te vullen.
+    const bestand = await verkleinFoto(file)
+
     const timestamp = Date.now()
-    const bestandsnaam = `${timestamp}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
+    const bestandsnaam = `${timestamp}_${bestand.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
     const storagePath = `${werkbonId}/${taakId}/${bestandsnaam}`
 
     const { error: uploadError } = await supabase.storage
       .from('werkbon-fotos')
-      .upload(storagePath, file, { upsert: false })
+      .upload(storagePath, bestand, { upsert: false })
 
     if (uploadError) return { error: uploadError }
 
@@ -49,12 +56,18 @@ export function useFotos() {
    * een halve streep bereik is dat het verschil tussen "traag" en
    * "kapot".
    */
-  const getUrls = async (paden: string[]): Promise<Record<string, string>> => {
-    if (paden.length === 0) return {}
+  const getUrls = async (
+    paden: string[]
+  ): Promise<{ urls: Record<string, string>; fout: string | null }> => {
+    if (paden.length === 0) return { urls: {}, fout: null }
     const { data, error } = await supabase.storage
       .from('werkbon-fotos')
       .createSignedUrls(paden, 3600)
-    if (error || !data) return {}
+
+    // De fout teruggeven en niet stilzwijgend een lege lijst: zonder dit
+    // zag een mislukte ondertekening er precies hetzelfde uit als een
+    // foto die nog aan het laden was — een grijs vakje, voor altijd.
+    if (error || !data) return { urls: {}, fout: error?.message ?? 'onbekende fout' }
 
     const uit: Record<string, string> = {}
     for (const rij of data) {
@@ -62,7 +75,7 @@ export function useFotos() {
       // de reeks hoort daar niet onder te lijden.
       if (rij.path && rij.signedUrl) uit[rij.path] = rij.signedUrl
     }
-    return uit
+    return { urls: uit, fout: null }
   }
 
   return { upload, getUrl, getUrls }

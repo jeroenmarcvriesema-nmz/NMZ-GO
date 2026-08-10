@@ -36,14 +36,18 @@ export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps
   // venster. Het antwoord op "is die foto goed gegaan" hoort op het
   // scherm te staan waar je hem net maakte.
   const [urls, setUrls] = useState<Record<string, string>>({})
+  const [fotoStand, setFotoStand] = useState<'bezig' | 'klaar' | 'mislukt'>('bezig')
   const [bekijk, setBekijk] = useState<number | null>(null)
   const paden = fotos.map((f) => f.storage_path).join('|')
 
   useEffect(() => {
-    if (paden === '') { setUrls({}); return }
+    if (paden === '') { setUrls({}); setFotoStand('klaar'); return }
     let levend = true
-    getUrls(paden.split('|')).then((gevonden) => {
-      if (levend) setUrls(gevonden)
+    setFotoStand('bezig')
+    getUrls(paden.split('|')).then(({ urls: gevonden, fout }) => {
+      if (!levend) return
+      setUrls(gevonden)
+      setFotoStand(fout ? 'mislukt' : 'klaar')
     })
     return () => { levend = false }
     // Op de paden en niet op de reeks: die krijgt bij elke ophaalronde
@@ -130,8 +134,16 @@ export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps
                   src={urls[foto.storage_path]}
                   alt=""
                   loading="lazy"
+                  decoding="async"
+                  // Een link die het niet doet ziet er anders uit dan een
+                  // link die nog onderweg is. Zonder dit onderscheid
+                  // blijft een kapotte foto er eeuwig uitzien alsof hij
+                  // bijna klaar is.
+                  onError={() => setFotoStand('mislukt')}
                   className="w-full h-full object-cover"
                 />
+              ) : fotoStand === 'mislukt' ? (
+                <IconAlertCircle className="w-5 h-5 text-brand-red" />
               ) : (
                 // Zolang de ondertekende link onderweg is. Geen spinner:
                 // die trekt de aandacht naar het laden in plaats van
@@ -188,6 +200,13 @@ export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps
           {!taak.voltooid && heeftFoto && (
             <span className="text-xs text-gray-400 dark:text-white/40 flex items-center gap-1">
               {fotos.length} {fotos.length === 1 ? 'foto' : "foto's"} · nog niet afgevinkt
+            </span>
+          )}
+
+          {fotoStand === 'mislukt' && (
+            <span className="text-xs text-brand-red dark:text-red-400 flex items-center gap-1">
+              <IconAlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+              De foto&apos;s konden niet worden geladen — ze zijn wél opgeslagen.
             </span>
           )}
 

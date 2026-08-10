@@ -13,7 +13,7 @@ interface AuthState {
   signOut: () => Promise<void>
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   profile: null,
   loading: true,
   error: null,
@@ -22,8 +22,27 @@ export const useAuthStore = create<AuthState>((set) => ({
   setLoading: (loading) => set({ loading }),
   setError: (error) => set({ error }),
 
+  /**
+   * Het profiel ophalen — maar niet elke keer het scherm leegmaken.
+   *
+   * Dit zette `loading` altijd op waar, en `AuthGuard` vervangt de hele
+   * app door een laadscherm zolang dat aan staat. Elke aanroep haalde
+   * dus de complete boom weg en bouwde hem opnieuw op.
+   *
+   * Dat is precies wat er op een telefoon gebeurt bij het maken van een
+   * foto. De camera brengt de browser naar de achtergrond; kom je terug,
+   * dan controleert Supabase de sessie en vuurt `SIGNED_IN` af. App.tsx
+   * roept dan `fetchProfile()` aan — en je hele scherm knippert weg,
+   * inclusief de werkbon, je plek in de lijst en de zojuist opgehaalde
+   * foto's. Dat zag eruit als een refresh omdat het er feitelijk een was.
+   *
+   * Kennen we de gebruiker al, dan is dit achtergrondwerk en hoort het
+   * scherm te blijven staan.
+   */
   fetchProfile: async (userId: string) => {
-    set({ loading: true, error: null })
+    const bestaand = get().profile
+    const alBekend = bestaand?.id === userId
+    if (!alBekend) set({ loading: true, error: null })
 
     try {
       const { data, error } = await supabase
@@ -57,6 +76,12 @@ export const useAuthStore = create<AuthState>((set) => ({
           }
         }
 
+        // Ging het mis terwijl we de gebruiker al kenden, dan is dit een
+        // hapering en geen afmelding. Het profiel weggooien zou iemand
+        // midden op een klus uit de app zetten omdat het net even geen
+        // bereik had.
+        if (alBekend) { set({ loading: false }); return }
+
         set({
           profile: null,
           loading: false,
@@ -66,6 +91,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
 
       if (!data) {
+        if (alBekend) { set({ loading: false }); return }
         set({ profile: null, loading: false, error: 'Geen profiel gevonden.' })
         return
       }
@@ -73,6 +99,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ profile: data as Profile, loading: false, error: null })
     } catch (err) {
       console.error('[Auth] Onverwachte fout:', err)
+      if (alBekend) { set({ loading: false }); return }
       set({
         profile: null,
         loading: false,
