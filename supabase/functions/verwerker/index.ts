@@ -16,7 +16,13 @@
 // ============================================================
 
 import { createClient, SupabaseClient } from 'jsr:@supabase/supabase-js@2'
-import { importeerTaak, statusBijwerken, synchroniseer, tekstproef } from './clickup.ts'
+import {
+  fotosUploaden,
+  importeerTaak,
+  statusBijwerken,
+  synchroniseer,
+  tekstproef,
+} from './clickup.ts'
 
 // Een fout die niet opnieuw geprobeerd moet worden.
 class OnverwerkbaarError extends Error {
@@ -31,6 +37,7 @@ interface Taak {
   soort: string
   payload: Record<string, unknown>
   pogingen: number
+  prioriteit: number
   volgnummer: string
 }
 
@@ -125,6 +132,21 @@ const HANDLERS: Record<string, Handler> = {
     return await tekstproef(db, tenantId, clickupTaakId)
   },
 
+  // De foto's van een werkbon als bijlage bij de ClickUp-taak.
+  //
+  // Staat vóór de statuswijziging in de wachtrij (prioriteit 50 tegen
+  // 100), zodat de bijlagen er staan op het moment dat de status naar
+  // "opgeleverd" springt. Idempotent via een stempel per foto: wat al
+  // bij ClickUp staat gaat niet nog een keer.
+  'clickup.fotos_uploaden': async (taak, db) => {
+    const tenantId = String(taak.payload.tenant_id ?? '')
+    const werkbonId = String(taak.payload.werkbon_id ?? '')
+    if (!tenantId || !werkbonId) {
+      throw new OnverwerkbaarError('tenant_id en werkbon_id zijn allebei nodig')
+    }
+    return await fotosUploaden(db, tenantId, werkbonId)
+  },
+
   // Terugkoppeling naar ClickUp: stilgelegd, hervat of opgeleverd.
   //
   // Via de wachtrij en niet rechtstreeks vanuit de database, zodat een
@@ -183,7 +205,14 @@ Deno.serve(async (req) => {
     const { data: taken, error } = await db.rpc('claim_verwerkingstaken', { aantal: BATCH })
     if (error) throw new Error(`claimen mislukt: ${error.message}`)
 
-    for (const taak of (taken ?? []) as Taak[]) {
+    // De claim kiest op prioriteit, maar de volgorde waarin hij de
+    // rijen teruggeeft is die van het queryplan en niet van de
+    // sortering. Voor twee taken uit dezelfde gebeurtenis is dat het
+    // verschil tussen "de foto's staan er als de status springt" en
+    // "meestal wel" — dus sorteren we hier zelf.
+    const batch = [...((taken ?? []) as Taak[])].sort((a, b) => a.prioriteit - b.prioriteit)
+
+    for (const taak of batch) {
       bekeken++
       const handler = HANDLERS[taak.soort]
 
