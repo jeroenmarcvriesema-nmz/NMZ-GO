@@ -118,6 +118,18 @@ export interface Foto {
   storage_path: string
   bestandsnaam: string
   created_at: string
+
+  // ── De fotoketen naar ClickUp (migraties 026 en 027) ──
+  /** Wanneer deze foto als bijlage bij de ClickUp-taak is gezet. */
+  clickup_geupload_op?: string | null
+  clickup_attachment_id?: string | null
+  /**
+   * Wanneer het bestand uit de bucket is gehaald. De rij blijft staan,
+   * het bestand is weg — een ondertekende link levert dan niets meer
+   * op. Wordt nooit gevuld zolang `clickup_geupload_op` leeg is, dus
+   * gevuld betekent: de foto staat bij de ClickUp-taak.
+   */
+  opgeruimd_op?: string | null
 }
 
 export interface Uitnodiging {

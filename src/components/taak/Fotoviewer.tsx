@@ -1,8 +1,13 @@
 import { useEffect } from 'react'
-import { IconX, IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
+import { IconX, IconChevronLeft, IconChevronRight, IconArchive } from '@tabler/icons-react'
 
 interface Props {
-  fotos: { id: string; url: string | null }[]
+  /**
+   * `opgeruimd` betekent: het bestand is uit de bucket gehaald nadat
+   * ClickUp de foto had (migratie 027). Er valt hier dus niets te
+   * tonen, maar dat is iets anders dan een foto die niet laadt.
+   */
+  fotos: { id: string; url: string | null; opgeruimd?: boolean }[]
   /** Welke foto open staat, of null voor dicht. */
   index: number | null
   /** De tekst van het afvinkpunt, zodat je weet waar je naar kijkt. */
@@ -79,6 +84,15 @@ export function Fotoviewer({ fotos, index, titel, onSluit, onWissel }: Props) {
             alt={titel}
             className="max-w-full max-h-full object-contain rounded-sm"
           />
+        ) : huidige.opgeruimd ? (
+          <div className="text-center px-6">
+            <IconArchive className="w-8 h-8 text-white/40 mx-auto mb-3" />
+            <p className="text-sm text-white/60">
+              Deze foto is opgeruimd en staat als bijlage bij de
+              ClickUp-taak. De opname zelf is niet verloren — alleen hier
+              niet meer te bekijken.
+            </p>
+          </div>
         ) : (
           <p className="text-sm text-white/60 text-center px-6">
             Deze foto kon niet worden geladen. Controleer je verbinding en

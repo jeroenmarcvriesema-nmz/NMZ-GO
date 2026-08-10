@@ -14,6 +14,12 @@
 - **[FIX]** De schil van Vandaag was een component-in-een-component. Die krijgt bij elke hertekening een nieuwe identiteit, waarna React de hele inhoud opnieuw ophangt: elk afvinkpunt vroeg zijn ondertekende fotolinks dan opnieuw op en de miniaturen knipperden terug naar een grijs vakje.
 - **[FIX]** Het bijschrift bij "Uit te voeren punten" stond ernáást en duwde de kop op een telefoon van 390 pixels over drie regels uiteen. Staat nu eronder.
 
+### Klaar voor de opruiming van de fotobucket
+- **[FEATURE]** Migratie 027 haalt het bestand uit de bucket zodra ClickUp de foto heeft en de klus veertien dagen geleden is opgeleverd. De rij in `fotos` blijft staan met `opgeruimd_op` gevuld. Een ondertekende link levert dan niets meer op, en dat was in de schermen niet te onderscheiden van een foto die nog laadt — een grijs vakje, voor altijd. Zulke foto's krijgen nu hun eigen vakje: "bij ClickUp", met de volledige uitleg als je hem opent.
+- Die paden gaan ook niet meer mee naar de ondertekening. Dat scheelt een ronde naar de server voor een antwoord dat toch leeg is.
+- **[FIX]** In het archief verdween een opgeruimde foto stilzwijgend uit de strook terwijl de kop er wél bij telde: vier foto's beloofd, twee te zien. Juist daar telt het, want het archief gáát over oud werk en oud werk is precies wat opgeruimd wordt.
+- Speelt pas veertien dagen na de eerste oplevering. Er is nog niets opgeruimd, dus dit is voorbereiding — niet een fout die iemand al gezien heeft.
+
 ---
 
 ## De eerste echte foto's — twee fouten die dat blootlegde
