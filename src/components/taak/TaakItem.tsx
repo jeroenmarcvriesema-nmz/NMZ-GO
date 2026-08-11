@@ -49,8 +49,17 @@ export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps
    * te ondertekenen: zo'n pad meesturen levert een leeg antwoord op, en
    * dat is hier niet te onderscheiden van een foto die nog laadt. Dus
    * gaan ze er vooraf uit, en krijgen ze hun eigen vakje.
+   *
+   * `storage_path` wordt hier ook getoetst: de overzichtslijst haalt
+   * van elke foto alleen het id op om te kunnen tellen. Belandt zo'n
+   * rij hier toch — als het ophalen van de volledige bon mislukte —
+   * dan hoort dat geen ondertekening van het pad "undefined" op te
+   * leveren.
    */
-  const paden = fotos.filter((f) => !f.opgeruimd_op).map((f) => f.storage_path).join('|')
+  const paden = fotos
+    .filter((f) => !f.opgeruimd_op && f.storage_path)
+    .map((f) => f.storage_path)
+    .join('|')
 
   useEffect(() => {
     if (paden === '') { setUrls({}); setFotoStand('klaar'); return }

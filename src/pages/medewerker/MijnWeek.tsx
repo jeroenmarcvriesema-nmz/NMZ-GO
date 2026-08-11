@@ -7,7 +7,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { useWerkbonnen } from '@/hooks/useWerkbonnen'
-import { berekenVoortgang, cn } from '@/lib/utils'
+import { berekenVoortgang, formatDatum, cn } from '@/lib/utils'
 import { isoDatum, maandagVerschoven, weekDagen, looptOp, inWeek } from '@/lib/planning'
 import { Weekkiezer } from '@/components/layout/Weekkiezer'
 import type { Werkbon } from '@/types'
@@ -136,7 +136,7 @@ export default function MijnWeek() {
                       {w.adres}
                     </div>
                     <div className="text-xs text-gray-400 dark:text-white/40">
-                      vanaf {w.geplande_start ?? w.datum} · {(w.taken ?? []).length} punten
+                      vanaf {formatDatum(w.geplande_start ?? w.datum)} · {(w.taken ?? []).length} punten
                     </div>
                   </div>
                   <IconChevronRight className="w-4 h-4 flex-shrink-0 text-gray-300 dark:text-white/25" />

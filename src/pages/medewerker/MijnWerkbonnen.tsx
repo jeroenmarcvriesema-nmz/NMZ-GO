@@ -135,6 +135,19 @@ export default function MijnWerkbonnen() {
   return (
     <>
       <Schil voornaam={voornaam}>
+        {/* Bovenaan, direct onder de groet. Punten klaar, foto's,
+            voortgang en gewerkte tijd zijn het antwoord op "hoe sta ik
+            ervoor" — dat is wat je wil zien als je je telefoon uit je
+            zak haalt, niet iets waar je twintig afvinkpunten voor moet
+            langsscrollen. */}
+        <Tegels
+          aantalKlaar={taken.filter((t) => t.voltooid).length}
+          aantalTaken={taken.length}
+          aantalFotos={aantalFotos}
+          voortgang={voortgang}
+          uren={werkdag.fase === 'voor_start' ? '—' : geefUren(werkdag.startTijd, werkdag.stopTijd)}
+        />
+
         {werkdag.fase === 'gestopt' && (
           <div className="bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-lg shadow-sm p-6 text-center">
             <div className="w-12 h-12 rounded-full bg-green-50 dark:bg-green-500/10 flex items-center justify-center mx-auto mb-4">
@@ -164,13 +177,6 @@ export default function MijnWerkbonnen() {
           onVoltooid={() => { refetch(); refetchLijst() }}
         />
 
-        <Tegels
-          aantalKlaar={taken.filter((t) => t.voltooid).length}
-          aantalTaken={taken.length}
-          aantalFotos={aantalFotos}
-          voortgang={voortgang}
-          uren={werkdag.fase === 'voor_start' ? '—' : geefUren(werkdag.startTijd, werkdag.stopTijd)}
-        />
         <Prestaties />
         <WaarWerktWie />
       </Schil>

@@ -5,11 +5,25 @@ import type { Werkbon } from '@/types'
 /**
  * Alle werkbonnen, voor lijsten en overzichten.
  *
- * Bewust **zonder** `fotos(*)`. Dit haalt dertig bonnen op; daar elke
- * foto bij zetten is een lijst die vertienvoudigt op een telefoon in
- * een kruipruimte, terwijl geen enkel overzichtsscherm die foto's
- * tekent. Wie de foto's van één bon nodig heeft gebruikt `useWerkbon`
- * hieronder — dat is één rij, geen dertig.
+ * Van de foto's komt hier **alleen het id** mee, en dat is een bewuste
+ * middenweg tussen twee fouten.
+ *
+ * `fotos(*)` zou dertig bonnen inclusief elk storage_pad opleveren —
+ * een lijst die vertienvoudigt op een telefoon in een kruipruimte,
+ * terwijl geen enkel overzichtsscherm een miniatuur tekent. Maar de
+ * relatie helemaal weglaten was ook fout: een half dozijn schermen
+ * telt `taken.flatMap(t => t.fotos)` om "12 foto's" te tonen, en dat
+ * stond dus altijd op nul. Rapporten zette die nul zelfs in de
+ * Excel-export.
+ *
+ * Een id is een uuid; een volle rij is een pad, een bestandsnaam en
+ * vier tijdstempels. Tellen kan met het eerste. Dezelfde aanpak als
+ * `useDashboard` en `useProjecten` al hanteren.
+ *
+ * Let op wat dat betekent: `taak.fotos` is hier alleen te **tellen**,
+ * niet te tónen — `storage_path` is niet gevuld. Wie miniaturen nodig
+ * heeft gebruikt `useWerkbon` hieronder, dat is één rij en wél
+ * compleet.
  */
 export function useWerkbonnen() {
   const [werkbonnen, setWerkbonnen] = useState<Werkbon[]>([])
@@ -22,7 +36,7 @@ export function useWerkbonnen() {
       .from('werkbonnen')
       .select(`
         *,
-        taken(*),
+        taken(*, fotos(id)),
         medewerkers:werkbon_medewerkers(persoon:personen(*))
       `)
       .order('datum', { ascending: false })

@@ -167,9 +167,10 @@ export default function Rapporten() {
 
         <p className="text-xs text-gray-400 dark:text-white/40 leading-relaxed">
           De export bevat adres, ploeg, afgevinkte punten en het aantal foto's per
-          bon — genoeg voor de administratie. Een opleverrapport per klus in PDF
-          bestaat nog niet: de velden daarvoor staan wel in de database, maar er
-          is nog geen scherm waar iemand ze invult.
+          bon — genoeg voor de administratie. Het opleverrapport per klus vraag je
+          aan op de werkbon zelf, samen met de drie tekstvelden die erin komen. De
+          PDF wordt nog niet gemaakt: zo'n aanvraag blijft in de wachtrij staan
+          tot de generator er is.
         </p>
       </div>
     </PageWrapper>
