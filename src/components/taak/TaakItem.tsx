@@ -6,7 +6,7 @@ import { useTaken } from '@/hooks/useTaken'
 import { useFotos } from '@/hooks/useFotos'
 import { useAuth } from '@/hooks/useAuth'
 import type { Taak } from '@/types'
-import { IconCamera, IconCameraOff, IconCheck, IconSquare, IconPhoto, IconAlertCircle } from '@tabler/icons-react'
+import { IconCamera, IconCameraOff, IconCheck, IconSquare, IconPhoto, IconAlertCircle, IconArchive } from '@tabler/icons-react'
 
 interface TaakItemProps {
   taak: Taak
@@ -38,7 +38,28 @@ export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps
   const [urls, setUrls] = useState<Record<string, string>>({})
   const [fotoStand, setFotoStand] = useState<'bezig' | 'klaar' | 'mislukt'>('bezig')
   const [bekijk, setBekijk] = useState<number | null>(null)
-  const paden = fotos.map((f) => f.storage_path).join('|')
+
+  /**
+   * Een opgeruimde foto heeft geen bestand meer.
+   *
+   * Zodra ClickUp de foto heeft en de klus veertien dagen geleden is
+   * opgeleverd, haalt de opruiming het bestand uit de bucket (migratie
+   * 027). De rij in `fotos` blijft staan met `opgeruimd_op` gevuld —
+   * zo blijft zichtbaar dát er een foto was. Er valt alleen niets meer
+   * te ondertekenen: zo'n pad meesturen levert een leeg antwoord op, en
+   * dat is hier niet te onderscheiden van een foto die nog laadt. Dus
+   * gaan ze er vooraf uit, en krijgen ze hun eigen vakje.
+   *
+   * `storage_path` wordt hier ook getoetst: de overzichtslijst haalt
+   * van elke foto alleen het id op om te kunnen tellen. Belandt zo'n
+   * rij hier toch — als het ophalen van de volledige bon mislukte —
+   * dan hoort dat geen ondertekening van het pad "undefined" op te
+   * leveren.
+   */
+  const paden = fotos
+    .filter((f) => !f.opgeruimd_op && f.storage_path)
+    .map((f) => f.storage_path)
+    .join('|')
 
   useEffect(() => {
     if (paden === '') { setUrls({}); setFotoStand('klaar'); return }
@@ -122,7 +143,21 @@ export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps
           ploeg ook. */}
       {(heeftFoto || !readOnly) && (
         <div className="flex items-center gap-2 mt-3 pl-10 flex-wrap">
-          {fotos.map((foto, n) => (
+          {fotos.map((foto, n) => foto.opgeruimd_op ? (
+            // Het bestand is weg, de foto niet: die staat als bijlage
+            // bij de ClickUp-taak. Dat is beter nieuws dan een gebroken
+            // plaatje, dus staat het er ook zo.
+            <div
+              key={foto.id}
+              title="Het bestand is opgeruimd — de foto staat als bijlage bij de ClickUp-taak"
+              className="w-16 h-16 rounded-sm border border-gray-200 dark:border-white/10 bg-surface-2 dark:bg-white/5 flex flex-col items-center justify-center gap-0.5 px-1 text-center"
+            >
+              <IconArchive className="w-4 h-4 text-gray-400 dark:text-white/40" />
+              <span className="text-[9px] font-semibold leading-tight text-gray-400 dark:text-white/40">
+                bij ClickUp
+              </span>
+            </div>
+          ) : (
             <button
               key={foto.id}
               onClick={() => setBekijk(n)}
@@ -239,7 +274,11 @@ export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps
       )}
 
       <Fotoviewer
-        fotos={fotos.map((f) => ({ id: f.id, url: urls[f.storage_path] ?? null }))}
+        fotos={fotos.map((f) => ({
+          id: f.id,
+          url: f.opgeruimd_op ? null : urls[f.storage_path] ?? null,
+          opgeruimd: !!f.opgeruimd_op,
+        }))}
         index={bekijk}
         titel={taak.titel}
         onSluit={() => setBekijk(null)}

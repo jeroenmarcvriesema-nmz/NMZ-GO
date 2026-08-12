@@ -180,7 +180,7 @@ export function Klusacties({ werkbon, onKlaar }: Props) {
       >
         <div className="space-y-4">
           {/* Er stond dat de opleverdatum één dag opschoof. Dat deed de
-              database ook, en dat is er sinds migratie 027 uit: hoelang
+              database ook, en dat is er sinds migratie 029 uit: hoelang
               een klus stilligt weet niemand op het moment dat je hem
               stillegt. Bij asbest is dat geen dag maar een
               inventarisatie. De planning verschuift dus niet — dat

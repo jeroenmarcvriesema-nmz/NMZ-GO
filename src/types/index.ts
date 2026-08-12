@@ -118,6 +118,18 @@ export interface Foto {
   storage_path: string
   bestandsnaam: string
   created_at: string
+
+  // ── De fotoketen naar ClickUp (migraties 026 en 027) ──
+  /** Wanneer deze foto als bijlage bij de ClickUp-taak is gezet. */
+  clickup_geupload_op?: string | null
+  clickup_attachment_id?: string | null
+  /**
+   * Wanneer het bestand uit de bucket is gehaald. De rij blijft staan,
+   * het bestand is weg — een ondertekende link levert dan niets meer
+   * op. Wordt nooit gevuld zolang `clickup_geupload_op` leeg is, dus
+   * gevuld betekent: de foto staat bij de ClickUp-taak.
+   */
+  opgeruimd_op?: string | null
 }
 
 export interface Uitnodiging {
@@ -129,31 +141,18 @@ export interface Uitnodiging {
   verloopt_op: string | null
 }
 
-export interface Project {
-  id: string
-  naam: string
-  adres: string
-  opdrachtgever: string
-  status: ProjectStatus
-  voortgang: number
-  startdatum: string
-  einddatum: string
-  medewerkers: Profile[]
-  aantalWerkbonnen: number
-  aantalTaken: number
-  aantalTakenKlaar: number
-  aantalFotos: number
-  opmerkingen: string
-}
+// `Project` stond hier: één rij uit de tabel `projecten`, met haar
+// werkbonnen, ploeg en aantallen erbij gerekend. Die tabel heeft nul
+// rijen en krijgt er nooit een bij — uit ClickUp komt één taak als één
+// werkbon. Met het verwijderen van `/projecten/:id` las niemand dit
+// type nog. `ProjectStatus` hieronder blijft wél: de projectenlijst
+// gebruikt hem voor een groep klussen met hetzelfde opdrachtnummer.
 
 export interface PlanningItem {
   id: string
   /** Startdatum; met `eind` erbij beslaat een klus vaak meerdere dagen. */
   datum: string
   eind: string
-  projectId: string | null
-  /** Leeg zolang klussen losse bonnen zijn en niet aan een project hangen. */
-  projectnaam: string
   adres: string
   /** Los van `adres`, zodat zoeken op de plaats ook in de planning werkt. */
   plaats: string | null

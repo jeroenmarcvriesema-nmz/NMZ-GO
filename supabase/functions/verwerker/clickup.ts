@@ -345,6 +345,41 @@ async function verwerkTaak(
 }
 
 /**
+ * Het ClickUp-token uit Vault.
+ *
+ * Het staat daar net als de service-role-sleutel. De RPC is de enige
+ * doorgang en is alleen voor service_role — een browser of ingelogde
+ * gebruiker komt er niet bij.
+ */
+async function geefToken(db: SupabaseClient): Promise<string> {
+  const { data: token, error } = await db.rpc('geef_clickup_token')
+  if (error) throw new Error(`ClickUp-token lezen mislukt: ${error.message}`)
+  if (!token) {
+    throw new Error(
+      'Er staat geen clickup_token in Vault. Zet hem met ' +
+      "select vault.create_secret('<token>', 'clickup_token');",
+    )
+  }
+  return token as string
+}
+
+/** De ClickUp-instellingen van een tenant, of een fout als ze ontbreken. */
+async function geefInstellingen(
+  db: SupabaseClient,
+  tenantId: string,
+): Promise<Instellingen & Statussen> {
+  const { data, error } = await db
+    .from('clickup_instellingen')
+    .select('*')
+    .eq('tenant_id', tenantId)
+    .maybeSingle()
+
+  if (error) throw new Error(`instellingen lezen mislukt: ${error.message}`)
+  if (!data) throw new Error(`geen ClickUp-instellingen voor tenant ${tenantId}`)
+  return data as Instellingen & Statussen
+}
+
+/**
  * Alles ophalen wat het verwerken van taken nodig heeft: instellingen,
  * het token uit Vault en de koppeling ClickUp-naam → persoon.
  */
@@ -358,17 +393,7 @@ async function maakContext(db: SupabaseClient, tenantId: string): Promise<Werkco
   if (instFout) throw new Error(`instellingen lezen mislukt: ${instFout.message}`)
   if (!inst) throw new Error(`geen ClickUp-instellingen voor tenant ${tenantId}`)
 
-  // Het token staat in Vault, net als de service-role-sleutel. Deze
-  // functie is de enige doorgang en is alleen voor service_role — een
-  // browser of ingelogde gebruiker komt er niet bij.
-  const { data: token, error: tokenFout } = await db.rpc('geef_clickup_token')
-  if (tokenFout) throw new Error(`ClickUp-token lezen mislukt: ${tokenFout.message}`)
-  if (!token) {
-    throw new Error(
-      'Er staat geen clickup_token in Vault. Zet hem met ' +
-      "select vault.create_secret('<token>', 'clickup_token');",
-    )
-  }
+  const token = await geefToken(db)
 
   // Koppeling ClickUp-naam → persoon. Een persoon bestaat los van een
   // account: de planning in ClickUp kent alleen namen, en of daar al
@@ -525,17 +550,8 @@ export async function tekstproef(
   tenantId: string,
   clickupTaakId: string,
 ): Promise<Record<string, unknown>> {
-  const { data: inst } = await db
-    .from('clickup_instellingen')
-    .select('*')
-    .eq('tenant_id', tenantId)
-    .maybeSingle()
-
-  if (!inst) throw new Error(`geen ClickUp-instellingen voor tenant ${tenantId}`)
-  const i = inst as Instellingen
-
-  const { data: token } = await db.rpc('geef_clickup_token')
-  if (!token) throw new Error('geen clickup_token in Vault')
+  const i = await geefInstellingen(db, tenantId)
+  const token = await geefToken(db)
 
   const taak = await haal(`/task/${clickupTaakId}`, token)
   const opdracht = bijlage(taak, i.veld_werkopdracht, OPDRACHT_VELD)
@@ -620,19 +636,266 @@ async function opmerking(taakId: string, token: string, tekst: string): Promise<
   if (!res.ok) console.warn(`opmerking plaatsen mislukt (${res.status})`)
 }
 
+// ============================================================
+// Foto's als bijlage bij de ClickUp-taak
+// ============================================================
+// Het bewijs dat het werk gedaan is, hoort te staan waar de planning
+// leeft. Zolang de foto's alleen in NMZ GO staan, moet iedereen die
+// naar het bord kijkt hier apart komen kijken.
+//
+// Dit is bovendien de voorwaarde voor het opruimen van de bucket:
+// zodra ClickUp de foto's heeft, is Supabase Storage een doorgeefluik
+// en hoeven ze daar geen maanden te blijven staan. Vandaar het stempel
+// per foto — zonder dat gooi je bewijs weg dat nergens anders staat.
+
+/** Hoeveel foto's er per ronde hoogstens de deur uit gaan. */
+const FOTOS_PER_RONDE = 25
+
+/**
+ * Een bestandsnaam waar iemand in ClickUp iets aan heeft.
+ *
+ * Wat de telefoon oplevert is `1786373563255_image.jpg`. Twintig van
+ * die naast elkaar in een taak zijn twintig keer hetzelfde. Adres,
+ * fase en volgnummer maken er iets van dat je kunt teruglezen.
+ */
+function bijlagenaam(adres: string, fase: string, n: number, bron: string): string {
+  const kern = (adres || 'werkbon')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60)
+  const punt = bron.lastIndexOf('.')
+  const extensie = punt > 0 ? bron.slice(punt).toLowerCase() : '.jpg'
+  return `${kern}-${fase}-${String(n).padStart(2, '0')}${extensie}`
+}
+
+/**
+ * Eén bijlage naar ClickUp. Multipart, want dat is wat het eindpunt
+ * verwacht — geen Content-Type meezetten, `fetch` bepaalt zelf de
+ * scheidingsreeks en die moet in de header overeenkomen met de body.
+ */
+async function stuurBijlage(
+  taakId: string,
+  token: string,
+  bestand: Blob,
+  naam: string,
+): Promise<string | null> {
+  const form = new FormData()
+  form.append('attachment', bestand, naam)
+  form.append('filename', naam)
+
+  const res = await fetch(`${API}/task/${encodeURIComponent(taakId)}/attachment`, {
+    method: 'POST',
+    headers: { Authorization: token },
+    body: form,
+  })
+
+  if (res.status === 401) {
+    throw new Error(
+      'ClickUp weigert het token (401). Werk clickup_token bij in Vault ' +
+      'met vault.update_secret().',
+    )
+  }
+  if (!res.ok) {
+    throw new Error(`ClickUp gaf ${res.status} op de bijlage ${naam}: ${await res.text()}`)
+  }
+
+  const uit = await res.json().catch(() => null)
+  return uit?.id ?? null
+}
+
+/**
+ * De foto's van één werkbon naar de gekoppelde ClickUp-taak.
+ *
+ * Idempotent via het stempel per foto: wat al bij ClickUp staat wordt
+ * niet meegenomen. Dat is ook de reden dat het stempel meteen na élke
+ * upload wordt weggeschreven en niet aan het eind — valt de functie
+ * halverwege om, dan pakt de volgende ronde precies de rest op.
+ *
+ * Een foto die het niet haalt laat de taak mislukken, ook als de rest
+ * wel is gelukt. De geslaagde foto's zijn dan al gestempeld, dus de
+ * herhaling doet alleen wat overbleef. Stil "vier van de vijf" melden
+ * zou betekenen dat het opruimen straks een bestand weggooit dat
+ * nergens anders staat.
+ */
+export async function fotosUploaden(
+  db: SupabaseClient,
+  tenantId: string,
+  werkbonId: string,
+): Promise<Record<string, unknown>> {
+  const i = await geefInstellingen(db, tenantId)
+
+  const { data: bon } = await db
+    .from('werkbonnen')
+    .select('id, adres, clickup_taak_id')
+    .eq('id', werkbonId)
+    .eq('tenant_id', tenantId)
+    .maybeSingle()
+  if (!bon) throw new Error(`werkbon ${werkbonId} bestaat niet`)
+
+  // Een handmatig aangemaakte bon hangt aan geen ClickUp-taak. Geen
+  // fout — er valt alleen niets heen te sturen.
+  if (!bon.clickup_taak_id) {
+    return { overgeslagen: 'deze werkbon komt niet uit ClickUp', adres: bon.adres }
+  }
+
+  const { data: fotos, error: fotoFout } = await db
+    .from('fotos')
+    .select('id, storage_path, bestandsnaam, fase, created_at')
+    .eq('werkbon_id', werkbonId)
+    .eq('tenant_id', tenantId)
+    .is('clickup_geupload_op', null)
+    .is('opgeruimd_op', null)
+    .order('created_at', { ascending: true })
+  if (fotoFout) throw new Error(`foto's lezen mislukt: ${fotoFout.message}`)
+
+  // Waar de nummering verdergaat. Puur voor de bestandsnaam: bij een
+  // tweede ronde hoort de vierde foto niet weer -01 te heten.
+  const { count: alGedaan } = await db
+    .from('fotos')
+    .select('id', { count: 'exact', head: true })
+    .eq('werkbon_id', werkbonId)
+    .not('clickup_geupload_op', 'is', null)
+
+  const teDoen = fotos ?? []
+  if (teDoen.length === 0) {
+    return {
+      adres: bon.adres,
+      clickup_taak: bon.clickup_taak_id,
+      geupload: 0,
+      al_bij_clickup: alGedaan ?? 0,
+      klaar: true,
+    }
+  }
+
+  // Droogloop, net als de synchronisatie: rapporteren wat er zou
+  // gebeuren en niets wegschrijven.
+  if (!i.actief) {
+    return {
+      droogloop: true,
+      adres: bon.adres,
+      clickup_taak: bon.clickup_taak_id,
+      zou_uploaden: teDoen.length,
+      namen: teDoen.map((f, n) =>
+        bijlagenaam(bon.adres ?? '', f.fase ?? 'na', (alGedaan ?? 0) + n + 1, f.bestandsnaam ?? '')),
+    }
+  }
+
+  const token = await geefToken(db)
+  const ronde = teDoen.slice(0, FOTOS_PER_RONDE)
+
+  let geupload = 0
+  const mislukt: { foto: string; reden: string }[] = []
+
+  for (const [n, foto] of ronde.entries()) {
+    const naam = bijlagenaam(
+      bon.adres ?? '', foto.fase ?? 'na', (alGedaan ?? 0) + n + 1, foto.bestandsnaam ?? '',
+    )
+
+    try {
+      const { data: bestand, error } = await db.storage
+        .from('werkbon-fotos')
+        .download(foto.storage_path)
+
+      if (error || !bestand) {
+        throw new Error(`niet in de bucket te vinden (${error?.message ?? 'leeg'})`)
+      }
+
+      const attachmentId = await stuurBijlage(bon.clickup_taak_id, token, bestand, naam)
+
+      // Meteen stempelen. Valt de functie hierna om, dan is deze foto
+      // in de volgende ronde uit beeld en gaat hij niet twee keer.
+      const { error: stempelFout } = await db
+        .from('fotos')
+        .update({
+          clickup_geupload_op: new Date().toISOString(),
+          clickup_attachment_id: attachmentId,
+        })
+        .eq('id', foto.id)
+
+      if (stempelFout) {
+        throw new Error(
+          `bijlage staat bij ClickUp maar het stempel is niet weggeschreven: ${stempelFout.message}`,
+        )
+      }
+      geupload++
+    } catch (e) {
+      mislukt.push({ foto: foto.storage_path, reden: e instanceof Error ? e.message : String(e) })
+    }
+  }
+
+  const restant = teDoen.length - ronde.length
+
+  // Wat niet gelukt is, hoort terug te komen. De gestempelde foto's
+  // zijn dan uit beeld, dus de herhaling doet alleen wat overbleef.
+  if (mislukt.length > 0) {
+    throw new Error(
+      `${geupload} van ${ronde.length} foto's naar ClickUp; mislukt: ` +
+      mislukt.map((m) => `${m.foto} (${m.reden})`).join('; '),
+    )
+  }
+
+  // Meer dan één ronde vol. Ook dat komt terug — een taak die stil
+  // "25 gedaan" meldt terwijl er nog dertig liggen, is een taak die
+  // niemand meer oppakt.
+  if (restant > 0) {
+    throw new Error(`${geupload} foto's naar ClickUp, nog ${restant} te gaan`)
+  }
+
+  return {
+    adres: bon.adres,
+    clickup_taak: bon.clickup_taak_id,
+    geupload,
+    al_bij_clickup: alGedaan ?? 0,
+    klaar: true,
+  }
+}
+
+/**
+ * Staat het fotobewijs compleet bij ClickUp, en zo niet: is er nog
+ * iemand mee bezig?
+ *
+ * De statuswijziging bij oplevering leunt hierop. Prioriteit zet de
+ * uploadtaak vóór de statustaak, maar dat is de gelukkige route; gaat
+ * de upload mis, dan mag de status niet alsnog op "opgeleverd"
+ * springen alsof het bewijs er staat.
+ */
+async function fotostand(
+  db: SupabaseClient,
+  tenantId: string,
+  werkbonId: string,
+): Promise<{ openstaand: number; uploadLoopt: boolean }> {
+  const { count: openstaand } = await db
+    .from('fotos')
+    .select('id', { count: 'exact', head: true })
+    .eq('werkbon_id', werkbonId)
+    .is('clickup_geupload_op', null)
+    .is('opgeruimd_op', null)
+
+  if ((openstaand ?? 0) === 0) return { openstaand: 0, uploadLoopt: false }
+
+  // Ligt de uploadtaak nog te wachten of is hij bezig, dan is dit een
+  // kwestie van volgorde en wachten we. Is hij onverwerkbaar geworden,
+  // dan is wachten zinloos: dan gaat de status naar "wacht op foto's"
+  // zodat het bord de waarheid vertelt.
+  const { count: open } = await db
+    .from('verwerkingstaken')
+    .select('id', { count: 'exact', head: true })
+    .eq('soort', 'clickup.fotos_uploaden')
+    .eq('tenant_id', tenantId)
+    .eq('payload->>werkbon_id', werkbonId)
+    .in('status', ['wachtend', 'bezig'])
+
+  return { openstaand: openstaand ?? 0, uploadLoopt: (open ?? 0) > 0 }
+}
+
 export async function statusBijwerken(
   db: SupabaseClient,
   tenantId: string,
   werkbonId: string,
   soort: 'stilgelegd' | 'hervat' | 'opgeleverd',
 ): Promise<Record<string, unknown>> {
-  const { data: inst } = await db
-    .from('clickup_instellingen')
-    .select('*')
-    .eq('tenant_id', tenantId)
-    .maybeSingle()
-  if (!inst) throw new Error(`geen ClickUp-instellingen voor tenant ${tenantId}`)
-  const i = inst as Instellingen & Statussen
+  const i = await geefInstellingen(db, tenantId)
 
   const { data: bon } = await db
     .from('werkbonnen')
@@ -647,16 +910,16 @@ export async function statusBijwerken(
     return { overgeslagen: 'deze werkbon komt niet uit ClickUp' }
   }
 
-  const { data: token } = await db.rpc('geef_clickup_token')
-  if (!token) throw new Error('geen clickup_token in Vault')
+  const token = await geefToken(db)
 
   let status: string
   let tekst: string
+  let wachtOpFotos = 0
 
   if (soort === 'stilgelegd') {
     const reden = bon.stilleg_reden ?? 'geen reden vastgelegd'
     status = statusUitReden(reden, i)
-    // Geen "nieuwe opleverdatum" meer: sinds migratie 027 schuift die
+    // Geen "nieuwe opleverdatum" meer: sinds migratie 029 schuift die
     // niet op. Hoelang een klus stilligt is op dit moment niet te
     // zeggen — bij asbest komt er een inventarisatie achteraan en geen
     // dag. Een datum noemen die niemand heeft vastgesteld is erger dan
@@ -666,8 +929,30 @@ export async function statusBijwerken(
     status = i.trigger_status
     tekst = 'Weer hervat in NMZ GO.'
   } else {
-    status = i.status_opgeleverd ?? 'opgeleverd'
-    tekst = 'Opgeleverd en door kantoor bevestigd in NMZ GO.'
+    // De afspraak met de eigenaar: "opgeleverd" als het fotobewijs bij
+    // ClickUp staat, anders "wacht op foto's". De status op het bord
+    // hoort niet te suggereren dat er bewijs is terwijl dat er niet is.
+    const stand = await fotostand(db, tenantId, werkbonId)
+
+    if (stand.uploadLoopt) {
+      // Alleen een kwestie van volgorde: de uploadtaak staat op een
+      // lagere prioriteit en hoort vóór te gaan. Is hij er nog niet
+      // doorheen, dan komt deze taak gewoon terug — een tijdelijke
+      // fout, dus met oplopende wachttijd.
+      throw new Error(
+        `de fotoupload naar ClickUp loopt nog (${stand.openstaand} te gaan); ` +
+        'de status volgt zodra de bijlagen er staan',
+      )
+    }
+
+    wachtOpFotos = stand.openstaand
+    if (wachtOpFotos > 0) {
+      status = i.status_wacht_op_fotos ?? i.status_opgeleverd ?? 'opgeleverd'
+      tekst = `Opgeleverd in NMZ GO, maar ${wachtOpFotos} foto('s) staan nog niet bij deze taak.`
+    } else {
+      status = i.status_opgeleverd ?? 'opgeleverd'
+      tekst = 'Opgeleverd en door kantoor bevestigd in NMZ GO.'
+    }
   }
 
   if (i.actief) {
@@ -684,5 +969,6 @@ export async function statusBijwerken(
     clickup_taak: bon.clickup_taak_id,
     nieuwe_status: status,
     opmerking: tekst,
+    ...(wachtOpFotos > 0 ? { fotos_niet_bij_clickup: wachtOpFotos } : {}),
   }
 }

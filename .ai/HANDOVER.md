@@ -62,18 +62,65 @@ schrijven; git voegt dat niet netjes samen.
 Afspraken die daarbij horen:
 
 - **Eerst `git pull`, elke keer.** Beide sessies duwen naar `main`.
-- **Migratienummers.** Tot en met 025 is gebruikt. De fotoketen neemt
-  **026**. Zit je in de andere sessie en heb je ook een migratie nodig,
-  pak dan 027 en hoger — nooit een nummer hergebruiken.
+- **Migratienummers.** Tot en met **029** is gebruikt (026 t/m 028 door
+  de fotoketen, 029 = stilleggen schuift niet meer op). Pak 030 en
+  hoger — nooit een nummer hergebruiken. Dit ging al een keer mis:
+  twee sessies maakten allebei een 027 en dat is achteraf rechtgezet.
 - **`clickup.ts` is gewijzigd zonder uitrol.** De opmerking bij
   `stilgelegd` noemde een "Nieuwe opleverdatum". Die bestaat niet meer
-  (zie migratie 027) en de regel is aangepast in de broncode, maar
-  **niet uitgerold** — jij bent degene die die functie uitrolt, en een
-  halve uitrol heeft de verwerker eerder plat gelegd. Neem deze
-  wijziging mee in jouw eerstvolgende `deploy_edge_function`, met alle
-  vijf bestanden.
-- **Migratie 027 bestaat al** (`werkbon_stilleggen` schuift de planning
-  niet meer op). 026 is nog vrij en blijft voor jou; pak anders 028.
+  (zie migratie 029) en de regel is aangepast in de broncode, maar is
+  **niet door mij uitgerold** — de fotoketen-sessie rolt die functie
+  uit, en een halve uitrol heeft de verwerker eerder plat gelegd. Neem
+  deze regel mee in de eerstvolgende `deploy_edge_function`, met alle
+  bestanden tegelijk.
+
+### Voor de schermen-sessie — twee bevindingen van de eigenaar
+
+Gemeld op 10 augustus, nadat de eerste echte foto's binnen waren. De
+eigenaar heeft alle rollen nagelopen. Beide punten zitten in `src/`, dus
+ze liggen bij de schermen-sessie; de ClickUp-sessie heeft ze alleen
+uitgezocht en niets gewijzigd.
+
+**1. Foto's ontbreken in de hele werkdagflow.** Op het Vandaag-scherm
+staat bij een punt een leeg cameravakje, terwijl datzelfde punt via
+"Werkbon openen" gewoon twee foto's toont. Zelfde punt, zelfde
+component, ander resultaat — dus het ligt niet aan de opmaak.
+
+De oorzaak staat in `src/hooks/useWerkbonnen.ts`:
+
+| Hook | Selectie | Gebruikt door |
+|---|---|---|
+| `useWerkbonnen()` | `taken(*)` — **zonder foto's** | `MijnWerkbonnen.tsx` (Vandaag) |
+| `useWerkbon(id)`  | `taken(*, fotos(*))` | `WerkbonUitvoeren.tsx` (`/werkbon/:id`) |
+
+`TaakItem` doet `taak.fotos ?? []`, dus zonder die relatie tekent hij
+een leeg uploadvak. Dat raakt alle drie de fasen tegelijk: voor het
+starten, tijdens het werk en na het stoppen. De eigenaar wil ze op alle
+drie de momenten zien: "is ook overzichtelijker voor de jongens in het
+veld."
+
+Let op bij het oplossen: `useWerkbonnen()` haalt álle werkbonnen op.
+Daar zomaar `fotos(*)` bij zetten betekent dertig bonnen inclusief elke
+foto, op een telefoon in een kruipruimte. Kijk of de foto's alleen nodig
+zijn voor de bon van vandaag.
+
+**2. Twee schermen voor dezelfde werkbon.**
+`MijnWerkbonnen.tsx` bouwt de checklist inline op; `WerkbonUitvoeren.tsx`
+(`/werkbon/:id`) doet hetzelfde werk in een nettere opbouw. De knop
+"Werkbon openen" onderaan springt van de een naar de ander. Woorden van
+de eigenaar: "dan zie ik eigenlijk een veel mooier scherm ook dan gewoon
+bij starten... is het niet onzinnig dat ik werkdag starten doe, ik bij de
+werkbon kom, en daarna klik op werkbon openen, kom ik ook bij dezelfde
+werkbon maar dan werkt het iets mooier." Het hoort één scherm te zijn.
+
+**3. Foto's die zijn opgeruimd.** Zodra de opruiming loopt (zie de
+fotoketen hieronder) blijft de rij in `fotos` staan maar is het bestand
+weg; `fotos.opgeruimd_op` is dan gevuld. Een scherm dat daar een
+signed URL voor opvraagt krijgt niets terug. Dat speelt pas veertien
+dagen ná de eerste oplevering — er is dus tijd — maar het hoort wel
+opgevangen te worden: "staat bij de ClickUp-taak" in plaats van een
+gebroken plaatje.
+
 - **De aanvraagknop van het opleverrapport staat al live.** Wie erop
   drukt maakt een rij in `rapportages` én een wachtrijtaak
   `rapportage.genereren`. Die taaksoort heeft nog geen handler, dus de
@@ -81,6 +128,76 @@ Afspraken die daarbij horen:
   rust — geen vervuilde wachtrij, maar de aanvraag blijft wel liggen.
   Zodra de PDF-generatie er is, moet je de blijven liggen aanvragen
   opnieuw aanbieden met `taak_opnieuw()`.
+
+### Schermen-sessie — de drie punten zijn af (10 augustus)
+
+Alle drie de bevindingen hierboven zijn gebouwd. Alleen in `src/`;
+`supabase/` is niet aangeraakt en er is geen migratie bijgekomen —
+`opgeruimd_op` bestaat al sinds 026.
+
+**1. De foto's staan er.** `useWerkbonnen()` blijft bewust zonder
+`fotos(*)`: dat zijn dertig bonnen, en geen enkel overzichtsscherm
+tekent die foto's. Vandaag kiest met die lichte lijst de bon van vandaag
+en haalt daarna díé ene bon op met `useWerkbon(id)` — één rij. Die hook
+accepteert nu een lege id (`string | null | undefined`), want een scherm
+weet pas ná de lijst welke bon het moet hebben en een hook mag niet
+voorwaardelijk worden aangeroepen. Zonder id: leeg resultaat en
+`loading` op onwaar.
+
+**2. Eén scherm.** Het punten-en-foto's deel zit in
+`src/components/werkbon/Klusuitvoering.tsx`, in de opmaak van
+`/werkbon/:id`. Vandaag én `/werkbon/:id` tekenen dat blok; de knop
+"Werkbon openen" is weg. De route blijft bestaan — "Mijn bonnen" en
+"Mijn week" openen daarmee een bon die *niet* die van vandaag is, en
+daar hoort geen werkdagknop onder. Wat bij de dag hoort staat nog op
+Vandaag: groet, tegels, mijn cijfers, wie waar werkt, en de
+werkdagknoppen. Die laatste staan nu in alle drie de fasen in dezelfde
+balk onderin. Afronden kan voortaan ook vanaf Vandaag.
+
+**3. Opgeruimde foto's.** `Foto.opgeruimd_op` staat in `types/index.ts`.
+`TaakItem` en het archief laten die paden buiten de ondertekening en
+tonen een vakje "bij ClickUp" met de uitleg in de Fotoviewer. In het
+archief verdween zo'n foto eerst stilzwijgend uit de strook terwijl de
+kop er wél bij telde.
+
+**Daarna nog nagelopen op verzoek van de eigenaar.** Dezelfde ontbrekende
+fotorelatie stond ook op Mijn bonnen, Rapporten, Alle werkbonnen en
+Afgerond een nul te tonen — Rapporten zette die nul zelfs in de
+Excel-export. De lijst haalt nu per foto alleen het **id** op: genoeg om
+te tellen, en een fractie van een volle rij. Let op wat dat betekent —
+`taak.fotos` uit `useWerkbonnen()` is te tellen, niet te tónen, want
+`storage_path` is er niet. Miniaturen komen uit `useWerkbon`.
+
+De tegels op Vandaag staan op verzoek bovenaan in plaats van onder de
+checklist.
+
+**`/projecten/:id` is verwijderd.** Dode route: sinds de projectenpagina
+op klusgroepen draait wees er niets meer naartoe, en de pagina las de
+tabel `projecten` — nul rijen, en nul van de dertig werkbonnen heeft een
+`project_id`. Weg zijn de pagina, de route, `useProjecten()`,
+`useProject()`, `useMedewerkers()` en het type `Project`. Gebleven zijn
+`usePlanning()` en `statusLabel`/`statusKleur`, want de planning en de
+projectenlijst gebruiken die. De tabel zelf is niet aangeraakt.
+
+Daarmee is `projecten` ook uit `usePlanning()` verdwenen: de join
+`project:projecten` gaf bij elke rij een leeg project terug, en
+`PlanningItem.projectId` en `projectnaam` zijn met de join mee weg. In
+`src/` staat nu geen enkele verwijzing meer naar die tabel.
+
+**Kleur op de weekplanning.** Een klus droeg zijn status alleen als
+randje van drie pixels; nu draagt het hele kaartje de kleur — blauw
+bezig, groen afgerond, rood stilgelegd, en neutraal wat nog niet
+begonnen is. De dagkop heeft een eigen tint gekregen (stond in hetzelfde
+wit als de inhoud eronder) en vandaag licht op als hele kolom in plaats
+van alleen bovenaan. Alles binnen de regel uit `PRODUCT_VISION.md`: de
+basis blijft neutraal, en elke kleur zegt iets.
+
+Nog niet gedaan, bewust: er zijn geen tests bijgekomen. Dit is
+renderwerk, en er is geen jsdom of testing-library in het project —
+daarvoor zou een dependency erbij moeten, en dat vraagt goedkeuring.
+Gecontroleerd is er met een tijdelijke voorbeeldpagina in Chromium (390
+en 1280 pixels, licht en donker, alle drie de fasen) plus een
+RLS-scoped query als de toegewezen medewerker op Bentinckstraat 63.
 
 ---
 

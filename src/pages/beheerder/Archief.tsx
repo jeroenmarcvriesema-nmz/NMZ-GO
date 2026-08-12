@@ -239,8 +239,13 @@ function Fotostrook({ fotos }: { fotos: ArchiefFoto[] }) {
     let afgebroken = false
     const haal = async () => {
       setBezig(true)
+      // Een opgeruimde foto heeft geen bestand meer: ondertekenen levert
+      // niets op. Die overslaan, anders wordt er per stuk een ronde naar
+      // de server gedaan voor een antwoord dat toch leeg is.
       const paren = await Promise.all(
-        fotos.map(async (f) => [f.id, await getUrl(f.storage_path)] as const),
+        fotos
+          .filter((f) => !f.opgeruimd_op)
+          .map(async (f) => [f.id, await getUrl(f.storage_path)] as const),
       )
       if (afgebroken) return
       setUrls(Object.fromEntries(paren.filter(([, u]) => u) as [string, string][]))
@@ -268,6 +273,23 @@ function Fotostrook({ fotos }: { fotos: ArchiefFoto[] }) {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
           {fotos.map((f) => {
+            // Het bestand is opgeruimd, de foto niet: die staat als
+            // bijlage bij de ClickUp-taak. Zonder dit viel zo'n foto
+            // stilzwijgend uit de strook terwijl de kop er nog wel bij
+            // telde — vier foto's beloofd, twee te zien.
+            if (f.opgeruimd_op) {
+              return (
+                <div
+                  key={f.id}
+                  className="aspect-square rounded-sm border border-gray-100 dark:border-white/10 bg-surface-2 dark:bg-white/5 flex flex-col items-center justify-center gap-1.5 p-2 text-center"
+                >
+                  <IconArchive className="w-5 h-5 text-gray-400 dark:text-white/40" />
+                  <span className="text-[11px] leading-tight text-gray-400 dark:text-white/40">
+                    Opgeruimd — staat bij de ClickUp-taak
+                  </span>
+                </div>
+              )
+            }
             const url = urls[f.id]
             if (!url) return null
             return (

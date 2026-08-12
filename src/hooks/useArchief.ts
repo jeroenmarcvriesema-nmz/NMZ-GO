@@ -21,6 +21,13 @@ export interface ArchiefFoto {
   bestandsnaam: string | null
   created_at: string
   fase: string | null
+  /**
+   * Gevuld betekent: het bestand is uit de bucket gehaald nadat ClickUp
+   * de foto had (migratie 027). De rij blijft staan. Juist hier telt
+   * dat, want het archief gáát over oud werk, en oud werk is precies
+   * wat opgeruimd wordt.
+   */
+  opgeruimd_op: string | null
 }
 
 export interface ArchiefPunt {
@@ -56,7 +63,7 @@ const VELDEN = `
   geplande_start, geplande_eind, status, opgeleverd_op, inspecteur,
   werkvoorbereiding,
   taken(id, titel, omschrijving, voltooid, opmerking, volgorde,
-        fotos(id, storage_path, bestandsnaam, created_at, fase)),
+        fotos(id, storage_path, bestandsnaam, created_at, fase, opgeruimd_op)),
   medewerkers:werkbon_medewerkers(persoon:personen(naam))
 `
 

@@ -2,6 +2,29 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Werkbon } from '@/types'
 
+/**
+ * Alle werkbonnen, voor lijsten en overzichten.
+ *
+ * Van de foto's komt hier **alleen het id** mee, en dat is een bewuste
+ * middenweg tussen twee fouten.
+ *
+ * `fotos(*)` zou dertig bonnen inclusief elk storage_pad opleveren —
+ * een lijst die vertienvoudigt op een telefoon in een kruipruimte,
+ * terwijl geen enkel overzichtsscherm een miniatuur tekent. Maar de
+ * relatie helemaal weglaten was ook fout: een half dozijn schermen
+ * telt `taken.flatMap(t => t.fotos)` om "12 foto's" te tonen, en dat
+ * stond dus altijd op nul. Rapporten zette die nul zelfs in de
+ * Excel-export.
+ *
+ * Een id is een uuid; een volle rij is een pad, een bestandsnaam en
+ * vier tijdstempels. Tellen kan met het eerste. Dezelfde aanpak als
+ * `useDashboard` en `useProjecten` al hanteren.
+ *
+ * Let op wat dat betekent: `taak.fotos` is hier alleen te **tellen**,
+ * niet te tónen — `storage_path` is niet gevuld. Wie miniaturen nodig
+ * heeft gebruikt `useWerkbon` hieronder, dat is één rij en wél
+ * compleet.
+ */
 export function useWerkbonnen() {
   const [werkbonnen, setWerkbonnen] = useState<Werkbon[]>([])
   const [loading, setLoading] = useState(true)
@@ -13,7 +36,7 @@ export function useWerkbonnen() {
       .from('werkbonnen')
       .select(`
         *,
-        taken(*),
+        taken(*, fotos(id)),
         medewerkers:werkbon_medewerkers(persoon:personen(*))
       `)
       .order('datum', { ascending: false })
@@ -41,9 +64,18 @@ export function useWerkbonnen() {
   return { werkbonnen, loading, error, refetch: fetch, verwijder }
 }
 
-export function useWerkbon(id: string) {
+/**
+ * Eén werkbon, inclusief de foto's per afvinkpunt.
+ *
+ * `id` mag leeg zijn. Dat is niet theoretisch: het Vandaag-scherm weet
+ * pas wélke bon het moet ophalen nadat de lijst binnen is, en een hook
+ * mag niet voorwaardelijk aangeroepen worden. Zonder id blijft het
+ * resultaat leeg en staat `loading` op onwaar — anders draait een
+ * scherm dat nog geen bon heeft eeuwig in een spinner.
+ */
+export function useWerkbon(id: string | null | undefined) {
   const [werkbon, setWerkbon] = useState<Werkbon | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!!id)
   const [error, setError] = useState<string | null>(null)
 
   /**
@@ -60,7 +92,7 @@ export function useWerkbon(id: string) {
    * de nieuwe gegevens onderweg zijn.
    */
   const fetch = async (stil = false) => {
-    if (!id) return
+    if (!id) { setWerkbon(null); setError(null); setLoading(false); return }
     if (!stil) setLoading(true)
     const { data, error: fetchError } = await supabase
       .from('werkbonnen')

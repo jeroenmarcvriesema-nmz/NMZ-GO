@@ -1,5 +1,50 @@
 # NMZ GO — Changelog
 
+## Het scherm van de man in het veld
+
+- **[FIX]** In de hele werkdagflow was elke foto onzichtbaar. Op Vandaag stond bij een afvinkpunt een leeg cameravakje, terwijl datzelfde punt via "Werkbon openen" gewoon twee foto's liet zien. De oorzaak zat één regel diep: `useWerkbonnen()` haalde `taken(*)` op en `useWerkbon(id)` haalde `taken(*, fotos(*))` op. `TaakItem` doet `taak.fotos ?? []` en tekende zonder die relatie een leeg uploadvak — in alle drie de fasen van de werkdag: vóór het starten, tijdens het werk en na het stoppen.
+- Opgelost zonder de overzichtslijst zwaarder te maken. Daar `fotos(*)` bij zetten betekent dertig bonnen inclusief elke foto op een telefoon in een kruipruimte, terwijl geen enkel overzichtsscherm die foto's tekent. Vandaag kiest nu eerst de bon van vandaag uit de lichte lijst en haalt daarná díé ene bon op met dezelfde hook die `/werkbon/:id` gebruikt: één rij extra, geen dertig.
+- **[FIX]** Bijkomend: na een foto knippert Vandaag niet meer weg. Het scherm ververste zich met de lijst-refetch — die zet de laadstatus aan en gooit de hele pagina terug naar een spinner. Het gebruikt nu de stille ophaalronde die `/werkbon/:id` al had.
+
+### Eén scherm voor één werkbon
+- **[FIX]** Vandaag bouwde de checklist zelf op, `/werkbon/:id` deed hetzelfde werk in een nettere opbouw, en onderaan Vandaag stond een knop "Werkbon openen" die van de een naar de ander sprong. Woorden van de eigenaar: "ik doe werkdag starten, ik kom bij de werkbon, en daarna klik ik op werkbon openen en kom ik bij dezelfde werkbon maar dan werkt het iets mooier." Beide schermen tekenen nu hetzelfde blok — `Klusuitvoering` — in de opmaak van `/werkbon/:id`. De knop is weg.
+- De route `/werkbon/:id` blijft: vanuit "Mijn bonnen" en "Mijn week" open je daarmee een bon die níét die van vandaag is. Wat daar ontbreekt is de werkdag — starten en stoppen hoort bij de dag, niet bij een bon van volgende week.
+- **[FEATURE]** De werkdagknop staat nu in alle drie de fasen op dezelfde plek: een balk onderin, boven de navigatie. Starten stond halverwege de pagina, stoppen vastgezet onderin, hervatten weer bovenaan. Met dertig punten onder je duim is "waar stond die knop ook alweer" een echte vraag.
+- **[FEATURE]** Een werkbon afronden kan nu ook vanaf Vandaag. Dat zat alleen op het andere scherm, dus de laatste handeling van de klus was precies de handeling waarvoor je moest doorklikken.
+- **[FIX]** De schil van Vandaag was een component-in-een-component. Die krijgt bij elke hertekening een nieuwe identiteit, waarna React de hele inhoud opnieuw ophangt: elk afvinkpunt vroeg zijn ondertekende fotolinks dan opnieuw op en de miniaturen knipperden terug naar een grijs vakje.
+- **[FIX]** Het bijschrift bij "Uit te voeren punten" stond ernáást en duwde de kop op een telefoon van 390 pixels over drie regels uiteen. Staat nu eronder.
+
+### Kleur op de weekplanning
+- **[FEATURE]** Een klus in de planning kreeg zijn status alleen mee als randje van drie pixels en een bolletje. Het hele kaartje draagt nu die kleur: blauw voor bezig, groen voor afgerond, rood voor stilgelegd. Van een meter afstand zie je welke kolom loopt en welke stilligt zonder één woord te lezen.
+- Wat nog niet begonnen is blijft bewust neutraal. Anders krijgt een week vol werk dat nog moet starten de meeste kleur van allemaal, en dat is precies verkeerd om.
+- **[FIX]** De dagkop stond in hetzelfde wit als de inhoud eronder en las daardoor niet als kop. Die heeft nu een eigen tint (`surface-2` / `surface-dark-3`).
+- **[FEATURE]** Vandaag licht op als hele kolom — gele rand rondom in plaats van alleen een gele hoed bovenop.
+- **[FEATURE]** Zaterdag heeft een eigen tint. Hij hoort in de planning — er wordt afgemaakt en garantiewerk gedaan — maar het is geen dag als de andere vijf, en een volle zaterdag zegt iets anders dan een volle dinsdag. Leisteen, geen nieuwe felle kleur: blauw, groen en rood zijn vergeven aan de status van een klus en geel is vandaag. Is het zaterdag én vandaag, dan wint vandaag.
+
+### Het laatste draadje van de projecten
+- **[FIX]** `usePlanning()` joinde nog `project:projecten` en vulde daarmee `PlanningItem.projectId` en `projectnaam`. Die join gaf bij elke rij een leeg project terug — nul rijen in de tabel, nul van de dertig werkbonnen met een `project_id` — en `projectId` werd sinds de opruiming hierboven door niemand meer gelezen. Join en velden zijn weg.
+
+### De projectdetailpagina is weg
+- **[FIX]** `/projecten/:id` was een dode route. Sinds de projectenpagina op klusgroepen is herbouwd wees er niets meer naartoe, en de pagina las nog de tabel `projecten` — nul rijen, en van de dertig werkbonnen heeft er nul een `project_id`. Wie de URL intypte kreeg "Project niet gevonden"; nu stuurt de app je terug naar je eigen startscherm.
+- Het tabblad "Foto's" op die pagina tekende nepvakjes: `n` identieke gele blokjes met een fototeken, met een handje-cursor die nergens heen ging.
+- Weg: de pagina (326 regels), de route, en uit `useProjecten.ts` de hooks `useProjecten()`, `useProject()` en `useMedewerkers()` plus het bijbehorende select en mapwerk (±180 regels). Het type `Project` in `types/index.ts` las daarna niemand meer.
+- Blijft: `/projecten` zelf, de weekplanning (`usePlanning`) en de statushelpers die de projectenlijst gebruikt. `ProjectStatus` blijft ook — die hoort bij een groep klussen met hetzelfde opdrachtnummer.
+- De tabel `projecten` is niet aangeraakt. Geen migratie.
+
+### De andere schermen nagelopen
+- **[FEATURE]** De tegels op Vandaag — punten klaar, foto's, voortgang, gewerkte tijd — staan nu bovenaan, direct onder de groet. Ze stonden onder de checklist, dus je moest twintig afvinkpunten langsscrollen voor het antwoord op "hoe sta ik ervoor".
+- **[FIX]** Dezelfde ontbrekende relatie stond ook op vier andere plekken een nul te tonen: "0 foto's" op Mijn bonnen en Rapporten, en op de werkbonkaart (Alle werkbonnen, Afgerond) verscheen de fototeller helemaal niet, want die toont zichzelf alleen bij meer dan nul. Rapporten zette die nul ook in de Excel-export. De overzichtslijst haalt nu per foto het **id** op — genoeg om te tellen, en een fractie van een volle rij. Miniaturen komen nog steeds uit `useWerkbon`.
+- **[FIX]** "Verderop ingepland" op Mijn week toonde een kale datum uit de database (`2026-08-17`) in plaats van "17 aug 2026".
+- **[FIX]** De uitleg onder Rapporten klopte niet meer: die zei dat er geen scherm is waar iemand de rapportvelden invult. Dat scherm staat er sinds de vorige ronde op de werkbon zelf.
+
+### Klaar voor de opruiming van de fotobucket
+- **[FEATURE]** Migratie 027 haalt het bestand uit de bucket zodra ClickUp de foto heeft en de klus veertien dagen geleden is opgeleverd. De rij in `fotos` blijft staan met `opgeruimd_op` gevuld. Een ondertekende link levert dan niets meer op, en dat was in de schermen niet te onderscheiden van een foto die nog laadt — een grijs vakje, voor altijd. Zulke foto's krijgen nu hun eigen vakje: "bij ClickUp", met de volledige uitleg als je hem opent.
+- Die paden gaan ook niet meer mee naar de ondertekening. Dat scheelt een ronde naar de server voor een antwoord dat toch leeg is.
+- **[FIX]** In het archief verdween een opgeruimde foto stilzwijgend uit de strook terwijl de kop er wél bij telde: vier foto's beloofd, twee te zien. Juist daar telt het, want het archief gáát over oud werk en oud werk is precies wat opgeruimd wordt.
+- Speelt pas veertien dagen na de eerste oplevering. Er is nog niets opgeruimd, dus dit is voorbereiding — niet een fout die iemand al gezien heeft.
+
+---
+
 ## De eerste echte foto's — twee fouten die dat blootlegde
 
 De eerste twee foto's ooit zijn gemaakt op Bentinckstraat 63. Ze kwamen

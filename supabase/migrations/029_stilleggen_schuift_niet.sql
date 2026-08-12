@@ -1,4 +1,4 @@
--- 027 — Stilleggen schuift de planning niet meer op
+-- 029 — Stilleggen schuift de planning niet meer op
 --
 -- `werkbon_stilleggen()` zette de opleverdatum één dag verder:
 --
