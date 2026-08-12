@@ -11,10 +11,11 @@
 // daarmee niets. Nu staat het hier, één keer.
 //
 // ── De kleurtaal ──
-//   grijs   nog niet gestart
-//   blauw   bezig
-//   groen   afgerond en opgeleverd
-//   rood    ligt stil
+//   grijs      nog niet gestart
+//   blauw      bezig
+//   violet     alles afgevinkt, wacht op afronden
+//   groen      afgerond en opgeleverd
+//   rood       ligt stil
 //
 // Geel doet hier niet mee. Dat is het merk: knoppen, vandaag,
 // voortgangsbalken, de kickerbalk voor een kop. Zie
@@ -26,7 +27,13 @@
 // een voortuin maakt elk kleurverschil twijfelachtig.
 // ============================================================
 
-export type Klusstand = 'niet_gestart' | 'bezig' | 'afgerond' | 'opgeleverd' | 'stilgelegd'
+export type Klusstand =
+  | 'niet_gestart'
+  | 'bezig'
+  | 'af_te_ronden'
+  | 'afgerond'
+  | 'opgeleverd'
+  | 'stilgelegd'
 
 /**
  * Zet de kleurwas op de lijstschermen uit.
@@ -48,6 +55,7 @@ export interface Klusfeiten {
   /** De punten, of alleen hun aantallen als het scherm die al geteld heeft. */
   taken?: { voltooid: boolean }[] | null
   puntenKlaar?: number | null
+  punten?: number | null
 }
 
 /**
@@ -67,13 +75,25 @@ export interface Klusfeiten {
  *
  * Een afgevinkt punt is bewijs dat iemand daar is geweest. Dát is wat
  * "bezig" betekent, en daar hoeft niemand een knop voor te vinden.
+ *
+ * Tussen bezig en afgerond zit `af_te_ronden`: alles is afgevinkt maar
+ * niemand heeft de bon dichtgedaan. Groen zou daar te vroeg zijn — er
+ * moet nog iemand op een knop drukken voordat kantoor kan opleveren —
+ * en "Bezig" op 100% las als een tegenspraak. Het is de wachtrij van
+ * kantoor, en die hoort als aparte stand op het bord te staan.
  */
 export function klusstand(k: Klusfeiten): Klusstand {
   if (k.stilgelegd_op) return 'stilgelegd'
   if (k.opgeleverd_op) return 'opgeleverd'
   if (k.status === 'voltooid') return 'afgerond'
 
-  const klaar = k.puntenKlaar ?? (k.taken ?? []).filter((t) => t.voltooid).length
+  const punten = k.taken ?? []
+  const klaar = k.puntenKlaar ?? punten.filter((t) => t.voltooid).length
+  const totaal = k.punten ?? punten.length
+
+  // Nul van nul is geen voltooide bon maar een bon zonder punten — een
+  // verse klus uit ClickUp waarvan de werkopdracht nog niet is ontleed.
+  if (totaal > 0 && klaar >= totaal) return 'af_te_ronden'
   if (k.status === 'bezig' || klaar > 0) return 'bezig'
 
   return 'niet_gestart'
@@ -90,7 +110,7 @@ interface Standkleur {
    */
   kort: string
   /** Variant voor `<Badge>`. */
-  badge: 'gray' | 'blue' | 'green' | 'red'
+  badge: 'gray' | 'blue' | 'violet' | 'green' | 'red'
   /** Rand links van een kaart — leest van een afstand. */
   rand: string
   /** Bolletje of voortgangsbalk in de kleur van de stand. */
@@ -130,6 +150,25 @@ export const STANDEN: Record<Klusstand, Standkleur> = {
     omlijsting: 'border-blue-100 dark:border-blue-500/20',
     balkbed: 'bg-blue-100 dark:bg-blue-500/20',
     tekst: 'text-blue-700 dark:text-blue-400',
+  },
+  // Alles afgevinkt, nog niet dichtgedaan — de wachtrij van kantoor.
+  //
+  // Violet, en dat is een bewuste omweg. Amber zou de gewone keuze zijn
+  // voor "hier moet iemand iets doen", maar geel is merkkleur en zou
+  // hier "actie" en "dit is NMZ" door elkaar halen. Turkoois stond hier
+  // eerst en lag te dicht bij groen: in donkere modus was een klus die
+  // wacht niet te onderscheiden van een klus die klaar is, en juist dat
+  // verschil is de hele reden dat deze stand bestaat.
+  af_te_ronden: {
+    label: 'Klaar om af te ronden',
+    kort: 'Af te ronden',
+    badge: 'violet',
+    rand: 'border-l-violet-500',
+    bol: 'bg-violet-500',
+    vlak: 'bg-violet-50/70 dark:bg-violet-500/10',
+    omlijsting: 'border-violet-100 dark:border-violet-500/20',
+    balkbed: 'bg-violet-100 dark:bg-violet-500/20',
+    tekst: 'text-violet-700 dark:text-violet-400',
   },
   afgerond: {
     label: 'Afgerond',
@@ -173,4 +212,48 @@ export const STANDEN: Record<Klusstand, Standkleur> = {
 /** De kleuren die bij een klus horen, in één aanroep. */
 export function standkleur(k: Klusfeiten): Standkleur {
   return STANDEN[klusstand(k)]
+}
+
+/**
+ * De volgorde waarin je klussen wilt zien.
+ *
+ * Niet alfabetisch en niet op aanmaakdatum, maar op wat er van je
+ * gevraagd wordt. Bovenaan wat een telefoontje kost, onderaan wat af
+ * is:
+ *
+ *   1. ligt stil            — iemand moet bellen
+ *   2. klaar om af te ronden — één druk op de knop en het is klaar
+ *   3. bezig                 — loopt, hou het in de gaten
+ *   4. nog niet gestart      — staat te wachten
+ *   5. afgerond              — geen actie meer
+ *   6. opgeleverd            — dossier dicht
+ *
+ * Afgerond en opgeleverd staan onderaan omdat ze niets meer vragen.
+ * Wie ze zoekt gebruikt het filter; wie het bord openslaat wil zien
+ * wat er nog moet gebeuren.
+ */
+export const STANDVOLGORDE: Record<Klusstand, number> = {
+  stilgelegd: 0,
+  af_te_ronden: 1,
+  bezig: 2,
+  niet_gestart: 3,
+  afgerond: 4,
+  opgeleverd: 5,
+}
+
+/**
+ * Sorteert op stand, en binnen dezelfde stand op de meegegeven sleutel
+ * — in de praktijk de startdatum, zodat wat het langst wacht bovenaan
+ * komt. Zonder die tweede sleutel is de volgorde binnen een stand die
+ * van de database, en dat verspringt tussen twee ophaalrondes.
+ */
+export function vergelijkStand<T>(
+  a: T,
+  b: T,
+  feiten: (x: T) => Klusfeiten,
+  tweede: (x: T) => string = () => '',
+): number {
+  const verschil = STANDVOLGORDE[klusstand(feiten(a))] - STANDVOLGORDE[klusstand(feiten(b))]
+  if (verschil !== 0) return verschil
+  return tweede(a).localeCompare(tweede(b))
 }

@@ -1,6 +1,7 @@
 import { weekDagen, weeknummer, weekLabel, maandagVerschoven } from '@/lib/planning'
 import { cn } from '@/lib/utils'
-import { IconChevronLeft, IconChevronRight, IconCalendarWeek } from '@tabler/icons-react'
+import { Button } from '@/components/ui/Button'
+import { IconChevronLeft, IconChevronRight, IconCalendarWeek, IconArrowBackUp } from '@tabler/icons-react'
 
 interface WeekkiezerProps {
   /** 0 = deze week, 1 = volgende week, -1 = vorige. */
@@ -94,13 +95,29 @@ export function Weekkiezer({ week, onWissel, telling, className }: WeekkiezerPro
         </div>
       </div>
 
+      {/* Terug naar nu.
+          Dit was grijze tekst tussen twee grijze pijlen: het zag eruit
+          als een bijschrift en niet als iets wat je kunt aantikken.
+          Terwijl het de meest gebruikte handeling op dit scherm is —
+          drie weken vooruit bladeren en dan in één keer terug.
+
+          Nu de bestaande `secondary`-knop uit het design system: een
+          rand, een pictogram dat terugwijst, en het weeknummer erin
+          zodat je vooraf weet waar je uitkomt. Hover, focus, active en
+          beide thema's komen uit die knop mee. Hij verschijnt alleen
+          als je níét in deze week staat; een knop die je naar je
+          huidige plek stuurt is een knop zonder gevolg. */}
       {!isNu && (
-        <button
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={() => onWissel(0)}
-          className="min-h-[44px] px-3 rounded-sm text-sm font-semibold text-gray-500 dark:text-white/50 hover:text-gray-900 dark:hover:text-white hover:bg-surface-2 dark:hover:bg-white/5 transition-colors"
+          className="min-h-[44px]"
+          title={`Terug naar week ${weeknummer(maandagVerschoven(0))}`}
         >
-          Naar deze week
-        </button>
+          <IconArrowBackUp className="w-4 h-4" />
+          Naar deze week (wk {weeknummer(maandagVerschoven(0))})
+        </Button>
       )}
     </div>
   )

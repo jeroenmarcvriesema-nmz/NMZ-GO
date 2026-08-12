@@ -1,5 +1,5 @@
-import type { Werkbon, ProjectStatus } from '@/types'
-import { klusstand } from '@/lib/klusstand'
+import type { Werkbon } from '@/types'
+import { klusstand, vergelijkStand, STANDVOLGORDE, type Klusstand } from '@/lib/klusstand'
 
 /**
  * Van losse werkbonnen naar iets dat je een project kunt noemen.
@@ -29,7 +29,7 @@ export interface Klusgroep {
   opdrachtgever: string
   /** Waar het werk zit. Bij een project kunnen dat meerdere adressen zijn. */
   plaatsen: string[]
-  status: ProjectStatus
+  status: Klusstand
   /** Eerste en laatste dag over alle bonnen heen. Leeg als er geen datum bekend is. */
   van: string
   tot: string
@@ -84,21 +84,33 @@ function eind(bon: Werkbon): string {
 /**
  * Hoe staat deze groep ervoor?
  *
+ * Dezelfde standen als één losse klus, zodat "Bezig" op de
+ * projectenpagina hetzelfde woord en dezelfde kleur is als op de
+ * werkbonnen en de planning. Hier stond een eigen lijstje
+ * (`ProjectStatus`) met "actief" waar de rest van de app "bezig" zegt.
+ *
  * De volgorde is geen smaak maar prioriteit: wat een telefoontje vraagt
- * staat bovenaan. Ligt er iets stil, dan is dat het antwoord — ook als
- * de andere negen bonnen keurig lopen. Daarna: is er iets bezig, is
- * alles klaar, of is er nog niets begonnen.
+ * staat bovenaan. Ligt er één bon stil, dan is dat het antwoord voor de
+ * hele groep — ook als de andere negen keurig lopen. Daarna wat loopt,
+ * dan wat op afronden wacht, en pas als álles af is heet de groep af.
  */
-export function groepsstatus(bonnen: Werkbon[]): ProjectStatus {
-  if (bonnen.some((b) => b.stilgelegd_op)) return 'stilgelegd'
-  // Via `klusstand` en niet via `b.status === 'bezig'`: die kolom staat
-  // op elke bon op 'open', ook op de bonnen waar al is afgevinkt. Een
-  // groep waar werk in zit heette daardoor "niet gestart".
-  if (bonnen.some((b) => klusstand(b) === 'bezig')) return 'actief'
-  if (bonnen.length > 0 && bonnen.every((b) => b.opgeleverd_op || b.status === 'voltooid')) {
-    return 'afgerond'
-  }
-  if (bonnen.some((b) => b.opgeleverd_op || b.status === 'voltooid')) return 'actief'
+export function groepsstatus(bonnen: Werkbon[]): Klusstand {
+  if (bonnen.length === 0) return 'niet_gestart'
+
+  const standen = bonnen.map(klusstand)
+
+  if (standen.includes('stilgelegd')) return 'stilgelegd'
+  if (standen.includes('bezig')) return 'bezig'
+  if (standen.includes('af_te_ronden')) return 'af_te_ronden'
+
+  const klaar = (s: Klusstand) => s === 'afgerond' || s === 'opgeleverd'
+  if (standen.every((s) => s === 'opgeleverd')) return 'opgeleverd'
+  if (standen.every(klaar)) return 'afgerond'
+
+  // Deels klaar, deels nog niet begonnen: er is aan gewerkt, dus de
+  // groep loopt. Een project half af "niet gestart" noemen klopt niet.
+  if (standen.some(klaar)) return 'bezig'
+
   return 'niet_gestart'
 }
 
@@ -142,8 +154,13 @@ function maakGroep(sleutel: string, soort: Klusgroep['soort'], bonnen: Werkbon[]
 /**
  * Groepeert werkbonnen tot projecten en losse klussen.
  *
- * Gesorteerd op begindatum, nieuwste eerst: wat er nu speelt hoort
- * bovenaan te staan en niet wat vorig jaar af is.
+ * Gesorteerd op voortgang en niet op datum: wat stilligt staat bovenaan,
+ * dan wat op afronden wacht, dan wat loopt, dan wat nog moet beginnen,
+ * en onderaan wat af is. Binnen dezelfde stand op begindatum, oudste
+ * eerst — wat het langst wacht heeft de meeste haast.
+ *
+ * Het was gesorteerd op begindatum, nieuwste eerst. Daardoor stond een
+ * klus die volgende maand begint bóven een klus die vandaag stilligt.
  */
 export function groepeerKlussen(werkbonnen: Werkbon[]): Klusgroep[] {
   const perNummer = new Map<string, Werkbon[]>()
@@ -173,5 +190,9 @@ export function groepeerKlussen(werkbonnen: Werkbon[]): Klusgroep[] {
     groepen.push(maakGroep(bon.id, 'klus', [bon]))
   }
 
-  return groepen.sort((a, b) => (b.van || '').localeCompare(a.van || ''))
+  return groepen.sort((a, b) => {
+    const verschil = STANDVOLGORDE[a.status] - STANDVOLGORDE[b.status]
+    if (verschil !== 0) return verschil
+    return (a.van || '9999').localeCompare(b.van || '9999')
+  })
 }

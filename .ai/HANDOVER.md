@@ -184,6 +184,54 @@ Daarmee is `projecten` ook uit `usePlanning()` verdwenen: de join
 `PlanningItem.projectId` en `projectnaam` zijn met de join mee weg. In
 `src/` staat nu geen enkele verwijzing meer naar die tabel.
 
+**Storingen staan op `/storingen` en zijn alleen voor de eigenaar.** Ze
+stonden als kaart op het dashboard en waren leesbaar voor alle vijf de
+kantoorrollen. Het slot zit nu op drie plekken: menu (`Sidebar`,
+`MobileNav`, achter `isEigenaar`), route (`EigenaarGuard` in `App.tsx`,
+slot `'eigenaar'` in `lib/rollen.ts`) en database. Alleen de derde is
+beveiliging.
+
+> **LET OP — migratie 030 is nog niet toegepast.** Het bestand staat in
+> `supabase/migrations/030_storingen_alleen_eigenaar.sql` maar is nog
+> niet tegen de database gedraaid. Zolang dat niet is gebeurd is de
+> storingenpagina alleen in de frontend afgeschermd en kan elke
+> kantoorrol de tabel `fouten` gewoon bevragen. Draai hem, en controleer
+> daarna met de query onderaan het migratiebestand.
+
+**Het dashboard telde een derde van het werk.** De KPI's lazen
+`werkbonnen` met `datum = vandaag`: vijf van de eenendertig bonnen,
+terwijl er veertien lopen. `useDashboard` haalt nu een tweede, smalle
+query op over de hele voorraad en telt met `klusstand()`. De volgorde
+van het scherm is omgedraaid: cijfers, dan projectoverzicht en
+activiteit, dan pas de meldingen.
+
+**Eén woordenlijst.** `ProjectTabel` en `useProjecten` hadden elk een
+eigen statuslijstje; die zijn weg. `Klusgroep.status` is nu een
+`Klusstand` in plaats van een `ProjectStatus`, en `STANDVOLGORDE` in
+`lib/klusstand.ts` is de enige sorteervolgorde — dashboard, projecten en
+planning gebruiken hem. "Mijn week" van de zwamsaneerder bewust niet.
+
+**De statusknoppen op de werkbon zijn vereenvoudigd.** De drie knopjes
+(Open/Bezig/Voltooid) zijn één handeling geworden: afronden als alles is
+afgevinkt, heropenen als de bon al op afgerond staat, en anders de reden
+waarom afronden nog niet kan. Een opgeleverde bon biedt geen heropenen
+meer aan — dat dossier is dicht. Het filter op Alle werkbonnen draait nu
+op de afgeleide stand (Alle · Niet gestart · Bezig · Afgerond · Ligt
+stil) in plaats van op de kolom, waar twee van de vier knoppen altijd
+nul resultaten gaven.
+
+De kolom `werkbonnen.status` blijft bestaan met alle drie de waarden, en
+`klusstand()` accepteert `'bezig'` nog steeds. Alleen schrijft de app die
+waarde nergens meer. Geen migratie.
+
+Een bon waar alles is afgevinkt maar die nog niet is afgerond heeft een
+eigen stand gekregen: `af_te_ronden`, "Klaar om af te ronden", in
+violet. Zes standen dus. Violet en niet amber, want geel is merkkleur;
+en niet turkoois, want dat lag in donkere modus te dicht bij groen — en
+het verschil met "klaar" is precies waarvoor deze stand bestaat. Op
+Alle werkbonnen heeft hij een eigen filterknop: dat is de wachtrij van
+kantoor.
+
 **Eén kleurtaal, en waarom die er niet was.** Niets zet ooit
 `werkbonnen.status` op `'bezig'` — de ClickUp-synchronisatie raakt de
 kolom niet aan en de handmatige knop op de werkbon gebruikt niemand.

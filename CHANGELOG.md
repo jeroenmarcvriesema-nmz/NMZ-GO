@@ -34,6 +34,28 @@
 - **[FEATURE]** 9 tests erbij (`opdracht`), **143 in totaal**.
 - Geen migratie nodig: bucket, kolommen en policies stonden er al.
 
+## Dashboard, projecten, planning en de storingen
+
+### Storingen zijn van de eigenaar
+- **[FIX]** De crashes van de app stonden als kaart bovenaan het dashboard, boven het werk. Dat is de verkeerde volgorde: het dashboard gaat over klussen, en een uitvoerder die zijn week inplant heeft niets aan een stacktrace. Ze staan nu op een eigen pagina, `/storingen`, met een eigen lege staat en een foutstaat, en kijken veertien dagen terug in plaats van zeven.
+- **[FIX]** En ze waren te breed zichtbaar. `fouten_select_kantoor` stond open voor alle vijf de kantoorrollen, terwijl er in staat wat er misging op het toestel van een collega — pad, browser en naam. **Migratie 030** vervangt die policy door `fouten_select_eigenaar` op de bestaande `public.is_eigenaar()`. Het slot zit nu op drie plekken: het menu toont de ingang niet, de route stuurt je weg, en de database geeft niets terug. Alleen die derde is beveiliging.
+
+### Het dashboard zag een derde van het werk
+- **[FIX]** De KPI's lazen `werkbonnen` met de datum van vandaag: vijf van de eenendertig bonnen, terwijl er veertien klussen daadwerkelijk lopen. Een klus die vorige week begon en volgende week doorloopt heeft `datum` in het verleden en viel er volledig buiten — en dat is nou juist de klus waar je iets van wilt weten. De tegels tellen nu de hele werkvoorraad.
+- **[FEATURE]** Vijf tegels in de standen van de app: Ligt stil · Klaar om af te ronden · Bezig · Niet gestart · Uitgelopen. "Uitgelopen" is de opleverdatum die voorbij is terwijl de klus niet af is, en is aanklikbaar naar `/uitloop`.
+- **[FIX]** De volgorde van het dashboard: eerst de cijfers, dan het projectoverzicht en de activiteit van vandaag, en pas onderaan de operationele meldingen. Die stonden bovenaan, wat las als een storingspagina met een dashboard eronder.
+- **[FIX]** Élke KPI-tegel kwam omhoog bij hover, ook de tien die nergens heen gaan. Dat belooft dat er iets gebeurt als je klikt. Nu doet alleen de tegel die dat waarmaakt het nog.
+
+### Eén woordenlijst, en sorteren op wat er van je gevraagd wordt
+- **[FIX]** Het projectoverzicht op het dashboard had een eigen statuslijstje — "Gestart" waar de rest van de app "Bezig" zegt, en rood voor "achter" terwijl rood elders "ligt stil" betekent. De projectenpagina had er ook een, met "Loopt" en "Actief". Alles komt nu uit `lib/klusstand.ts`. "Achter op schema" is behouden maar staat náást de stand: het gaat over tempo, en een klus kan tegelijk bezig én achter zijn.
+- **[FEATURE]** Eén sorteervolgorde (`STANDVOLGORDE`) op dashboard, projecten en planning: ligt stil → klaar om af te ronden → bezig → niet gestart → afgerond → opgeleverd, en binnen dezelfde stand de oudste eerst. De projectenpagina stond op "nieuwste datum eerst", waardoor een klus van volgende maand bóven een klus stond die vandaag stillag.
+- **[FEATURE]** Het statusfilter op Projecten heeft dezelfde zes knoppen als Alle werkbonnen.
+- De planning van de zwamsaneerder ("Mijn week") is bewust niet aangeraakt: die kijkt naar één dag met één of twee klussen en heeft aan sorteren niets.
+
+### Planning
+- **[FIX]** "Naar deze week" was grijze tekst tussen twee grijze pijlen — het las als een bijschrift, niet als een knop, terwijl het de meest gebruikte handeling op dat scherm is. Nu de bestaande `secondary`-knop met een terugpijl en het doelweeknummer erin: "Naar deze week (wk 33)".
+- **[FEATURE]** Elke dagkop heeft een telling met een bolletje in de zwaarste stand van die dag. Je ziet bij het openslaan van de week in welke kolommen iets te doen is zonder één kaart te lezen.
+
 ## Het scherm van de man in het veld
 
 - **[FIX]** In de hele werkdagflow was elke foto onzichtbaar. Op Vandaag stond bij een afvinkpunt een leeg cameravakje, terwijl datzelfde punt via "Werkbon openen" gewoon twee foto's liet zien. De oorzaak zat één regel diep: `useWerkbonnen()` haalde `taken(*)` op en `useWerkbon(id)` haalde `taken(*, fotos(*))` op. `TaakItem` doet `taak.fotos ?? []` en tekende zonder die relatie een leeg uploadvak — in alle drie de fasen van de werkdag: vóór het starten, tijdens het werk en na het stoppen.
@@ -47,6 +69,21 @@
 - **[FEATURE]** Een werkbon afronden kan nu ook vanaf Vandaag. Dat zat alleen op het andere scherm, dus de laatste handeling van de klus was precies de handeling waarvoor je moest doorklikken.
 - **[FIX]** De schil van Vandaag was een component-in-een-component. Die krijgt bij elke hertekening een nieuwe identiteit, waarna React de hele inhoud opnieuw ophangt: elk afvinkpunt vroeg zijn ondertekende fotolinks dan opnieuw op en de miniaturen knipperden terug naar een grijs vakje.
 - **[FIX]** Het bijschrift bij "Uit te voeren punten" stond ernáást en duwde de kop op een telefoon van 390 pixels over drie regels uiteen. Staat nu eronder.
+
+### "Klaar om af te ronden" is een eigen stand
+
+- **[FEATURE]** Een bon waar de ploeg alles had afgevinkt maar die nog niet was afgerond, heette "Bezig" op 100% — een tegenspraak, en groen zou te vroeg zijn geweest want er moet nog iemand op afronden drukken voordat kantoor kan opleveren. Dat is nu een eigen stand tussen bezig en afgerond in: **Klaar om af te ronden**, in violet.
+- Violet is een bewuste omweg. Amber zou de gewone keuze zijn voor "hier moet iemand iets doen", maar geel is merkkleur. Turkoois stond er eerst en lag te dicht bij groen: in donkere modus was een klus die wacht niet te onderscheiden van een klus die klaar is, en juist dat verschil is de hele reden dat deze stand bestaat.
+- Zichtbaar op alle schermen die de kleurtaal gebruiken, met een eigen filterknop op Alle werkbonnen: dat is de wachtrij van kantoor.
+- Een bon zonder punten telt niet mee — nul van nul is geen voltooide klus maar een verse bon waarvan de werkopdracht nog niet is ontleed.
+- **[FEATURE]** 2 tests erbij, **136 in totaal**.
+
+### De statusknoppen op de werkbon
+
+- **[FIX]** Op de werkbon stonden drie knopjes — Open, Bezig, Voltooid — waarmee kantoor de kolom met de hand zette. "Bezig" schreef een waarde die niets in de app las en die niemand ooit zette. Nu de stand uit de afgevinkte punten komt, was dat een keuze zonder gevolg. Er staat nu één handeling, passend bij het moment: **Werkbon afronden** als alles is afgevinkt, **Heropenen** als de bon al op afgerond staat, en anders de reden waarom afronden nog niet kan ("nog 16 van de 23 punten open"). Dat is wat de database toch al afdwong — je hoorde het alleen pas ná het klikken.
+- **[FIX]** Een opgeleverde bon bood nog steeds "Heropenen" aan, met eronder de tekst "kan zolang hij nog niet is opgeleverd" — terwijl er direct naast "Opgeleverd en bevestigd" stond. Opgeleverd is een dichtgeklapt dossier: de klant heeft bericht, ClickUp staat op opgeleverd en de foto's zijn onderweg. Die knop is weg.
+- **[FIX]** De filterknoppen op Alle werkbonnen waren Alle · Open · Bezig · Voltooid en lazen dezelfde dode kolom: twee van de vier gaven altijd nul resultaten. Het zijn nu Alle · Niet gestart · Bezig · Afgerond · Ligt stil — dezelfde vijf woorden en kleuren als op de kaarten eronder, en ze werken alle vijf. "Afgerond" vangt ook het opgeleverde werk.
+- De kolom zelf blijft ongemoeid: `'open' | 'bezig' | 'voltooid'` staat nog in de database en in het type, en `klusstand()` accepteert `'bezig'` nog steeds als de waarde er ooit toch in komt. Geen migratie.
 
 ### Eén kleurtaal, op alle schermen
 
