@@ -14,6 +14,14 @@
 - **[FIX]** De schil van Vandaag was een component-in-een-component. Die krijgt bij elke hertekening een nieuwe identiteit, waarna React de hele inhoud opnieuw ophangt: elk afvinkpunt vroeg zijn ondertekende fotolinks dan opnieuw op en de miniaturen knipperden terug naar een grijs vakje.
 - **[FIX]** Het bijschrift bij "Uit te voeren punten" stond ernáást en duwde de kop op een telefoon van 390 pixels over drie regels uiteen. Staat nu eronder.
 
+### "Klaar om af te ronden" is een eigen stand
+
+- **[FEATURE]** Een bon waar de ploeg alles had afgevinkt maar die nog niet was afgerond, heette "Bezig" op 100% — een tegenspraak, en groen zou te vroeg zijn geweest want er moet nog iemand op afronden drukken voordat kantoor kan opleveren. Dat is nu een eigen stand tussen bezig en afgerond in: **Klaar om af te ronden**, in violet.
+- Violet is een bewuste omweg. Amber zou de gewone keuze zijn voor "hier moet iemand iets doen", maar geel is merkkleur. Turkoois stond er eerst en lag te dicht bij groen: in donkere modus was een klus die wacht niet te onderscheiden van een klus die klaar is, en juist dat verschil is de hele reden dat deze stand bestaat.
+- Zichtbaar op alle schermen die de kleurtaal gebruiken, met een eigen filterknop op Alle werkbonnen: dat is de wachtrij van kantoor.
+- Een bon zonder punten telt niet mee — nul van nul is geen voltooide klus maar een verse bon waarvan de werkopdracht nog niet is ontleed.
+- **[FEATURE]** 2 tests erbij, **136 in totaal**.
+
 ### De statusknoppen op de werkbon
 
 - **[FIX]** Op de werkbon stonden drie knopjes — Open, Bezig, Voltooid — waarmee kantoor de kolom met de hand zette. "Bezig" schreef een waarde die niets in de app las en die niemand ooit zette. Nu de stand uit de afgevinkte punten komt, was dat een keuze zonder gevolg. Er staat nu één handeling, passend bij het moment: **Werkbon afronden** als alles is afgevinkt, **Heropenen** als de bon al op afgerond staat, en anders de reden waarom afronden nog niet kan ("nog 16 van de 23 punten open"). Dat is wat de database toch al afdwong — je hoorde het alleen pas ná het klikken.

@@ -30,8 +30,9 @@ import { klusstand, STANDEN, type Klusstand } from '@/lib/klusstand'
 const STANDFILTERS: { label: string; value: Klusstand | 'alle' }[] = [
   { label: 'Alle',         value: 'alle' },
   { label: 'Niet gestart', value: 'niet_gestart' },
-  { label: STANDEN.bezig.label,      value: 'bezig' },
-  { label: STANDEN.afgerond.label,   value: 'afgerond' },
+  { label: STANDEN.bezig.label,        value: 'bezig' },
+  { label: STANDEN.af_te_ronden.kort,  value: 'af_te_ronden' },
+  { label: STANDEN.afgerond.label,     value: 'afgerond' },
   { label: STANDEN.stilgelegd.label, value: 'stilgelegd' },
 ]
 

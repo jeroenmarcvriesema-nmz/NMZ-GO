@@ -94,7 +94,7 @@ export function groepsstatus(bonnen: Werkbon[]): ProjectStatus {
   // Via `klusstand` en niet via `b.status === 'bezig'`: die kolom staat
   // op elke bon op 'open', ook op de bonnen waar al is afgevinkt. Een
   // groep waar werk in zit heette daardoor "niet gestart".
-  if (bonnen.some((b) => klusstand(b) === 'bezig')) return 'actief'
+  if (bonnen.some((b) => ['bezig', 'af_te_ronden'].includes(klusstand(b)))) return 'actief'
   if (bonnen.length > 0 && bonnen.every((b) => b.opgeleverd_op || b.status === 'voltooid')) {
     return 'afgerond'
   }

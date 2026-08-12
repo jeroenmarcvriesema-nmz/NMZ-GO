@@ -197,11 +197,13 @@ De kolom `werkbonnen.status` blijft bestaan met alle drie de waarden, en
 `klusstand()` accepteert `'bezig'` nog steeds. Alleen schrijft de app die
 waarde nergens meer. Geen migratie.
 
-Let op één gevolg: een bon waar de ploeg alles heeft afgevinkt maar die
-nog niet is afgerond, heet "Bezig" op 100%. Dat is bewust — pas het
-afronden maakt hem groen — maar als de eigenaar daar een eigen stand
-voor wil ("klaar om af te ronden"), dan is dat een zesde waarde in
-`STANDEN`.
+Een bon waar alles is afgevinkt maar die nog niet is afgerond heeft een
+eigen stand gekregen: `af_te_ronden`, "Klaar om af te ronden", in
+violet. Zes standen dus. Violet en niet amber, want geel is merkkleur;
+en niet turkoois, want dat lag in donkere modus te dicht bij groen — en
+het verschil met "klaar" is precies waarvoor deze stand bestaat. Op
+Alle werkbonnen heeft hij een eigen filterknop: dat is de wachtrij van
+kantoor.
 
 **Eén kleurtaal, en waarom die er niet was.** Niets zet ooit
 `werkbonnen.status` op `'bezig'` — de ClickUp-synchronisatie raakt de

@@ -24,11 +24,27 @@ describe('klusstand', () => {
     expect(klusstand({ status: 'open', taken: punten(0, 16) })).toBe('niet_gestart')
   })
 
-  it('een bon zonder punten is niet gestart, niet bezig', () => {
+  it('noemt een bon met alles afgevinkt "klaar om af te ronden", niet afgerond', () => {
+    // Groen zou hier te vroeg zijn: er moet nog iemand op afronden
+    // drukken voordat kantoor kan opleveren. En "Bezig" op 100% las als
+    // een tegenspraak.
+    expect(klusstand({ status: 'open', taken: punten(9, 9) })).toBe('af_te_ronden')
+    expect(klusstand({ status: 'open', puntenKlaar: 12, punten: 12 })).toBe('af_te_ronden')
+  })
+
+  it('afgerond en opgeleverd gaan vóór af te ronden', () => {
+    expect(klusstand({ status: 'voltooid', taken: punten(9, 9) })).toBe('afgerond')
+    expect(klusstand({ status: 'open', opgeleverd_op: '2026-08-04', taken: punten(9, 9) })).toBe('opgeleverd')
+    expect(klusstand({ status: 'open', stilgelegd_op: '2026-08-01', taken: punten(9, 9) })).toBe('stilgelegd')
+  })
+
+  it('een bon zonder punten is niet gestart, niet af te ronden', () => {
     // Een verse bon uit ClickUp waarvan de werkopdracht nog niet is
-    // ontleed. Nul van nul is geen voortgang.
+    // ontleed. Nul van nul is geen voortgang, en zeker geen klus die
+    // klaar is om af te ronden.
     expect(klusstand({ status: 'open', taken: [] })).toBe('niet_gestart')
     expect(klusstand({ status: 'open' })).toBe('niet_gestart')
+    expect(klusstand({ status: 'open', puntenKlaar: 0, punten: 0 })).toBe('niet_gestart')
   })
 
   it('stilgelegd wint van alles', () => {
@@ -57,7 +73,8 @@ describe('klusstand', () => {
 
 describe('standkleur', () => {
   it('geeft blauw voor bezig en groen voor klaar', () => {
-    expect(standkleur({ status: 'open', puntenKlaar: 1 }).badge).toBe('blue')
+    expect(standkleur({ status: 'open', puntenKlaar: 1, punten: 9 }).badge).toBe('blue')
+    expect(standkleur({ status: 'open', puntenKlaar: 9, punten: 9 }).badge).toBe('violet')
     expect(standkleur({ status: 'voltooid' }).badge).toBe('green')
     expect(standkleur({ opgeleverd_op: '2026-08-04' }).badge).toBe('green')
     expect(standkleur({ stilgelegd_op: '2026-08-01' }).badge).toBe('red')
