@@ -14,6 +14,13 @@
 - **[FIX]** De schil van Vandaag was een component-in-een-component. Die krijgt bij elke hertekening een nieuwe identiteit, waarna React de hele inhoud opnieuw ophangt: elk afvinkpunt vroeg zijn ondertekende fotolinks dan opnieuw op en de miniaturen knipperden terug naar een grijs vakje.
 - **[FIX]** Het bijschrift bij "Uit te voeren punten" stond ernáást en duwde de kop op een telefoon van 390 pixels over drie regels uiteen. Staat nu eronder.
 
+### De projectdetailpagina is weg
+- **[FIX]** `/projecten/:id` was een dode route. Sinds de projectenpagina op klusgroepen is herbouwd wees er niets meer naartoe, en de pagina las nog de tabel `projecten` — nul rijen, en van de dertig werkbonnen heeft er nul een `project_id`. Wie de URL intypte kreeg "Project niet gevonden"; nu stuurt de app je terug naar je eigen startscherm.
+- Het tabblad "Foto's" op die pagina tekende nepvakjes: `n` identieke gele blokjes met een fototeken, met een handje-cursor die nergens heen ging.
+- Weg: de pagina (326 regels), de route, en uit `useProjecten.ts` de hooks `useProjecten()`, `useProject()` en `useMedewerkers()` plus het bijbehorende select en mapwerk (±180 regels). Het type `Project` in `types/index.ts` las daarna niemand meer.
+- Blijft: `/projecten` zelf, de weekplanning (`usePlanning`) en de statushelpers die de projectenlijst gebruikt. `ProjectStatus` blijft ook — die hoort bij een groep klussen met hetzelfde opdrachtnummer.
+- De tabel `projecten` is niet aangeraakt. Geen migratie.
+
 ### De andere schermen nagelopen
 - **[FEATURE]** De tegels op Vandaag — punten klaar, foto's, voortgang, gewerkte tijd — staan nu bovenaan, direct onder de groet. Ze stonden onder de checklist, dus je moest twintig afvinkpunten langsscrollen voor het antwoord op "hoe sta ik ervoor".
 - **[FIX]** Dezelfde ontbrekende relatie stond ook op vier andere plekken een nul te tonen: "0 foto's" op Mijn bonnen en Rapporten, en op de werkbonkaart (Alle werkbonnen, Afgerond) verscheen de fototeller helemaal niet, want die toont zichzelf alleen bij meer dan nul. Rapporten zette die nul ook in de Excel-export. De overzichtslijst haalt nu per foto het **id** op — genoeg om te tellen, en een fractie van een volle rij. Miniaturen komen nog steeds uit `useWerkbon`.

@@ -27,7 +27,6 @@ import WachtwoordHerstellen from '@/pages/auth/WachtwoordHerstellen'
 
 const Dashboard        = lazy(() => import('@/pages/beheerder/Dashboard'))
 const Projecten        = lazy(() => import('@/pages/beheerder/Projecten'))
-const ProjectDetail    = lazy(() => import('@/pages/beheerder/ProjectDetail'))
 const Planning         = lazy(() => import('@/pages/beheerder/Planning'))
 const Werkbonnen       = lazy(() => import('@/pages/beheerder/Werkbonnen'))
 const WerkbonNieuw     = lazy(() => import('@/pages/beheerder/WerkbonNieuw'))
@@ -172,7 +171,6 @@ export default function App() {
 
             <Route path="/dashboard"        element={<KantoorGuard><Dashboard /></KantoorGuard>} />
             <Route path="/projecten"        element={<KantoorGuard><Projecten /></KantoorGuard>} />
-            <Route path="/projecten/:id"    element={<KantoorGuard><ProjectDetail /></KantoorGuard>} />
             <Route path="/planning"         element={<KantoorGuard><Planning /></KantoorGuard>} />
             <Route path="/werkbonnen"       element={<KantoorGuard><Werkbonnen /></KantoorGuard>} />
             <Route path="/werkbonnen/nieuw" element={<KantoorGuard><WerkbonNieuw /></KantoorGuard>} />

@@ -151,6 +151,31 @@ tonen een vakje "bij ClickUp" met de uitleg in de Fotoviewer. In het
 archief verdween zo'n foto eerst stilzwijgend uit de strook terwijl de
 kop er wél bij telde.
 
+**Daarna nog nagelopen op verzoek van de eigenaar.** Dezelfde ontbrekende
+fotorelatie stond ook op Mijn bonnen, Rapporten, Alle werkbonnen en
+Afgerond een nul te tonen — Rapporten zette die nul zelfs in de
+Excel-export. De lijst haalt nu per foto alleen het **id** op: genoeg om
+te tellen, en een fractie van een volle rij. Let op wat dat betekent —
+`taak.fotos` uit `useWerkbonnen()` is te tellen, niet te tónen, want
+`storage_path` is er niet. Miniaturen komen uit `useWerkbon`.
+
+De tegels op Vandaag staan op verzoek bovenaan in plaats van onder de
+checklist.
+
+**`/projecten/:id` is verwijderd.** Dode route: sinds de projectenpagina
+op klusgroepen draait wees er niets meer naartoe, en de pagina las de
+tabel `projecten` — nul rijen, en nul van de dertig werkbonnen heeft een
+`project_id`. Weg zijn de pagina, de route, `useProjecten()`,
+`useProject()`, `useMedewerkers()` en het type `Project`. Gebleven zijn
+`usePlanning()` en `statusLabel`/`statusKleur`, want de planning en de
+projectenlijst gebruiken die. De tabel zelf is niet aangeraakt.
+
+Eén draadje blijft liggen: `usePlanning()` joint nog `project:projecten`
+en vult daarmee `PlanningItem.projectId` en `projectnaam`. Die join
+levert altijd niets op en `projectId` wordt sinds deze opruiming door
+niemand meer gelezen. Niet aangeraakt omdat het `PlanningItem`-contract
+raakt dat Planning en PlanningKaart lezen, en omdat het niet stuk is.
+
 Nog niet gedaan, bewust: er zijn geen tests bijgekomen. Dit is
 renderwerk, en er is geen jsdom of testing-library in het project —
 daarvoor zou een dependency erbij moeten, en dat vraagt goedkeuring.

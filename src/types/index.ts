@@ -141,22 +141,12 @@ export interface Uitnodiging {
   verloopt_op: string | null
 }
 
-export interface Project {
-  id: string
-  naam: string
-  adres: string
-  opdrachtgever: string
-  status: ProjectStatus
-  voortgang: number
-  startdatum: string
-  einddatum: string
-  medewerkers: Profile[]
-  aantalWerkbonnen: number
-  aantalTaken: number
-  aantalTakenKlaar: number
-  aantalFotos: number
-  opmerkingen: string
-}
+// `Project` stond hier: één rij uit de tabel `projecten`, met haar
+// werkbonnen, ploeg en aantallen erbij gerekend. Die tabel heeft nul
+// rijen en krijgt er nooit een bij — uit ClickUp komt één taak als één
+// werkbon. Met het verwijderen van `/projecten/:id` las niemand dit
+// type nog. `ProjectStatus` hieronder blijft wél: de projectenlijst
+// gebruikt hem voor een groep klussen met hetzelfde opdrachtnummer.
 
 export interface PlanningItem {
   id: string
