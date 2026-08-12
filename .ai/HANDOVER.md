@@ -184,6 +184,25 @@ Daarmee is `projecten` ook uit `usePlanning()` verdwenen: de join
 `PlanningItem.projectId` en `projectnaam` zijn met de join mee weg. In
 `src/` staat nu geen enkele verwijzing meer naar die tabel.
 
+**De statusknoppen op de werkbon zijn vereenvoudigd.** De drie knopjes
+(Open/Bezig/Voltooid) zijn één handeling geworden: afronden als alles is
+afgevinkt, heropenen als de bon al op afgerond staat, en anders de reden
+waarom afronden nog niet kan. Een opgeleverde bon biedt geen heropenen
+meer aan — dat dossier is dicht. Het filter op Alle werkbonnen draait nu
+op de afgeleide stand (Alle · Niet gestart · Bezig · Afgerond · Ligt
+stil) in plaats van op de kolom, waar twee van de vier knoppen altijd
+nul resultaten gaven.
+
+De kolom `werkbonnen.status` blijft bestaan met alle drie de waarden, en
+`klusstand()` accepteert `'bezig'` nog steeds. Alleen schrijft de app die
+waarde nergens meer. Geen migratie.
+
+Let op één gevolg: een bon waar de ploeg alles heeft afgevinkt maar die
+nog niet is afgerond, heet "Bezig" op 100%. Dat is bewust — pas het
+afronden maakt hem groen — maar als de eigenaar daar een eigen stand
+voor wil ("klaar om af te ronden"), dan is dat een zesde waarde in
+`STANDEN`.
+
 **Eén kleurtaal, en waarom die er niet was.** Niets zet ooit
 `werkbonnen.status` op `'bezig'` — de ClickUp-synchronisatie raakt de
 kolom niet aan en de handmatige knop op de werkbon gebruikt niemand.

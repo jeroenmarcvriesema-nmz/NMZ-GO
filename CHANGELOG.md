@@ -14,6 +14,13 @@
 - **[FIX]** De schil van Vandaag was een component-in-een-component. Die krijgt bij elke hertekening een nieuwe identiteit, waarna React de hele inhoud opnieuw ophangt: elk afvinkpunt vroeg zijn ondertekende fotolinks dan opnieuw op en de miniaturen knipperden terug naar een grijs vakje.
 - **[FIX]** Het bijschrift bij "Uit te voeren punten" stond ernáást en duwde de kop op een telefoon van 390 pixels over drie regels uiteen. Staat nu eronder.
 
+### De statusknoppen op de werkbon
+
+- **[FIX]** Op de werkbon stonden drie knopjes — Open, Bezig, Voltooid — waarmee kantoor de kolom met de hand zette. "Bezig" schreef een waarde die niets in de app las en die niemand ooit zette. Nu de stand uit de afgevinkte punten komt, was dat een keuze zonder gevolg. Er staat nu één handeling, passend bij het moment: **Werkbon afronden** als alles is afgevinkt, **Heropenen** als de bon al op afgerond staat, en anders de reden waarom afronden nog niet kan ("nog 16 van de 23 punten open"). Dat is wat de database toch al afdwong — je hoorde het alleen pas ná het klikken.
+- **[FIX]** Een opgeleverde bon bood nog steeds "Heropenen" aan, met eronder de tekst "kan zolang hij nog niet is opgeleverd" — terwijl er direct naast "Opgeleverd en bevestigd" stond. Opgeleverd is een dichtgeklapt dossier: de klant heeft bericht, ClickUp staat op opgeleverd en de foto's zijn onderweg. Die knop is weg.
+- **[FIX]** De filterknoppen op Alle werkbonnen waren Alle · Open · Bezig · Voltooid en lazen dezelfde dode kolom: twee van de vier gaven altijd nul resultaten. Het zijn nu Alle · Niet gestart · Bezig · Afgerond · Ligt stil — dezelfde vijf woorden en kleuren als op de kaarten eronder, en ze werken alle vijf. "Afgerond" vangt ook het opgeleverde werk.
+- De kolom zelf blijft ongemoeid: `'open' | 'bezig' | 'voltooid'` staat nog in de database en in het type, en `klusstand()` accepteert `'bezig'` nog steeds als de waarde er ooit toch in komt. Geen migratie.
+
 ### Eén kleurtaal, op alle schermen
 
 - **[FIX]** De grootste vondst zit onder de kleur: **niets zet ooit `werkbonnen.status` op `'bezig'`.** De ClickUp-synchronisatie raakt die kolom niet aan en de handmatige knop op de werkbon gebruikt niemand. Alle dertig bonnen stonden op `'open'` — óók Gaaspstraat 46 met zeven afgevinkte punten en elf foto's. Elk scherm noemde dat "nog niet gestart", en blauw kwam nergens voor. De stand komt nu uit de feiten: een afgevinkt punt is bewijs dat iemand daar geweest is.

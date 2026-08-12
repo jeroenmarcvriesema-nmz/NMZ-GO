@@ -14,17 +14,31 @@ import { zoektMee } from '@/lib/zoeken'
 import { Weekkop } from '@/components/layout/Weekkop'
 import { cn } from '@/lib/utils'
 import { IconPlus, IconSearch, IconClipboardList, IconCalendarWeek, IconList } from '@tabler/icons-react'
-import type { WerkbonStatus } from '@/types'
+import { klusstand, STANDEN, type Klusstand } from '@/lib/klusstand'
 
-const statusFilters: { label: string; value: WerkbonStatus | 'alle' }[] = [
-  { label: 'Alle', value: 'alle' }, { label: 'Open', value: 'open' },
-  { label: 'Bezig', value: 'bezig' }, { label: 'Voltooid', value: 'voltooid' },
+/**
+ * Filteren op de stand van de klus, niet op de kolom `status`.
+ *
+ * Die kolom stond op alle dertig bonnen op 'open' — niets zet hem ooit
+ * op iets anders behalve afronden. "Bezig" en "Voltooid" gaven daardoor
+ * allebei nul resultaten: twee van de vier knoppen deden niets.
+ *
+ * Dit zijn nu dezelfde vijf woorden en kleuren als op de kaarten
+ * eronder, en ze werken alle vijf. "Afgerond" vangt ook het opgeleverde
+ * werk: dat is voor wie hier filtert dezelfde vraag.
+ */
+const STANDFILTERS: { label: string; value: Klusstand | 'alle' }[] = [
+  { label: 'Alle',         value: 'alle' },
+  { label: 'Niet gestart', value: 'niet_gestart' },
+  { label: STANDEN.bezig.label,      value: 'bezig' },
+  { label: STANDEN.afgerond.label,   value: 'afgerond' },
+  { label: STANDEN.stilgelegd.label, value: 'stilgelegd' },
 ]
 
 export default function Werkbonnen() {
   const navigate = useNavigate()
   const { werkbonnen, loading, error, refetch } = useWerkbonnen()
-  const [statusFilter, setStatusFilter] = useState<WerkbonStatus | 'alle'>('alle')
+  const [standFilter, setStandFilter] = useState<Klusstand | 'alle'>('alle')
   const [zoek, setZoek] = useState('')
 
   // Per week kijken, of alles op een rij.
@@ -46,7 +60,13 @@ export default function Werkbonnen() {
   const inHuidigeWeek = perWeek && !zoekt
 
   const gefilterd = werkbonnen.filter((w) => {
-    const sOk = statusFilter === 'alle' || w.status === statusFilter
+    const stand = klusstand(w)
+    // Opgeleverd valt onder afgerond: wie hier op "Afgerond" filtert
+    // zoekt werk dat klaar is, en of kantoor het al heeft opgeleverd is
+    // een andere vraag.
+    const sOk = standFilter === 'alle'
+      || stand === standFilter
+      || (standFilter === 'afgerond' && stand === 'opgeleverd')
     const wOk = !inHuidigeWeek || inWeek(w, maandag)
     return sOk && wOk
   }).filter((w) => zoektMee(w, zoek))
@@ -111,14 +131,14 @@ export default function Werkbonnen() {
               className="w-full pl-9 pr-4 py-2.5 text-sm text-gray-900 dark:text-white bg-white dark:bg-surface-dark-2 border border-gray-200 dark:border-white/10 rounded-sm outline-none placeholder:text-gray-400 dark:placeholder:text-white/30 focus:border-brand-yellow"
             />
           </div>
-          <div className="flex gap-1.5 bg-surface-2 dark:bg-white/5 p-1 rounded-sm">
-            {statusFilters.map((f) => (
+          <div className="flex flex-wrap gap-1.5 bg-surface-2 dark:bg-white/5 p-1 rounded-sm">
+            {STANDFILTERS.map((f) => (
               <button
                 key={f.value}
-                onClick={() => setStatusFilter(f.value)}
+                onClick={() => setStandFilter(f.value)}
                 className={cn(
                   'px-3 py-1.5 rounded text-xs font-semibold transition-all',
-                  statusFilter === f.value
+                  standFilter === f.value
                     ? 'bg-white dark:bg-surface-dark-2 text-gray-900 dark:text-white shadow-sm'
                     : 'text-gray-500 dark:text-white/50 hover:text-gray-700 dark:hover:text-white/80'
                 )}
@@ -151,14 +171,14 @@ export default function Werkbonnen() {
           uitleg={
             inHuidigeWeek
               ? 'Blader naar een andere week, of zet hierboven "Alles" aan om de hele lijst te zien.'
-              : zoekt || statusFilter !== 'alle'
+              : zoekt || standFilter !== 'alle'
                 ? 'Pas je zoekterm of filter aan om meer resultaten te zien.'
                 : 'Maak je eerste werkbon aan om te beginnen.'
           }
           actie={
             inHuidigeWeek
               ? <Button variant="secondary" size="sm" onClick={() => setPerWeek(false)}><IconList className="w-4 h-4" /> Alles tonen</Button>
-              : !zoekt && statusFilter === 'alle'
+              : !zoekt && standFilter === 'alle'
                 ? <Button variant="primary" size="sm" onClick={() => navigate('/werkbonnen/nieuw')}><IconPlus className="w-4 h-4" /> Nieuwe werkbon</Button>
                 : undefined
           }
