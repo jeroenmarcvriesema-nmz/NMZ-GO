@@ -1,5 +1,15 @@
 # NMZ GO — Changelog
 
+## De werkopdracht mag er ook met de hand in
+
+- **[FEATURE]** Bij het handmatig aanmaken van een werkbon kun je nu de **werkopdracht als PDF** aanreiken. De punten onder *Uit te voeren werkzaamheden* worden eruit gehaald en staan meteen als taken op de bon — met dezelfde parser als de ClickUp-route, dus dezelfde punten voor dezelfde opdracht. Kluiscode, inspecteur, telefoonnummer, adres en werkvoorbereiding komen mee, en het opdrachtnummer van de werkvoorbereider wordt het bonnummer (migratie 022).
+- Wat al ingevuld staat blijft staan. Zijn er al punten ingetypt, dan overschrijft de PDF ze niet maar verschijnt er een knop *Punten overnemen*. Tien punten kwijtraken omdat je de tekening erbij zocht is geen wisselgeld.
+- Is het geen NMZ-werkopdracht, dan valt de herkenning terug op opsommingstekens en nummers — dezelfde herkenning als het tabblad *Gripp import* — en zegt het scherm er eerlijk bij dat de punten nagelopen moeten worden. Een scan zonder tekstlaag levert een duidelijke melding op in plaats van een lege lijst.
+- **[FEATURE]** **Werkopdracht en werktekening als PDF toevoegen**, zowel bij het aanmaken als achteraf op een bestaande bon. De opslag ervoor bestond al sinds migratie 012 — besloten bucket, kolommen `opdracht_pad` en `tekening_pad`, en de knoppen op de bon — maar werd alleen gevuld door de ClickUp-synchronisatie. Een klus die met de hand werd aangemaakt kreeg ze dus nooit, en een tekening die later los kwam kon er niet meer bij zonder de bon opnieuw te maken.
+- **[FEATURE]** Nieuwe edge function `opdracht-lezen`: één PDF erin, de punten eruit. Hij schrijft niets weg en gebruikt geen service-role — hij werkt met het token van de gebruiker, dus RLS geldt onverkort en wie geen werk mag beheren komt er niet voorbij de deur. De PDF-leeslaag zit daarmee op de server, niet in de bundel van een telefoon.
+- **[FEATURE]** 9 tests erbij (`opdracht`), **143 in totaal**.
+- Geen migratie nodig: bucket, kolommen en policies stonden er al.
+
 ## Het scherm van de man in het veld
 
 - **[FIX]** In de hele werkdagflow was elke foto onzichtbaar. Op Vandaag stond bij een afvinkpunt een leeg cameravakje, terwijl datzelfde punt via "Werkbon openen" gewoon twee foto's liet zien. De oorzaak zat één regel diep: `useWerkbonnen()` haalde `taken(*)` op en `useWerkbon(id)` haalde `taken(*, fotos(*))` op. `TaakItem` doet `taak.fotos ?? []` en tekende zonder die relatie een leeg uploadvak — in alle drie de fasen van de werkdag: vóór het starten, tijdens het werk en na het stoppen.

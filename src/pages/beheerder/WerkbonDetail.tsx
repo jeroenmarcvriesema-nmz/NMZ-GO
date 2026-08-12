@@ -9,6 +9,7 @@ import { ProgressBar } from '@/components/ui/ProgressBar'
 import { TaakItem } from '@/components/taak/TaakItem'
 import { Klusacties } from '@/components/werkbon/Klusacties'
 import { Klusinfo } from '@/components/werkbon/Klusinfo'
+import { Werkdocumenten } from '@/components/werkbon/Werkdocumenten'
 import { Opleverrapport } from '@/components/werkbon/Opleverrapport'
 import { Spinner } from '@/components/ui/Spinner'
 import { Modal } from '@/components/ui/Modal'
@@ -110,6 +111,11 @@ export default function WerkbonDetail() {
             documenten, werkvoorbereiding. Kantoor moet kunnen
             controleren wat de ploeg voor zich krijgt. */}
         <Klusinfo werkbon={werkbon} />
+
+        {/* Kantoor kan de werkopdracht en de tekening er alsnog bij
+            zetten. Bij een klus uit ClickUp komen ze vanzelf mee, bij
+            een handmatige bon of een tekening die later los komt niet. */}
+        <Werkdocumenten werkbon={werkbon} onKlaar={refetch} />
 
         {/* De drie tekstvelden van het rapport bestonden als kolom sinds
             migratie 002 maar hadden nergens een invoerveld, en

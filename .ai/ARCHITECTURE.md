@@ -58,7 +58,16 @@ Elke nieuwe route wordt aan een van deze guards gekoppeld — er is geen route z
 
 Precies **één globale store** (`authStore`, Zustand) voor sessie/profiel. Alle overige data (werkbonnen, taken, projecten, planning) leeft **lokaal per hook-aanroep** via `useState`/`useEffect`, niet in een globale store. Dit is bewust: domeindata hoeft niet cross-page gedeeld te worden, en het voorkomt stale-cache-problemen.
 
-Geen server-side rendering, geen edge functions, geen custom backend op dit moment. Zie `ROADMAP.md` voor waar dit richting de toekomst zou kunnen uitbreiden (bv. voor PDF-generatie) — dat is een architecturale beslissing die eerst expliciet met de gebruiker wordt besproken.
+Geen server-side rendering en geen custom backend. Wél twee Supabase edge functions in `supabase/functions/`, allebei voor werk dat niet in een browser thuishoort:
+
+| Functie | Rol | JWT |
+|---|---|---|
+| `verwerker` | De verwerkingswachtrij: ClickUp-synchronisatie, foto's, statusterugkoppeling, opruimen. Aangeroepen door pg_cron of via `clickup_hartslag()`. Draait op de service-role. | uit (cron) |
+| `opdracht-lezen` | Eén werkopdracht-PDF lezen en de punten teruggeven. Schrijft niets weg en gebruikt géén service-role: hij werkt met het token van de aanroeper, dus RLS geldt onverkort. | aan |
+
+De PDF-leeslaag (`unpdf`) staat daarmee uitsluitend op de server — de frontend heeft er geen dependency voor. De parser zelf (`verwerker/ontleden.ts`) is één bestand zonder Deno-afhankelijkheden, wordt door beide routes gebruikt en is getest in `tests/ontleden.test.ts`; een handmatig aangereikte opdracht levert dus dezelfde punten op als dezelfde opdracht via ClickUp.
+
+Zie `ROADMAP.md` voor waar dit richting de toekomst zou kunnen uitbreiden (bv. voor PDF-generatie) — dat is een architecturale beslissing die eerst expliciet met de gebruiker wordt besproken.
 
 ---
 

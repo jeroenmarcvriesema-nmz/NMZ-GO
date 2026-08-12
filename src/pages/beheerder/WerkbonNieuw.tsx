@@ -5,19 +5,27 @@ import { SectionHeading } from '@/components/ui/SectionHeading'
 import { Button } from '@/components/ui/Button'
 import { Input, Textarea } from '@/components/ui/Input'
 import { Card } from '@/components/ui/Card'
+import { DocumentKiezer } from '@/components/werkbon/DocumentKiezer'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { useWerkbonDocumenten } from '@/hooks/useWerkbonDocumenten'
 import { genereerBonnummer } from '@/lib/utils'
+import { controleerDocument, herkenPunten, type GelezenOpdracht } from '@/lib/opdracht'
 import { toast } from '@/store/toastStore'
 import type { Persoon } from '@/types'
-import { IconPlus, IconTrash, IconArrowLeft, IconWand } from '@tabler/icons-react'
+import { IconPlus, IconTrash, IconArrowLeft, IconWand, IconListCheck } from '@tabler/icons-react'
 
 interface TaakInput { titel: string; omschrijving: string }
 
 export default function WerkbonNieuw() {
   const navigate = useNavigate()
   const { profile } = useAuth()
-  const [bonnummer] = useState(genereerBonnummer())
+  const { upload, lees } = useWerkbonDocumenten()
+  // Het zelfverzonnen nummer blijft bewaard: haalt de werkopdracht het
+  // echte opdrachtnummer binnen en wordt die PDF daarna weggehaald, dan
+  // hoort het nummer terug te vallen op wat het was.
+  const [standaardBonnummer] = useState(genereerBonnummer())
+  const [bonnummer, setBonnummer] = useState(standaardBonnummer)
   const [projectnaam, setProjectnaam] = useState('')
   const [adres, setAdres] = useState('')
   const [opdrachtgever, setOpdrachtgever] = useState('')
@@ -29,6 +37,15 @@ export default function WerkbonNieuw() {
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<'handmatig' | 'gripp'>('handmatig')
 
+  // De twee PDF's gaan pas de opslag in nadat de bon bestaat: het pad in
+  // de bucket begint met het id van de werkbon, en dat bestaat vóór het
+  // opslaan nog niet.
+  const [opdrachtPdf, setOpdrachtPdf] = useState<File | null>(null)
+  const [tekeningPdf, setTekeningPdf] = useState<File | null>(null)
+  const [lezen, setLezen] = useState(false)
+  const [gelezen, setGelezen] = useState<GelezenOpdracht | null>(null)
+  const [overgenomen, setOvergenomen] = useState(false)
+
   useEffect(() => {
     // Personen en niet profiles: toewijzen moet kunnen aan iemand die
     // nog geen account heeft. Dat is bij ons de normale toestand.
@@ -36,20 +53,94 @@ export default function WerkbonNieuw() {
       .then(({ data }) => setAlleProfielen((data as Persoon[]) || []))
   }, [])
 
+  const takenLeeg = taken.every((t) => !t.titel.trim())
+
+  const neemPuntenOver = (punten: string[]) => {
+    setTaken(punten.map((titel) => ({ titel, omschrijving: '' })))
+    setActiveTab('handmatig')
+  }
+
   const parseerGripp = () => {
-    const gevonden: TaakInput[] = []
-    grippTekst.split('\n').forEach((r) => {
-      const s = r.trim(); if (!s) return
-      const match = s.match(/^(?:\d+[.)\s]|[-\u2022*\u2192]\s*)(.+)/)
-      if (match) gevonden.push({ titel: match[1].trim(), omschrijving: '' })
-    })
+    const gevonden = herkenPunten(grippTekst)
     if (gevonden.length) {
-      setTaken(gevonden)
-      setActiveTab('handmatig')
+      neemPuntenOver(gevonden)
       toast.goed(`${gevonden.length} ${gevonden.length === 1 ? 'punt' : 'punten'} overgenomen`)
     } else {
       toast.fout('Geen checkpunten herkend. Gebruik genummerde punten of streepjes.')
     }
+  }
+
+  /**
+   * De werkopdracht-PDF laten lezen zodra hij gekozen wordt.
+   *
+   * Dezelfde parser als de ClickUp-route, dus dezelfde punten. Wat al
+   * ingevuld staat blijft staan: het scherm vult alleen lege velden aan.
+   * Staan er al punten, dan worden die niet overschreven maar krijgt de
+   * gebruiker er een knop voor — iemand die tien punten heeft ingetypt
+   * en dan de tekening erbij zoekt, mag ze niet kwijtraken.
+   */
+  const leesOpdracht = async (bestand: File) => {
+    setLezen(true)
+    const { opdracht, fout } = await lees(bestand)
+    setLezen(false)
+
+    if (fout || !opdracht) {
+      setGelezen(null)
+      setOvergenomen(false)
+      // Geen blokkade: de PDF blijft als bijlage aan de bon hangen, de
+      // punten gaan dan met de hand.
+      toast.fout(fout ?? 'De werkopdracht kon niet gelezen worden.')
+      return
+    }
+
+    setGelezen(opdracht)
+
+    if (opdracht.adres && !adres) setAdres(opdracht.adres)
+    // Dezelfde projectnaam die de ClickUp-route wegschrijft; het veld is
+    // verplicht en dit is bij een werkopdracht altijd het antwoord.
+    if (!projectnaam) setProjectnaam('Zwamsanering')
+    // Het bonnummer is bij een klus uit ClickUp het opdrachtnummer van
+    // de werkvoorbereider (migratie 022). Staat het in de opdracht, dan
+    // is dat het echte nummer en niet het nummer dat wij verzonnen.
+    if (opdracht.opdrachtnummer) setBonnummer(opdracht.opdrachtnummer)
+
+    const aantal = opdracht.punten.length
+    const woord = aantal === 1 ? 'punt' : 'punten'
+
+    if (takenLeeg) {
+      neemPuntenOver(opdracht.punten)
+      setOvergenomen(true)
+      toast.goed(
+        opdracht.sjabloon
+          ? `${aantal} ${woord} uit de werkopdracht overgenomen`
+          : `${aantal} ${woord} herkend — dit is geen NMZ-werkopdracht, loop ze even na`,
+      )
+    } else {
+      setOvergenomen(false)
+      toast.info(`${aantal} ${woord} gevonden. Je hebt zelf al punten ingevuld — kies "Punten overnemen" om ze te vervangen.`)
+    }
+  }
+
+  const kiesOpdracht = (bestand: File) => {
+    const bezwaar = controleerDocument(bestand)
+    if (bezwaar) { toast.fout(bezwaar); return }
+    setOpdrachtPdf(bestand)
+    setGelezen(null)
+    setOvergenomen(false)
+    leesOpdracht(bestand)
+  }
+
+  const wisOpdracht = () => {
+    setOpdrachtPdf(null)
+    setGelezen(null)
+    setOvergenomen(false)
+    setBonnummer(standaardBonnummer)
+  }
+
+  const kiesTekening = (bestand: File) => {
+    const bezwaar = controleerDocument(bestand)
+    if (bezwaar) { toast.fout(bezwaar); return }
+    setTekeningPdf(bestand)
   }
 
   const handleSave = async () => {
@@ -58,8 +149,20 @@ export default function WerkbonNieuw() {
     if (!geldig.length) { toast.fout('Voeg minimaal één taak toe.'); return }
     setLoading(true)
 
+    // Wat de parser uit de opdracht haalde hoort op de bon, precies
+    // zoals de ClickUp-route het wegschrijft: dat is wat iemand nodig
+    // heeft die voor de deur staat.
+    const uitOpdracht = gelezen?.sjabloon
+      ? {
+          kluiscode: gelezen.kluiscode,
+          inspecteur: gelezen.inspecteur,
+          inspecteur_telefoon: gelezen.inspecteurTelefoon,
+          werkvoorbereiding: gelezen.werkvoorbereiding,
+        }
+      : {}
+
     const { data: wb, error: wbErr } = await supabase
-      .from('werkbonnen').insert({ bonnummer, projectnaam, adres, opdrachtgever, datum, aangemaakt_door: profile?.id })
+      .from('werkbonnen').insert({ bonnummer, projectnaam, adres, opdrachtgever, datum, aangemaakt_door: profile?.id, ...uitOpdracht })
       .select().single()
 
     if (wbErr || !wb) {
@@ -82,6 +185,17 @@ export default function WerkbonNieuw() {
       if (koppelErr) toast.fout('De werkbon is aangemaakt, maar de monteurs zijn niet gekoppeld.')
     }
 
+    // De documenten als laatste, en een mislukte upload houdt de bon
+    // niet tegen: die is op de bon zelf alsnog aan te vullen.
+    if (opdrachtPdf) {
+      const { fout } = await upload(wb.id, 'werkopdracht', opdrachtPdf)
+      if (fout) toast.fout(`${fout} Voeg hem toe op de werkbon.`)
+    }
+    if (tekeningPdf) {
+      const { fout } = await upload(wb.id, 'werktekening', tekeningPdf)
+      if (fout) toast.fout(`${fout} Voeg hem toe op de werkbon.`)
+    }
+
     if (!taakErr) toast.goed('Werkbon aangemaakt')
     navigate(`/werkbonnen/${wb.id}`)
   }
@@ -98,7 +212,8 @@ export default function WerkbonNieuw() {
           <SectionHeading title="Werkbon informatie" />
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
-              <Input label="Bonnummer" value={bonnummer} readOnly className="bg-surface-2 dark:bg-white/5 text-gray-400 dark:text-white/40" />
+              <Input label="Bonnummer" value={bonnummer} readOnly className="bg-surface-2 dark:bg-white/5 text-gray-400 dark:text-white/40"
+                hint={gelezen?.opdrachtnummer ? 'Overgenomen uit de werkopdracht' : undefined} />
               <Input label="Datum" type="date" value={datum} onChange={(e) => setDatum(e.target.value)} />
             </div>
             <Input label="Projectnaam" placeholder="Bijv. Renovatie badkamer" value={projectnaam} onChange={(e) => setProjectnaam(e.target.value)} required />
@@ -118,6 +233,72 @@ export default function WerkbonNieuw() {
               </button>
             ))}
             {alleProfielen.length === 0 && <p className="text-sm text-gray-400 dark:text-white/40">Geen medewerkers gevonden.</p>}
+          </div>
+        </Card>
+
+        {/* De twee PDF's die de ploeg op locatie opent. Bij een klus uit
+            ClickUp komen ze vanzelf mee; een bon die met de hand wordt
+            gemaakt had ze tot nu toe nooit. De werkopdracht wordt meteen
+            gelezen — daar komen de punten uit. */}
+        <Card>
+          <SectionHeading title="Documenten" />
+          <div className="space-y-3">
+            <DocumentKiezer
+              label="Werkopdracht (PDF)"
+              hint="De punten worden er automatisch uitgehaald"
+              waarde={opdrachtPdf?.name ?? null}
+              bezig={lezen}
+              onKies={kiesOpdracht}
+              onWis={wisOpdracht}
+            />
+
+            {gelezen && (
+              <div className="rounded-sm border border-gray-100 dark:border-white/10 bg-surface-2 dark:bg-white/5 p-4 space-y-2">
+                <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                  {gelezen.punten.length} {gelezen.punten.length === 1 ? 'punt' : 'punten'} gevonden
+                  {overgenomen && ' en overgenomen'}
+                </div>
+
+                {!gelezen.sjabloon && (
+                  <p className="text-xs text-gray-500 dark:text-white/50">
+                    Dit is geen NMZ-werkopdracht ({gelezen.reden ?? 'sjabloon niet herkend'}); de punten
+                    komen uit de opsomming. Loop ze na bij Taken.
+                  </p>
+                )}
+                {gelezen.weggelaten.length > 0 && (
+                  <p className="text-xs text-gray-500 dark:text-white/50">
+                    Overgeslagen: {gelezen.weggelaten.join(', ')}.
+                  </p>
+                )}
+                {gelezen.kluiscode && (
+                  <p className="text-xs text-gray-500 dark:text-white/50">Kluiscode {gelezen.kluiscode} gevonden.</p>
+                )}
+                {gelezen.inspecteur && (
+                  <p className="text-xs text-gray-500 dark:text-white/50">
+                    Inspecteur {gelezen.inspecteur}
+                    {gelezen.inspecteurTelefoon ? ` (${gelezen.inspecteurTelefoon})` : ''}.
+                  </p>
+                )}
+
+                {!overgenomen && gelezen.punten.length > 0 && (
+                  <Button variant="secondary" size="sm" onClick={() => {
+                    neemPuntenOver(gelezen.punten)
+                    setOvergenomen(true)
+                    toast.goed(`${gelezen.punten.length} ${gelezen.punten.length === 1 ? 'punt' : 'punten'} overgenomen`)
+                  }}>
+                    <IconListCheck className="w-4 h-4" /> Punten overnemen
+                  </Button>
+                )}
+              </div>
+            )}
+
+            <DocumentKiezer
+              label="Werktekening (PDF)"
+              hint="Optioneel — te openen vanaf de bon"
+              waarde={tekeningPdf?.name ?? null}
+              onKies={kiesTekening}
+              onWis={() => setTekeningPdf(null)}
+            />
           </div>
         </Card>
 
