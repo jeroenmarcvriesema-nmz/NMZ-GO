@@ -9,12 +9,61 @@ import { Weekkiezer } from '@/components/layout/Weekkiezer'
 import { cn, formatDatumKort } from '@/lib/utils'
 import { isoDatum, weekDagen, maandagVerschoven } from '@/lib/planning'
 import { zoektMee } from '@/lib/zoeken'
+import { klusstand, STANDEN, STANDVOLGORDE, type Klusstand } from '@/lib/klusstand'
 import type { PlanningItem } from '@/types'
 import { IconAlertTriangle, IconSearch, IconX } from '@tabler/icons-react'
 
 // Zes dagen: zaterdag wordt gebruikt om dingen af te maken en voor
 // garantiewerk, en hoort dus gewoon in de planning.
 const DAG_NAMEN = ['Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag']
+
+/**
+ * De volgorde binnen een dagkolom.
+ *
+ * Stond op de volgorde waarin de database de bonnen teruggaf — in de
+ * praktijk op datum, wat binnen één dag niets betekent. Nu op stand:
+ * wat stilligt bovenaan, dan wat op afronden wacht, dan wat loopt.
+ * Bij gelijke stand op adres, zodat de kolom niet verspringt tussen
+ * twee ophaalrondes.
+ *
+ * Dit geldt alleen hier, op de planning van kantoor. "Mijn week" van de
+ * zwamsaneerder houdt zijn eigen volgorde: die kijkt naar één dag met
+ * één of twee klussen en heeft aan sorteren niets — daar telt waar je
+ * heen moet, niet welke klus de meeste aandacht vraagt.
+ */
+function feitenVan(p: PlanningItem) {
+  return {
+    status: p.status === 'afgerond' ? 'voltooid' : 'open',
+    stilgelegd_op: p.status === 'stilgelegd' ? 'ja' : null,
+    puntenKlaar: p.puntenKlaar,
+    punten: p.punten,
+  }
+}
+
+/**
+ * De zwaarste stand van de dag, voor de telling in de dagkop.
+ *
+ * Eén getal per kolom zegt hoe druk een dag is, maar niet wat die dag
+ * van je vraagt. De kleur doet dat: staat er iets stil, dan is de
+ * telling rood. Zo zie je bij het openslaan van de week in welke
+ * kolommen iets te doen is, zonder één kaart te lezen.
+ *
+ * Dezelfde tabel als de kaarten eronder — geen nieuwe kleuren, alleen
+ * de zwaarste van wat er die dag staat.
+ */
+function zwaarsteStand(items: PlanningItem[]): Klusstand | null {
+  if (items.length === 0) return null
+  return items
+    .map((p) => klusstand(feitenVan(p)))
+    .reduce((zwaarste, s) => (STANDVOLGORDE[s] < STANDVOLGORDE[zwaarste] ? s : zwaarste))
+}
+
+function opStand(items: PlanningItem[]): PlanningItem[] {
+  return [...items].sort((a, b) => {
+    const verschil = STANDVOLGORDE[klusstand(feitenVan(a))] - STANDVOLGORDE[klusstand(feitenVan(b))]
+    return verschil !== 0 ? verschil : a.adres.localeCompare(b.adres)
+  })
+}
 
 /**
  * Zaterdag is de zesde kolom, en de laatste.
@@ -174,7 +223,7 @@ export default function Planning() {
           // Vandaag wint van zaterdag: als het zaterdag ís, is "vandaag"
           // het antwoord op de vraag die je stelt als je hier kijkt.
           const isZaterdag = i === ZATERDAG && !isVandaag
-          const dagItems = zichtbaar.filter((p) => p.datum <= dagStr && (p.eind ?? p.datum) >= dagStr)
+          const dagItems = opStand(zichtbaar.filter((p) => p.datum <= dagStr && (p.eind ?? p.datum) >= dagStr))
 
           return (
             <div
@@ -204,8 +253,31 @@ export default function Planning() {
                 <div className={cn('text-sm font-bold', isVandaag ? 'text-gray-900' : 'text-gray-700 dark:text-white/80')}>
                   {DAG_NAMEN[i]}
                 </div>
-                <div className={cn('text-xs', isVandaag ? 'text-gray-700' : 'text-gray-400 dark:text-white/40')}>
-                  {formatDatumKort(dag)}
+                <div className="flex items-center justify-between gap-2">
+                  <span className={cn('text-xs', isVandaag ? 'text-gray-700' : 'text-gray-400 dark:text-white/40')}>
+                    {formatDatumKort(dag)}
+                  </span>
+                  {/* De telling stond alleen op de telefoon. Op een
+                      laptop zie je zes kolommen naast elkaar en is
+                      juist dáár de vraag hoe vol een dag is. */}
+                  {dagItems.length > 0 && (() => {
+                    const zwaarste = zwaarsteStand(dagItems)
+                    const z = zwaarste ? STANDEN[zwaarste] : null
+                    return (
+                      <span
+                        title={z ? `Zwaarste stand vandaag: ${z.label}` : undefined}
+                        className={cn(
+                          'flex items-center gap-1 text-[11px] font-bold px-1.5 rounded-full tabular-nums flex-shrink-0',
+                          isVandaag ? 'bg-white/50 text-gray-800' : cn(z?.vlak, z?.tekst),
+                        )}
+                      >
+                        {!isVandaag && z && (
+                          <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', z.bol)} />
+                        )}
+                        {dagItems.length}
+                      </span>
+                    )
+                  })()}
                 </div>
               </div>
 
@@ -257,7 +329,7 @@ export default function Planning() {
           const dagStr = isoDatum(dag)
           const isVandaag = dag.getTime() === vandaag.getTime()
           const isZaterdag = i === ZATERDAG && !isVandaag
-          const dagItems = zichtbaar.filter((p) => p.datum <= dagStr && (p.eind ?? p.datum) >= dagStr)
+          const dagItems = opStand(zichtbaar.filter((p) => p.datum <= dagStr && (p.eind ?? p.datum) >= dagStr))
 
           return (
             <div className={cn(

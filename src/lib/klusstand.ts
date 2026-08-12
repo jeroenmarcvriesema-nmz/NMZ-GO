@@ -213,3 +213,47 @@ export const STANDEN: Record<Klusstand, Standkleur> = {
 export function standkleur(k: Klusfeiten): Standkleur {
   return STANDEN[klusstand(k)]
 }
+
+/**
+ * De volgorde waarin je klussen wilt zien.
+ *
+ * Niet alfabetisch en niet op aanmaakdatum, maar op wat er van je
+ * gevraagd wordt. Bovenaan wat een telefoontje kost, onderaan wat af
+ * is:
+ *
+ *   1. ligt stil            — iemand moet bellen
+ *   2. klaar om af te ronden — één druk op de knop en het is klaar
+ *   3. bezig                 — loopt, hou het in de gaten
+ *   4. nog niet gestart      — staat te wachten
+ *   5. afgerond              — geen actie meer
+ *   6. opgeleverd            — dossier dicht
+ *
+ * Afgerond en opgeleverd staan onderaan omdat ze niets meer vragen.
+ * Wie ze zoekt gebruikt het filter; wie het bord openslaat wil zien
+ * wat er nog moet gebeuren.
+ */
+export const STANDVOLGORDE: Record<Klusstand, number> = {
+  stilgelegd: 0,
+  af_te_ronden: 1,
+  bezig: 2,
+  niet_gestart: 3,
+  afgerond: 4,
+  opgeleverd: 5,
+}
+
+/**
+ * Sorteert op stand, en binnen dezelfde stand op de meegegeven sleutel
+ * — in de praktijk de startdatum, zodat wat het langst wacht bovenaan
+ * komt. Zonder die tweede sleutel is de volgorde binnen een stand die
+ * van de database, en dat verspringt tussen twee ophaalrondes.
+ */
+export function vergelijkStand<T>(
+  a: T,
+  b: T,
+  feiten: (x: T) => Klusfeiten,
+  tweede: (x: T) => string = () => '',
+): number {
+  const verschil = STANDVOLGORDE[klusstand(feiten(a))] - STANDVOLGORDE[klusstand(feiten(b))]
+  if (verschil !== 0) return verschil
+  return tweede(a).localeCompare(tweede(b))
+}

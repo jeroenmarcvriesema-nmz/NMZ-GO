@@ -1,41 +1,49 @@
 import { useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import type { ProjectRegel } from '@/hooks/useDashboard'
-import { IconPhoto, IconListCheck, IconChevronRight, IconMapPin } from '@tabler/icons-react'
+import { STANDEN } from '@/lib/klusstand'
+import { IconPhoto, IconListCheck, IconChevronRight, IconMapPin, IconAlertTriangle } from '@tabler/icons-react'
 
-interface StatusPilProps {
-  status: ProjectRegel['status']
-}
-
-function StatusPil({ status }: StatusPilProps) {
-  const map = {
-    gestart:      { label: 'Bezig',        cls: 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-500/30' },
-    niet_gestart: { label: 'Niet gestart', cls: 'bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-white/50 border-gray-200 dark:border-white/10' },
-    achter:       { label: 'Achter',       cls: 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/30' },
-    afgerond:     { label: 'Afgerond',     cls: 'bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 border-green-200 dark:border-green-500/30' },
-  }
-  const { label, cls } = map[status]
+/**
+ * De stand van een klus, plus de vlag "achter op schema".
+ *
+ * Hier stond een eigen woordenlijst met eigen kleuren: "Gestart" in
+ * plaats van "Bezig", en rood voor "Achter" terwijl rood elders in de
+ * app "ligt stil" betekent. Nu komt het woord en de kleur uit
+ * `lib/klusstand.ts`, net als op de werkbonnen, de planning en het
+ * archief.
+ *
+ * "Achter" is geen stand maar een tempo-signaal en staat er daarom
+ * náást — een klus kan tegelijk bezig én achter zijn, en dat is precies
+ * de combinatie waar je iets mee moet.
+ */
+function StatusPil({ regel }: { regel: ProjectRegel }) {
+  const k = STANDEN[regel.stand]
   return (
-    <span className={cn(
-      'inline-flex items-center whitespace-nowrap text-[11px] font-bold px-2 py-0.5 rounded-md border',
-      cls,
-    )}>
-      {label}
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+      <span className={cn(
+        'inline-flex items-center text-[11px] font-bold px-2 py-0.5 rounded-md border',
+        k.vlak, k.omlijsting, k.tekst,
+      )}>
+        {k.kort}
+      </span>
+      {regel.achter && (
+        <span
+          title="Al twee uur bezig en nog geen halve bon af"
+          className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-red dark:text-red-400"
+        >
+          <IconAlertTriangle className="w-3 h-3 flex-shrink-0" /> achter
+        </span>
+      )}
     </span>
   )
 }
 
-function balkKleur(status: ProjectRegel['status']): string {
-  return status === 'afgerond' ? 'bg-green-500'
-    : status === 'achter' ? 'bg-red-400'
-    : 'bg-brand-yellow'
-}
-
-function VoortgangBalk({ value, status }: { value: number; status: ProjectRegel['status'] }) {
+function VoortgangBalk({ value, stand }: { value: number; stand: ProjectRegel['stand'] }) {
   return (
     <div className="flex items-center gap-2 min-w-0">
-      <div className="flex-1 min-w-0 bg-gray-100 dark:bg-white/10 rounded-full h-1.5 overflow-hidden">
-        <div className={cn('h-full rounded-full transition-all', balkKleur(status))} style={{ width: `${value}%` }} />
+      <div className={cn('flex-1 min-w-0 rounded-full h-1.5 overflow-hidden', STANDEN[stand].balkbed)}>
+        <div className={cn('h-full rounded-full transition-all', STANDEN[stand].bol)} style={{ width: `${value}%` }} />
       </div>
       <span className="flex-shrink-0 text-xs font-semibold text-gray-500 dark:text-white/50 w-9 text-right tabular-nums">
         {value}%
@@ -95,7 +103,7 @@ export function ProjectTabel({ projecten }: ProjectTabelProps) {
                     <span className="truncate">{p.adres}</span>
                   </div>
                 </div>
-                <StatusPil status={p.status} />
+                <StatusPil regel={p} />
               </div>
 
               {p.team.length > 0 && (
@@ -105,7 +113,7 @@ export function ProjectTabel({ projecten }: ProjectTabelProps) {
               )}
 
               <div className="mt-2">
-                <VoortgangBalk value={p.voortgang} status={p.status} />
+                <VoortgangBalk value={p.voortgang} stand={p.stand} />
               </div>
 
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-[11px] text-gray-400 dark:text-white/40">
@@ -157,10 +165,10 @@ export function ProjectTabel({ projecten }: ProjectTabelProps) {
                   </div>
                 </td>
                 <td className="py-4 pr-4">
-                  <StatusPil status={p.status} />
+                  <StatusPil regel={p} />
                 </td>
                 <td className="py-4 pr-4">
-                  <VoortgangBalk value={p.voortgang} status={p.status} />
+                  <VoortgangBalk value={p.voortgang} stand={p.stand} />
                   <div className="hidden lg:flex items-center gap-3 mt-1.5">
                     <span className="flex items-center gap-1 text-[11px] text-gray-400 dark:text-white/40">
                       <IconListCheck className="w-3 h-3" />

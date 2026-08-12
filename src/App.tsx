@@ -7,7 +7,7 @@ import { PageLoader } from '@/components/ui/Spinner'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { Toaster } from '@/components/ui/Toaster'
 import { Foutvanger } from '@/components/layout/Foutvanger'
-import { magWerkBeheren, magGebruikersBeheren, startPad } from '@/lib/rollen'
+import { magWerkBeheren, magGebruikersBeheren, isEigenaar, startPad } from '@/lib/rollen'
 
 // Elk scherm apart inladen.
 //
@@ -32,6 +32,7 @@ const Werkbonnen       = lazy(() => import('@/pages/beheerder/Werkbonnen'))
 const WerkbonNieuw     = lazy(() => import('@/pages/beheerder/WerkbonNieuw'))
 const WerkbonDetail    = lazy(() => import('@/pages/beheerder/WerkbonDetail'))
 const Medewerkers      = lazy(() => import('@/pages/beheerder/Medewerkers'))
+const Storingen        = lazy(() => import('@/pages/beheerder/Storingen'))
 const PersoonDetail    = lazy(() => import('@/pages/beheerder/PersoonDetail'))
 const Rapporten        = lazy(() => import('@/pages/beheerder/Rapporten'))
 const Archief          = lazy(() => import('@/pages/beheerder/Archief'))
@@ -134,6 +135,21 @@ function KantoorGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+/**
+ * De storingen van de app zelf — alleen de eigenaar.
+ *
+ * Het strakste slot dat er is. De tegenhanger in de database is
+ * `fouten_select_eigenaar` (migratie 030); zonder die policy zou deze
+ * guard niets betekenen, want de tabel is rechtstreeks te bevragen.
+ */
+function EigenaarGuard({ children }: { children: React.ReactNode }) {
+  const { profile, loading } = useAuthStore()
+  if (loading) return <PageLoader />
+  if (!profile) return <Navigate to="/login" replace />
+  if (!isEigenaar(profile.rol)) return <Navigate to={startPad(profile.rol)} replace />
+  return <>{children}</>
+}
+
 /** Medewerkers, uitnodigingen, wachtwoorden — strenger. */
 function GebruikersbeheerGuard({ children }: { children: React.ReactNode }) {
   const { profile, loading } = useAuthStore()
@@ -180,6 +196,7 @@ export default function App() {
             <Route path="/rapporten"        element={<KantoorGuard><Rapporten /></KantoorGuard>} />
             <Route path="/archief"          element={<KantoorGuard><Archief /></KantoorGuard>} />
             <Route path="/uitloop"          element={<KantoorGuard><Uitloop /></KantoorGuard>} />
+            <Route path="/storingen"        element={<EigenaarGuard><Storingen /></EigenaarGuard>} />
 
             <Route path="/mijn-werkbonnen" element={<AuthGuard><MijnWerkbonnen /></AuthGuard>} />
             <Route path="/werkbon/:id"     element={<AuthGuard><WerkbonUitvoeren /></AuthGuard>} />

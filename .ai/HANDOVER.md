@@ -184,6 +184,33 @@ Daarmee is `projecten` ook uit `usePlanning()` verdwenen: de join
 `PlanningItem.projectId` en `projectnaam` zijn met de join mee weg. In
 `src/` staat nu geen enkele verwijzing meer naar die tabel.
 
+**Storingen staan op `/storingen` en zijn alleen voor de eigenaar.** Ze
+stonden als kaart op het dashboard en waren leesbaar voor alle vijf de
+kantoorrollen. Het slot zit nu op drie plekken: menu (`Sidebar`,
+`MobileNav`, achter `isEigenaar`), route (`EigenaarGuard` in `App.tsx`,
+slot `'eigenaar'` in `lib/rollen.ts`) en database. Alleen de derde is
+beveiliging.
+
+> **LET OP — migratie 030 is nog niet toegepast.** Het bestand staat in
+> `supabase/migrations/030_storingen_alleen_eigenaar.sql` maar is nog
+> niet tegen de database gedraaid. Zolang dat niet is gebeurd is de
+> storingenpagina alleen in de frontend afgeschermd en kan elke
+> kantoorrol de tabel `fouten` gewoon bevragen. Draai hem, en controleer
+> daarna met de query onderaan het migratiebestand.
+
+**Het dashboard telde een derde van het werk.** De KPI's lazen
+`werkbonnen` met `datum = vandaag`: vijf van de eenendertig bonnen,
+terwijl er veertien lopen. `useDashboard` haalt nu een tweede, smalle
+query op over de hele voorraad en telt met `klusstand()`. De volgorde
+van het scherm is omgedraaid: cijfers, dan projectoverzicht en
+activiteit, dan pas de meldingen.
+
+**Eén woordenlijst.** `ProjectTabel` en `useProjecten` hadden elk een
+eigen statuslijstje; die zijn weg. `Klusgroep.status` is nu een
+`Klusstand` in plaats van een `ProjectStatus`, en `STANDVOLGORDE` in
+`lib/klusstand.ts` is de enige sorteervolgorde — dashboard, projecten en
+planning gebruiken hem. "Mijn week" van de zwamsaneerder bewust niet.
+
 **De statusknoppen op de werkbon zijn vereenvoudigd.** De drie knopjes
 (Open/Bezig/Voltooid) zijn één handeling geworden: afronden als alles is
 afgevinkt, heropenen als de bon al op afgerond staat, en anders de reden

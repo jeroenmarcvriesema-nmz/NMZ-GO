@@ -35,7 +35,23 @@ export function magGebruikersBeheren(rol: Rol | undefined | null): boolean {
 }
 
 /** Welk slot zit er op een pad. */
-export type Slot = 'kantoor' | 'gebruikersbeheer' | 'ingelogd'
+export type Slot = 'eigenaar' | 'kantoor' | 'gebruikersbeheer' | 'ingelogd'
+
+/**
+ * De eigenaar, en niemand anders.
+ *
+ * Het strakste slot dat er is: één rol. Gebruikt voor de storingen —
+ * de crashes van de app zelf. Dat is beheer van het gereedschap en
+ * niet van het werk, en het hoort niet op het bord van een uitvoerder
+ * die een klus probeert in te plannen.
+ *
+ * De tegenhanger in de database is `public.is_eigenaar()`. Zoals
+ * hierboven: dit bepaalt wat je te zien krijgt, de policy bepaalt wat
+ * je mag.
+ */
+export function isEigenaar(rol: Rol | undefined | null): boolean {
+  return rol === 'eigenaar'
+}
 
 /**
  * Het slot per route, precies zoals App.tsx het zet.
@@ -55,6 +71,8 @@ export const ROUTE_SLOT: Record<string, Slot> = {
   '/medewerkers':      'gebruikersbeheer',
   '/medewerkers/:id':  'gebruikersbeheer',
 
+  '/storingen':        'eigenaar',
+
   '/mijn-werkbonnen': 'ingelogd',
   '/mijn-week':       'ingelogd',
   '/mijn-bonnen':     'ingelogd',
@@ -65,6 +83,7 @@ export const ROUTE_SLOT: Record<string, Slot> = {
 export function magBijPad(rol: Rol | undefined | null, pad: string): boolean {
   const slot = ROUTE_SLOT[pad]
   if (!slot) return false
+  if (slot === 'eigenaar') return isEigenaar(rol)
   if (slot === 'gebruikersbeheer') return magGebruikersBeheren(rol)
   if (slot === 'kantoor') return magWerkBeheren(rol)
   return !!rol

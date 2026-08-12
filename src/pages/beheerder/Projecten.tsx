@@ -7,25 +7,32 @@ import { Spinner } from '@/components/ui/Spinner'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { useWerkbonnen } from '@/hooks/useWerkbonnen'
-import { statusLabel, statusKleur } from '@/hooks/useProjecten'
 import { groepeerKlussen, type Klusgroep } from '@/lib/klusgroepen'
+import { STANDEN, KLEURWAS, type Klusstand } from '@/lib/klusstand'
 import { zoektMee } from '@/lib/zoeken'
 import { cn, formatDatumKort } from '@/lib/utils'
-import type { ProjectStatus } from '@/types'
 import {
   IconPlus, IconSearch, IconMapPin, IconCalendar, IconUsers,
   IconListCheck, IconChevronRight, IconChevronDown, IconFolderOpen, IconBuilding,
 } from '@tabler/icons-react'
 
-// Alleen de vier statussen die bij ons daadwerkelijk voorkomen. "Op
-// schema" en "vertraging" stonden er ook, maar niets zet ze ooit — een
-// filter dat altijd nul oplevert is een filter die je leert overslaan.
-const STATUS_FILTERS: { label: string; value: ProjectStatus | 'alle' }[] = [
-  { label: 'Alle',         value: 'alle' },
-  { label: 'Loopt',        value: 'actief' },
-  { label: 'Ligt stil',    value: 'stilgelegd' },
-  { label: 'Niet gestart', value: 'niet_gestart' },
-  { label: 'Afgerond',     value: 'afgerond' },
+/**
+ * Precies dezelfde standen en woorden als op Alle werkbonnen.
+ *
+ * Hier stond een eigen lijstje met "Loopt" waar de rest van de app
+ * "Bezig" zegt, en zonder "Klaar om af te ronden". Een status mag op de
+ * projectenpagina niet anders heten dan op de werkbonnen.
+ *
+ * Afgerond vangt ook het opgeleverde werk: wie hier filtert zoekt wat
+ * klaar is, en of kantoor het al heeft opgeleverd is een andere vraag.
+ */
+const STANDFILTERS: { label: string; value: Klusstand | 'alle' }[] = [
+  { label: 'Alle',                     value: 'alle' },
+  { label: STANDEN.niet_gestart.kort,  value: 'niet_gestart' },
+  { label: STANDEN.bezig.label,        value: 'bezig' },
+  { label: STANDEN.af_te_ronden.kort,  value: 'af_te_ronden' },
+  { label: STANDEN.afgerond.label,     value: 'afgerond' },
+  { label: STANDEN.stilgelegd.label,   value: 'stilgelegd' },
 ]
 
 /**
@@ -46,7 +53,7 @@ const STATUS_FILTERS: { label: string; value: ProjectStatus | 'alle' }[] = [
 export default function Projecten() {
   const navigate = useNavigate()
   const { werkbonnen, loading, error, refetch } = useWerkbonnen()
-  const [statusFilter, setStatusFilter] = useState<ProjectStatus | 'alle'>('alle')
+  const [standFilter, setStandFilter] = useState<Klusstand | 'alle'>('alle')
   const [zoek, setZoek] = useState('')
   const [open, setOpen] = useState<string | null>(null)
 
@@ -56,12 +63,14 @@ export default function Projecten() {
   // dat halverwege een project zit, dan hoort dat project te verschijnen
   // en niet weg te vallen omdat de eerste bon een ander adres heeft.
   const gefilterd = groepen.filter((g) => {
-    const sOk = statusFilter === 'alle' || g.status === statusFilter
+    const sOk = standFilter === 'alle'
+      || g.status === standFilter
+      || (standFilter === 'afgerond' && g.status === 'opgeleverd')
     const zOk = zoek.trim() === '' || g.bonnen.some((b) => zoektMee(b, zoek))
     return sOk && zOk
   })
 
-  const filtersAan = statusFilter !== 'alle' || zoek.trim() !== ''
+  const filtersAan = standFilter !== 'alle' || zoek.trim() !== ''
 
   return (
     <PageWrapper
@@ -84,13 +93,13 @@ export default function Projecten() {
           />
         </div>
         <div className="flex gap-1 bg-surface-2 dark:bg-white/5 p-1 rounded-sm flex-wrap">
-          {STATUS_FILTERS.map((f) => (
+          {STANDFILTERS.map((f) => (
             <button
               key={f.value}
-              onClick={() => setStatusFilter(f.value)}
+              onClick={() => setStandFilter(f.value)}
               className={cn(
                 'px-3 py-1.5 rounded text-xs font-semibold transition-all whitespace-nowrap',
-                statusFilter === f.value
+                standFilter === f.value
                   ? 'bg-white dark:bg-surface-dark-2 text-gray-900 dark:text-white shadow-sm'
                   : 'text-gray-500 dark:text-white/50 hover:text-gray-700 dark:hover:text-white/80'
               )}
@@ -121,7 +130,7 @@ export default function Projecten() {
           }
           actie={
             filtersAan
-              ? <Button variant="ghost" size="sm" onClick={() => { setStatusFilter('alle'); setZoek('') }}>Filters wissen</Button>
+              ? <Button variant="ghost" size="sm" onClick={() => { setStandFilter('alle'); setZoek('') }}>Filters wissen</Button>
               : <Button variant="primary" size="sm" onClick={() => navigate('/werkbonnen')}>Naar werkbonnen</Button>
           }
         />
@@ -159,6 +168,7 @@ interface GroepkaartProps {
 function Groepkaart({ groep, open, onKlap, onOpenBon }: GroepkaartProps) {
   const isProject = groep.soort === 'project'
   const voortgang = groep.punten > 0 ? Math.round((groep.puntenKlaar / groep.punten) * 100) : 0
+  const k = STANDEN[groep.status]
 
   // Bij een losse klus is de kop het adres, en daar staat de plaats
   // meestal al in ("Stuyvesantstraat 72 te Den Haag"). Hem eronder
@@ -166,7 +176,15 @@ function Groepkaart({ groep, open, onKlap, onOpenBon }: GroepkaartProps) {
   const plaatsen = groep.plaatsen.filter((p) => !groep.naam.includes(p))
 
   return (
-    <div className="bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-xl shadow-sm overflow-hidden transition-shadow hover:shadow-md">
+    <div className={cn(
+      // Dezelfde kleurwas als de werkbonkaarten en de planning, met
+      // dezelfde schakelaar: KLEURWAS uit betekent overal tegelijk een
+      // witte kaart met alleen een gekleurde rand.
+      'border border-l-4 rounded-xl shadow-sm overflow-hidden transition-shadow hover:shadow-md',
+      KLEURWAS ? k.vlak : 'bg-white dark:bg-surface-dark-2',
+      KLEURWAS ? k.omlijsting : 'border-gray-100 dark:border-white/10',
+      k.rand,
+    )}>
       <button
         onClick={() => (isProject ? onKlap() : onOpenBon(groep.bonnen[0].id))}
         className="w-full text-left p-5 group"
@@ -190,8 +208,11 @@ function Groepkaart({ groep, open, onKlap, onOpenBon }: GroepkaartProps) {
               {groep.opdrachtgever || (isProject ? `${groep.bonnen.length} klussen` : 'Losse klus')}
             </p>
           </div>
-          <span className={cn('inline-flex items-center text-[11px] font-bold px-2.5 py-1 rounded-lg border flex-shrink-0', statusKleur(groep.status))}>
-            {statusLabel(groep.status)}
+          <span className={cn(
+            'inline-flex items-center text-[11px] font-bold px-2.5 py-1 rounded-lg border flex-shrink-0',
+            k.vlak, k.omlijsting, k.tekst,
+          )}>
+            {k.kort}
           </span>
         </div>
 
@@ -220,7 +241,12 @@ function Groepkaart({ groep, open, onKlap, onOpenBon }: GroepkaartProps) {
             </div>
             <ProgressBar
               value={voortgang}
-              variant={groep.status === 'afgerond' ? 'green' : groep.status === 'stilgelegd' ? 'red' : 'yellow'}
+              // De balk volgt de stand van de kaart. Zonder de
+              // violette variant sloeg hij op honderd procent om naar
+              // groen, terwijl de kaart "klaar om af te ronden" zegt.
+              variant={groep.status === 'afgerond' || groep.status === 'opgeleverd' ? 'green'
+                : groep.status === 'stilgelegd' ? 'red'
+                : groep.status === 'af_te_ronden' ? 'violet' : 'yellow'}
             />
           </div>
         )}

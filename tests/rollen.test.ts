@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import {
   ALLE_ROLLEN, WERKBEHEER, GEBRUIKERSBEHEER,
-  magWerkBeheren, magGebruikersBeheren, magBijPad, startPad, ROUTE_SLOT,
+  magWerkBeheren, magGebruikersBeheren, isEigenaar, magBijPad, startPad, ROUTE_SLOT,
 } from '@/lib/rollen'
 import type { Rol } from '@/types'
 
@@ -64,6 +64,28 @@ describe('bevoegdheden', () => {
     expect(GEBRUIKERSBEHEER.length).toBeLessThan(WERKBEHEER.length)
   })
 
+  it('laat de storingen alleen aan de eigenaar zien', () => {
+    // De crashes van de app zelf. Stonden op het dashboard en waren
+    // daarmee zichtbaar voor alle vijf de kantoorrollen; er staat in
+    // wat er misging op het toestel van een collega.
+    expect(isEigenaar('eigenaar')).toBe(true)
+    expect(magBijPad('eigenaar', '/storingen')).toBe(true)
+
+    for (const rol of ALLE_ROLLEN.filter((r) => r !== 'eigenaar')) {
+      expect(isEigenaar(rol), `${rol} is geen eigenaar`).toBe(false)
+      expect(magBijPad(rol, '/storingen'), `${rol} mag niet bij de storingen`).toBe(false)
+    }
+    expect(isEigenaar(null)).toBe(false)
+  })
+
+  it('houdt het eigenaarslot strenger dan gebruikersbeheer', () => {
+    // Wie de storingen mag zien mag ook alles daaronder. Andersom niet:
+    // een beheerder beheert gebruikers maar leest geen stacktraces.
+    expect(magGebruikersBeheren('eigenaar')).toBe(true)
+    expect(magBijPad('beheerder', '/medewerkers')).toBe(true)
+    expect(magBijPad('beheerder', '/storingen')).toBe(false)
+  })
+
   it('brengt iedereen op een startpagina die hij mag zien', () => {
     for (const rol of ALLE_ROLLEN) {
       expect(magBijPad(rol, startPad(rol))).toBe(true)
@@ -79,6 +101,26 @@ describe('de zijbalk stuurt niemand weg', () => {
     expect(paden.length).toBeGreaterThan(0)
     for (const pad of paden) {
       expect(ROUTE_SLOT, `zijbalk verwijst naar onbekend pad ${pad}`).toHaveProperty(pad)
+    }
+  })
+
+  it('zet de storingen achter isEigenaar', () => {
+    // Het slot dat telt zit in de database (migratie 030), maar een
+    // menuknop die de helft van kantoor naar een leeg scherm stuurt is
+    // precies de fout waarvoor dit testbestand bestaat.
+    const eigenaarPaden = Object.entries(ROUTE_SLOT)
+      .filter(([, slot]) => slot === 'eigenaar')
+      .map(([pad]) => pad)
+
+    expect(eigenaarPaden.length).toBeGreaterThan(0)
+    for (const pad of eigenaarPaden) {
+      if (!paden.includes(pad)) continue
+      const regel = bron.split('\n').find((r) => r.includes(`to="${pad}"`)) ?? ''
+      const blok = bron.slice(0, bron.indexOf(regel))
+      expect(
+        blok.includes('isEigenaar'),
+        `${pad} staat in de zijbalk zonder isEigenaar ervoor`,
+      ).toBe(true)
     }
   })
 
@@ -104,6 +146,17 @@ describe('de zijbalk stuurt niemand weg', () => {
 describe('de mobiele balk stuurt niemand weg', () => {
   const bron = lees('src/components/layout/MobileNav.tsx')
   const paden = padenUit(bron)
+
+  it('zet de storingen achter isEigenaar', () => {
+    // De mobiele balk navigeert met ga('/pad') en niet met to="/pad",
+    // dus die vangt `padenUit` niet. Wel apart nakijken: hier zat de
+    // oorspronkelijke fout.
+    const regel = bron.split('\n').find((r) => r.includes("ga('/storingen')")) ?? ''
+    if (regel) {
+      const blok = bron.slice(0, bron.indexOf(regel))
+      expect(blok.includes('isEigenaar'), '/storingen staat in de mobiele balk zonder isEigenaar').toBe(true)
+    }
+  })
 
   it('verwijst alleen naar routes die bestaan', () => {
     expect(paden.length).toBeGreaterThan(0)

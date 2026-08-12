@@ -1,12 +1,24 @@
 import { cn } from '@/lib/utils'
 import type { ReactNode } from 'react'
+import { IconChevronRight } from '@tabler/icons-react'
 
 interface KpiCardProps {
   label: string
   value: number | string
   icon: ReactNode
-  variant?: 'neutral' | 'green' | 'yellow' | 'red' | 'blue'
+  variant?: 'neutral' | 'green' | 'yellow' | 'red' | 'blue' | 'violet'
   sub?: string
+  /**
+   * Maakt de tegel aantikbaar. Weglaten laat hem een tegel.
+   *
+   * Let op wat dit óók doet: zonder `onClick` verdwijnt het optillen bij
+   * hover. Dat zat op élke tegel, ook op de tien die nergens heen gaan —
+   * een kaart die meebeweegt onder je muis belooft dat er iets gebeurt
+   * als je klikt. Nu doet alleen de tegel die dat waarmaakt het nog.
+   */
+  onClick?: () => void
+  /** Wat er gebeurt bij aantikken, bv. "naar uitloop". */
+  actie?: string
 }
 
 const variants = {
@@ -45,14 +57,44 @@ const variants = {
     value: 'text-blue-700 dark:text-blue-400',
     bar: 'bg-blue-500',
   },
+  // Hoort bij de stand "klaar om af te ronden" (zie lib/klusstand.ts).
+  // Een tegel mag niet in een andere kleur staan dan de badge waar hij
+  // naar verwijst.
+  violet: {
+    bg: 'bg-white dark:bg-surface-dark-2',
+    iconBg: 'bg-violet-50 dark:bg-violet-500/10',
+    iconColor: 'text-violet-600 dark:text-violet-400',
+    value: 'text-violet-700 dark:text-violet-400',
+    bar: 'bg-violet-500',
+  },
 }
 
-export function KpiCard({ label, value, icon, variant = 'neutral', sub }: KpiCardProps) {
+export function KpiCard({ label, value, icon, variant = 'neutral', sub, onClick, actie }: KpiCardProps) {
   const v = variants[variant]
+  const Vak = onClick ? 'button' : 'div'
+
   return (
-    <div className={cn('min-w-0 rounded-xl border border-gray-100 dark:border-white/10 shadow-sm p-4 sm:p-6 flex flex-col gap-3 relative overflow-hidden transition-all duration-200 ease-brand hover:-translate-y-0.5 hover:shadow-md', v.bg)}>
-      <div className={cn('w-10 h-10 flex-shrink-0 rounded-lg flex items-center justify-center', v.iconBg)}>
-        <span className={cn('text-[19px]', v.iconColor)}>{icon}</span>
+    <Vak
+      onClick={onClick}
+      type={onClick ? 'button' : undefined}
+      className={cn(
+        'min-w-0 rounded-xl border border-gray-100 dark:border-white/10 shadow-sm p-4 sm:p-6',
+        'flex flex-col gap-3 relative overflow-hidden transition-all duration-200 ease-brand',
+        v.bg,
+        onClick && [
+          'text-left cursor-pointer hover:-translate-y-0.5 hover:shadow-md hover:border-brand-yellow',
+          'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow/50',
+          'active:translate-y-0',
+        ],
+      )}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className={cn('w-10 h-10 flex-shrink-0 rounded-lg flex items-center justify-center', v.iconBg)}>
+          <span className={cn('text-[19px]', v.iconColor)}>{icon}</span>
+        </div>
+        {onClick && (
+          <IconChevronRight className="w-4 h-4 flex-shrink-0 mt-1 text-gray-300 dark:text-white/25" />
+        )}
       </div>
       <div className="min-w-0">
         {/* Kleiner op een telefoon, en altijd breekbaar: "12/405" of
@@ -62,8 +104,13 @@ export function KpiCard({ label, value, icon, variant = 'neutral', sub }: KpiCar
         </div>
         <div className="text-xs sm:text-sm font-medium text-gray-400 dark:text-white/40 mt-2 break-words">{label}</div>
         {sub && <div className="text-xs text-gray-300 dark:text-white/30 mt-0.5 break-words">{sub}</div>}
+        {actie && (
+          <div className="text-xs font-semibold text-brand-yellow-dark dark:text-brand-yellow mt-1.5 break-words">
+            {actie} →
+          </div>
+        )}
       </div>
       <div className={cn('absolute bottom-0 left-0 right-0 h-0.5', v.bar)} />
-    </div>
+    </Vak>
   )
 }

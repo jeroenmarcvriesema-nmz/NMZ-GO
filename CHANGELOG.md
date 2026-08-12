@@ -1,5 +1,27 @@
 # NMZ GO — Changelog
 
+## Dashboard, projecten, planning en de storingen
+
+### Storingen zijn van de eigenaar
+- **[FIX]** De crashes van de app stonden als kaart bovenaan het dashboard, boven het werk. Dat is de verkeerde volgorde: het dashboard gaat over klussen, en een uitvoerder die zijn week inplant heeft niets aan een stacktrace. Ze staan nu op een eigen pagina, `/storingen`, met een eigen lege staat en een foutstaat, en kijken veertien dagen terug in plaats van zeven.
+- **[FIX]** En ze waren te breed zichtbaar. `fouten_select_kantoor` stond open voor alle vijf de kantoorrollen, terwijl er in staat wat er misging op het toestel van een collega — pad, browser en naam. **Migratie 030** vervangt die policy door `fouten_select_eigenaar` op de bestaande `public.is_eigenaar()`. Het slot zit nu op drie plekken: het menu toont de ingang niet, de route stuurt je weg, en de database geeft niets terug. Alleen die derde is beveiliging.
+
+### Het dashboard zag een derde van het werk
+- **[FIX]** De KPI's lazen `werkbonnen` met de datum van vandaag: vijf van de eenendertig bonnen, terwijl er veertien klussen daadwerkelijk lopen. Een klus die vorige week begon en volgende week doorloopt heeft `datum` in het verleden en viel er volledig buiten — en dat is nou juist de klus waar je iets van wilt weten. De tegels tellen nu de hele werkvoorraad.
+- **[FEATURE]** Vijf tegels in de standen van de app: Ligt stil · Klaar om af te ronden · Bezig · Niet gestart · Uitgelopen. "Uitgelopen" is de opleverdatum die voorbij is terwijl de klus niet af is, en is aanklikbaar naar `/uitloop`.
+- **[FIX]** De volgorde van het dashboard: eerst de cijfers, dan het projectoverzicht en de activiteit van vandaag, en pas onderaan de operationele meldingen. Die stonden bovenaan, wat las als een storingspagina met een dashboard eronder.
+- **[FIX]** Élke KPI-tegel kwam omhoog bij hover, ook de tien die nergens heen gaan. Dat belooft dat er iets gebeurt als je klikt. Nu doet alleen de tegel die dat waarmaakt het nog.
+
+### Eén woordenlijst, en sorteren op wat er van je gevraagd wordt
+- **[FIX]** Het projectoverzicht op het dashboard had een eigen statuslijstje — "Gestart" waar de rest van de app "Bezig" zegt, en rood voor "achter" terwijl rood elders "ligt stil" betekent. De projectenpagina had er ook een, met "Loopt" en "Actief". Alles komt nu uit `lib/klusstand.ts`. "Achter op schema" is behouden maar staat náást de stand: het gaat over tempo, en een klus kan tegelijk bezig én achter zijn.
+- **[FEATURE]** Eén sorteervolgorde (`STANDVOLGORDE`) op dashboard, projecten en planning: ligt stil → klaar om af te ronden → bezig → niet gestart → afgerond → opgeleverd, en binnen dezelfde stand de oudste eerst. De projectenpagina stond op "nieuwste datum eerst", waardoor een klus van volgende maand bóven een klus stond die vandaag stillag.
+- **[FEATURE]** Het statusfilter op Projecten heeft dezelfde zes knoppen als Alle werkbonnen.
+- De planning van de zwamsaneerder ("Mijn week") is bewust niet aangeraakt: die kijkt naar één dag met één of twee klussen en heeft aan sorteren niets.
+
+### Planning
+- **[FIX]** "Naar deze week" was grijze tekst tussen twee grijze pijlen — het las als een bijschrift, niet als een knop, terwijl het de meest gebruikte handeling op dat scherm is. Nu de bestaande `secondary`-knop met een terugpijl en het doelweeknummer erin: "Naar deze week (wk 33)".
+- **[FEATURE]** Elke dagkop heeft een telling met een bolletje in de zwaarste stand van die dag. Je ziet bij het openslaan van de week in welke kolommen iets te doen is zonder één kaart te lezen.
+
 ## Het scherm van de man in het veld
 
 - **[FIX]** In de hele werkdagflow was elke foto onzichtbaar. Op Vandaag stond bij een afvinkpunt een leeg cameravakje, terwijl datzelfde punt via "Werkbon openen" gewoon twee foto's liet zien. De oorzaak zat één regel diep: `useWerkbonnen()` haalde `taken(*)` op en `useWerkbon(id)` haalde `taken(*, fotos(*))` op. `TaakItem` doet `taak.fotos ?? []` en tekende zonder die relatie een leeg uploadvak — in alle drie de fasen van de werkdag: vóór het starten, tijdens het werk en na het stoppen.

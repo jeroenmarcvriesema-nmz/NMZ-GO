@@ -21,6 +21,7 @@ import {
   IconMoon,
   IconLogout,
   IconX,
+  IconBug,
 } from '@tabler/icons-react'
 
 function MobileNavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) {
@@ -77,7 +78,7 @@ function MeerRegel({ icon, label, onClick, gevaarlijk }: {
  * De uitlogknop zweefde eerst los boven de balk. Die hoort hier.
  */
 export function MobileNav() {
-  const { profile, magWerkBeheren, magGebruikersBeheren, signOut } = useAuth()
+  const { profile, magWerkBeheren, magGebruikersBeheren, isEigenaar, signOut } = useAuth()
   const { theme, toggleTheme } = useThemeStore()
   const navigate = useNavigate()
   const locatie = useLocation()
@@ -148,6 +149,11 @@ export function MobileNav() {
                   <MeerRegel icon={<IconArchive />} label="Archief" onClick={() => ga('/archief')} />
                   <MeerRegel icon={<IconFileExport />} label="Rapporten" onClick={() => ga('/rapporten')} />
                   <MeerRegel icon={<IconFolderOpen />} label="Projecten" onClick={() => ga('/projecten')} />
+                  {/* Alleen de eigenaar; het echte slot zit in de
+                      database (migratie 030). */}
+                  {isEigenaar && (
+                    <MeerRegel icon={<IconBug />} label="Storingen" onClick={() => ga('/storingen')} />
+                  )}
                 </>
               )}
 

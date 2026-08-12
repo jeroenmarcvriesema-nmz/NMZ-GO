@@ -17,6 +17,7 @@ import {
   IconClipboardCheck,
   IconArchive,
   IconClockExclamation,
+  IconBug,
   IconLogout,
   IconSun,
   IconMoon,
@@ -50,7 +51,7 @@ function NavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label
 }
 
 export function Sidebar() {
-  const { profile, signOut, magWerkBeheren, magGebruikersBeheren } = useAuth()
+  const { profile, signOut, magWerkBeheren, magGebruikersBeheren, isEigenaar } = useAuth()
   const { theme, toggleTheme } = useThemeStore()
   const navigate = useNavigate()
   const handleSignOut = async () => { await signOut(); navigate('/login') }
@@ -90,6 +91,14 @@ export function Sidebar() {
             <NavItem to="/rapporten"   icon={<IconFileExport />} label="Rapporten" />
             {magGebruikersBeheren && (
               <NavItem to="/medewerkers" icon={<IconUsers />} label="Medewerkers" />
+            )}
+            {/* De crashes van de app zelf. Beheer van het gereedschap,
+                niet van het werk — en daarom alleen voor de eigenaar.
+                Het slot dat telt zit in de database (migratie 030);
+                dit voorkomt alleen dat iemand tegen een dichte deur
+                loopt. */}
+            {isEigenaar && (
+              <NavItem to="/storingen" icon={<IconBug />} label="Storingen" />
             )}
           </>
         ) : (

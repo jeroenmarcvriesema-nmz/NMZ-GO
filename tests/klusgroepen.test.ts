@@ -101,12 +101,24 @@ describe('groepeerKlussen', () => {
     expect(groep.tot).toBe('2026-08-20')
   })
 
-  it('zet de nieuwste bovenaan', () => {
+  it('sorteert op voortgang, niet op datum', () => {
+    // Stond op begindatum, nieuwste eerst. Daardoor kwam een klus die
+    // volgende maand begint bóven een klus die vandaag stilligt.
     const groepen = groepeerKlussen([
-      bon({ id: 'oud', datum: '2026-01-05' }),
-      bon({ id: 'nieuw', datum: '2026-08-10' }),
+      bon({ id: 'later',  datum: '2026-09-01' }),
+      bon({ id: 'stil',   datum: '2026-01-05', stilgelegd_op: '2026-01-06' }),
+      bon({ id: 'loopt',  datum: '2026-02-01', taken: [{ voltooid: true }, { voltooid: false }] as any }),
     ])
-    expect(groepen[0].bonnen[0].id).toBe('nieuw')
+    expect(groepen.map((g) => g.bonnen[0].id)).toEqual(['stil', 'loopt', 'later'])
+  })
+
+  it('zet binnen dezelfde stand de oudste bovenaan', () => {
+    // Wat het langst wacht heeft de meeste haast.
+    const groepen = groepeerKlussen([
+      bon({ id: 'nieuw', datum: '2026-08-10' }),
+      bon({ id: 'oud',   datum: '2026-01-05' }),
+    ])
+    expect(groepen.map((g) => g.bonnen[0].id)).toEqual(['oud', 'nieuw'])
   })
 })
 
@@ -169,11 +181,28 @@ describe('groepsstatus', () => {
     ])).toBe('afgerond')
   })
 
-  it('is actief zodra er één bon af is en de rest nog niet', () => {
+  it('is bezig zodra er één bon af is en de rest nog niet', () => {
+    // Een project half af "niet gestart" noemen klopt niet: er is aan
+    // gewerkt. En "afgerond" ook niet, want er ligt nog werk.
     expect(groepsstatus([
       bon({ status: 'voltooid' }),
       bon({ status: 'open' }),
-    ])).toBe('actief')
+    ])).toBe('bezig')
+  })
+
+  it('gebruikt dezelfde standen als één losse klus', () => {
+    // Hier stond een eigen lijstje met "actief" waar de rest van de app
+    // "bezig" zegt. Eén woordenlijst, anders heet een status op de
+    // projectenpagina anders dan op de werkbon ernaast.
+    expect(groepsstatus([bon({ status: 'open', taken: [{ voltooid: true }, { voltooid: false }] as any })])).toBe('bezig')
+    expect(groepsstatus([bon({ opgeleverd_op: '2026-08-01' })])).toBe('opgeleverd')
+  })
+
+  it('zet een groep waar alles is afgevinkt op "klaar om af te ronden"', () => {
+    expect(groepsstatus([
+      bon({ status: 'open', taken: [{ voltooid: true }, { voltooid: true }] as any }),
+      bon({ status: 'voltooid' }),
+    ])).toBe('af_te_ronden')
   })
 
   it('is niet gestart als er nog niets gebeurd is', () => {
