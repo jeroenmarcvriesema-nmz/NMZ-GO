@@ -2,12 +2,12 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PageWrapper } from '@/components/layout/PageWrapper'
 import { Card } from '@/components/ui/Card'
-import { Badge } from '@/components/ui/Badge'
 import { Spinner } from '@/components/ui/Spinner'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { useWerkbonnen } from '@/hooks/useWerkbonnen'
 import { berekenVoortgang, formatDatum, cn } from '@/lib/utils'
+import { standkleur, KLEURWAS } from '@/lib/klusstand'
 import { isoDatum, maandagVerschoven, weekDagen, looptOp, inWeek } from '@/lib/planning'
 import { Weekkiezer } from '@/components/layout/Weekkiezer'
 import type { Werkbon } from '@/types'
@@ -87,12 +87,16 @@ export default function MijnWeek() {
 
             return (
               <div key={d} className="min-w-0">
+                {/* flex-wrap en min-w-0: in zes kolommen naast elkaar
+                    past "Woensdag 12/8 vandaag" niet op één regel, en
+                    zonder dit schoof het woord "vandaag" over de kop van
+                    donderdag heen. */}
                 <div className={cn(
-                  'flex items-baseline gap-2 px-1 pb-2 mb-2 border-b-2',
+                  'flex flex-wrap items-baseline gap-x-2 px-1 pb-2 mb-2 border-b-2',
                   isVandaag ? 'border-brand-yellow' : 'border-gray-100 dark:border-white/10'
                 )}>
                   <span className={cn(
-                    'text-sm font-bold capitalize',
+                    'text-sm font-bold capitalize min-w-0 truncate',
                     isVandaag ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-white/50'
                   )}>
                     {DAGEN[dag.getDay()]}
@@ -101,7 +105,7 @@ export default function MijnWeek() {
                     {dag.getDate()}/{dag.getMonth() + 1}
                   </span>
                   {isVandaag && (
-                    <span className="ml-auto text-[10px] font-bold uppercase tracking-widest text-brand-yellow-dark dark:text-brand-yellow">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-brand-yellow-dark dark:text-brand-yellow">
                       vandaag
                     </span>
                   )}
@@ -164,16 +168,17 @@ function DagKaart({ werkbon, onOpen }: { werkbon: Werkbon; onOpen: () => void })
   const taken = werkbon.taken ?? []
   const voortgang = berekenVoortgang(taken)
   const stil = Boolean(werkbon.stilgelegd_op)
+  const k = standkleur(werkbon)
 
   return (
     <button
       onClick={onOpen}
       className={cn(
-        'w-full text-left rounded-lg border bg-white dark:bg-surface-dark-2 p-3 shadow-sm',
+        'w-full text-left rounded-lg border border-l-4 p-3 shadow-sm',
         'hover:border-brand-yellow transition-colors duration-150 ease-brand',
-        stil
-          ? 'border-orange-300 dark:border-orange-500/40'
-          : 'border-gray-100 dark:border-white/10'
+        KLEURWAS ? k.vlak : 'bg-white dark:bg-surface-dark-2',
+        KLEURWAS ? k.omlijsting : 'border-gray-100 dark:border-white/10',
+        k.rand
       )}
     >
       <div className="flex items-start gap-1.5">
@@ -186,14 +191,21 @@ function DagKaart({ werkbon, onOpen }: { werkbon: Werkbon; onOpen: () => void })
       {stil && (
         <div className="flex items-start gap-1.5 mt-2 text-xs text-orange-700 dark:text-orange-300">
           <IconAlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-          <span className="leading-snug">Ligt stil — {werkbon.stilleg_reden}</span>
+          {/* Zonder "Ligt stil" ervoor: dat staat al als stand
+              onder deze regel, en twee keer hetzelfde in een kolom van
+              honderdvijftig pixels is zonde van de ruimte. */}
+          <span className="leading-snug">{werkbon.stilleg_reden}</span>
         </div>
       )}
 
       <div className="flex flex-wrap items-center gap-2 mt-2.5">
-        <Badge variant={voortgang === 100 ? 'green' : voortgang > 0 ? 'yellow' : 'gray'}>
+        <span className={cn('flex items-center gap-1.5 text-xs font-semibold min-w-0', k.tekst)}>
+          <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', k.bol)} />
+          <span className="truncate">{k.kort}</span>
+        </span>
+        <span className="text-xs font-bold tabular-nums text-gray-500 dark:text-white/50">
           {voortgang}%
-        </Badge>
+        </span>
         <span className="flex items-center gap-1 text-xs text-gray-400 dark:text-white/40">
           <IconListCheck className="w-3.5 h-3.5" />{taken.length}
         </span>

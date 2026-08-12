@@ -14,6 +14,16 @@
 - **[FIX]** De schil van Vandaag was een component-in-een-component. Die krijgt bij elke hertekening een nieuwe identiteit, waarna React de hele inhoud opnieuw ophangt: elk afvinkpunt vroeg zijn ondertekende fotolinks dan opnieuw op en de miniaturen knipperden terug naar een grijs vakje.
 - **[FIX]** Het bijschrift bij "Uit te voeren punten" stond ernáást en duwde de kop op een telefoon van 390 pixels over drie regels uiteen. Staat nu eronder.
 
+### Eén kleurtaal, op alle schermen
+
+- **[FIX]** De grootste vondst zit onder de kleur: **niets zet ooit `werkbonnen.status` op `'bezig'`.** De ClickUp-synchronisatie raakt die kolom niet aan en de handmatige knop op de werkbon gebruikt niemand. Alle dertig bonnen stonden op `'open'` — óók Gaaspstraat 46 met zeven afgevinkte punten en elf foto's. Elk scherm noemde dat "nog niet gestart", en blauw kwam nergens voor. De stand komt nu uit de feiten: een afgevinkt punt is bewijs dat iemand daar geweest is.
+- **[FEATURE]** `src/lib/klusstand.ts` is de enige bron voor "hoe staat deze klus ervoor" en "welke kleur is dat". Zeven schermen beantwoordden dat zelf: een klus die liep was blauw op de planning, amber op de werkbon en geel op Mijn bonnen, en de rand van een werkbonkaart was geel voor open, bezig én afgerond — en zei daarmee niets.
+- De taal: **grijs** nog niet gestart · **blauw** bezig · **groen** afgerond en opgeleverd · **rood** ligt stil. Geel doet niet mee aan status: dat blijft het merk — knoppen, vandaag, voortgangsbalken, de kickerbalk. Elke stand heeft ook een woord, want kleur alleen is nooit genoeg in fel zonlicht.
+- Doorgevoerd op: weekplanning, Alle werkbonnen, Mijn bonnen, Mijn week, Afgerond, Archief, Rapporten, de werkbon van kantoor en die van de ploeg. De lijstkaarten krijgen ook een zachte tint in de kleur van hun stand; één schakelaar (`KLEURWAS` in `klusstand.ts`) zet dat terug naar alleen rand en badge.
+- **[FIX]** `groepsstatus()` in `klusgroepen.ts` leunde op diezelfde dode kolom: een projectgroep waar werk in zat heette "niet gestart".
+- **[FIX]** Op Mijn week liep het woord "vandaag" over de kop van donderdag heen, en stond "Ligt stil" twee keer in hetzelfde kaartje.
+- **[FEATURE]** 11 tests erbij (`klusstand`), **134 in totaal**.
+
 ### Kleur op de weekplanning
 - **[FEATURE]** Een klus in de planning kreeg zijn status alleen mee als randje van drie pixels en een bolletje. Het hele kaartje draagt nu die kleur: blauw voor bezig, groen voor afgerond, rood voor stilgelegd. Van een meter afstand zie je welke kolom loopt en welke stilligt zonder één woord te lezen.
 - Wat nog niet begonnen is blijft bewust neutraal. Anders krijgt een week vol werk dat nog moet starten de meeste kleur van allemaal, en dat is precies verkeerd om.

@@ -1,5 +1,4 @@
 import { cn } from '@/lib/utils'
-import type { WerkbonStatus } from '@/types'
 
 interface BadgeProps {
   variant?: 'yellow' | 'red' | 'green' | 'gray' | 'blue' | 'orange'
@@ -21,14 +20,4 @@ export function Badge({ variant = 'gray', className, children }: BadgeProps) {
       {children}
     </span>
   )
-}
-
-export function StatusBadge({ status }: { status: WerkbonStatus }) {
-  const config: Record<WerkbonStatus, { label: string; variant: BadgeProps['variant'] }> = {
-    open:     { label: 'Open',     variant: 'gray' },
-    bezig:    { label: 'Bezig',    variant: 'orange' },
-    voltooid: { label: 'Voltooid', variant: 'green' },
-  }
-  const { label, variant } = config[status]
-  return <Badge variant={variant}>{label}</Badge>
 }

@@ -4,7 +4,7 @@ import { PageWrapper } from '@/components/layout/PageWrapper'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { StatusBadge } from '@/components/ui/Badge'
+import { Badge } from '@/components/ui/Badge'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { TaakItem } from '@/components/taak/TaakItem'
 import { Klusacties } from '@/components/werkbon/Klusacties'
@@ -15,6 +15,7 @@ import { Modal } from '@/components/ui/Modal'
 import { useWerkbon } from '@/hooks/useWerkbonnen'
 import { useTaken } from '@/hooks/useTaken'
 import { berekenVoortgang, formatDatum } from '@/lib/utils'
+import { standkleur } from '@/lib/klusstand'
 import { supabase } from '@/lib/supabase'
 import { IconArrowLeft, IconPlus, IconCalendar, IconMapPin, IconUsers, IconFileText, IconAlertCircle } from '@tabler/icons-react'
 
@@ -32,6 +33,8 @@ export default function WerkbonDetail() {
   if (!werkbon) return <PageWrapper title="Werkbon"><div className="text-center py-16 text-gray-400 dark:text-white/40">Werkbon niet gevonden.</div></PageWrapper>
 
   const voortgang = berekenVoortgang(werkbon.taken || [])
+  // Dezelfde stand en kleur als op de lijstschermen en de planning.
+  const k = standkleur(werkbon)
 
   const handlePuntOpslaan = async () => {
     if (!nieuwPunt.titel.trim()) return
@@ -79,7 +82,7 @@ export default function WerkbonDetail() {
               </div>
             </div>
             <div className="text-right">
-              <StatusBadge status={werkbon.status} />
+              <Badge variant={k.badge}>{k.label}</Badge>
               <div className="text-2xl font-extrabold mt-2 text-gray-900 dark:text-white">{voortgang}%</div>
             </div>
           </div>

@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useWerkbonnen } from '@/hooks/useWerkbonnen'
 import { berekenVoortgang, formatDatum, cn } from '@/lib/utils'
+import { standkleur, KLEURWAS } from '@/lib/klusstand'
 import { groepeerPerWeek } from '@/lib/planning'
 import { zoektMee } from '@/lib/zoeken'
 import { Weekkop } from '@/components/layout/Weekkop'
@@ -123,15 +124,20 @@ function BonRegel({ werkbon, onOpen, looptDoor }: { werkbon: Werkbon; onOpen: ()
   const voortgang = berekenVoortgang(taken)
   const fotos = taken.flatMap((t) => t.fotos ?? []).length
   const stil = Boolean(werkbon.stilgelegd_op)
-  const afgerond = werkbon.status === 'voltooid' || Boolean(werkbon.opgeleverd_op)
+  // Dezelfde stand en dezelfde kleuren als op de planning en de
+  // werkbonkaart. Stond hier op geel voor alles wat niet af of stil
+  // was — dus ook voor een bon waar nog geen vinger naar was omgekeken.
+  const k = standkleur(werkbon)
 
   return (
     <button
       onClick={onOpen}
       className={cn(
-        'w-full text-left rounded-lg border bg-white dark:bg-surface-dark-2 p-4 sm:p-5 shadow-sm',
+        'w-full text-left rounded-lg border border-l-4 p-4 sm:p-5 shadow-sm',
         'hover:border-brand-yellow transition-colors duration-150 ease-brand',
-        stil ? 'border-orange-300 dark:border-orange-500/40' : 'border-gray-100 dark:border-white/10'
+        KLEURWAS ? k.vlak : 'bg-white dark:bg-surface-dark-2',
+        KLEURWAS ? k.omlijsting : 'border-gray-100 dark:border-white/10',
+        k.rand
       )}
     >
       <div className="flex items-start gap-3">
@@ -157,9 +163,7 @@ function BonRegel({ werkbon, onOpen, looptDoor }: { werkbon: Werkbon; onOpen: ()
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
-          <Badge variant={afgerond ? 'green' : stil ? 'red' : 'yellow'}>
-            {afgerond ? 'Afgerond' : stil ? 'Ligt stil' : 'Loopt'}
-          </Badge>
+          <Badge variant={k.badge}>{k.label}</Badge>
           <IconChevronRight className="w-4 h-4 text-gray-300 dark:text-white/25" />
         </div>
       </div>
