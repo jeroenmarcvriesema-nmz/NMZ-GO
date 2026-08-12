@@ -170,11 +170,18 @@ tabel `projecten` — nul rijen, en nul van de dertig werkbonnen heeft een
 `usePlanning()` en `statusLabel`/`statusKleur`, want de planning en de
 projectenlijst gebruiken die. De tabel zelf is niet aangeraakt.
 
-Eén draadje blijft liggen: `usePlanning()` joint nog `project:projecten`
-en vult daarmee `PlanningItem.projectId` en `projectnaam`. Die join
-levert altijd niets op en `projectId` wordt sinds deze opruiming door
-niemand meer gelezen. Niet aangeraakt omdat het `PlanningItem`-contract
-raakt dat Planning en PlanningKaart lezen, en omdat het niet stuk is.
+Daarmee is `projecten` ook uit `usePlanning()` verdwenen: de join
+`project:projecten` gaf bij elke rij een leeg project terug, en
+`PlanningItem.projectId` en `projectnaam` zijn met de join mee weg. In
+`src/` staat nu geen enkele verwijzing meer naar die tabel.
+
+**Kleur op de weekplanning.** Een klus droeg zijn status alleen als
+randje van drie pixels; nu draagt het hele kaartje de kleur — blauw
+bezig, groen afgerond, rood stilgelegd, en neutraal wat nog niet
+begonnen is. De dagkop heeft een eigen tint gekregen (stond in hetzelfde
+wit als de inhoud eronder) en vandaag licht op als hele kolom in plaats
+van alleen bovenaan. Alles binnen de regel uit `PRODUCT_VISION.md`: de
+basis blijft neutraal, en elke kleur zegt iets.
 
 Nog niet gedaan, bewust: er zijn geen tests bijgekomen. Dit is
 renderwerk, en er is geen jsdom of testing-library in het project —

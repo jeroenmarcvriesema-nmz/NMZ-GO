@@ -153,9 +153,6 @@ export interface PlanningItem {
   /** Startdatum; met `eind` erbij beslaat een klus vaak meerdere dagen. */
   datum: string
   eind: string
-  projectId: string | null
-  /** Leeg zolang klussen losse bonnen zijn en niet aan een project hangen. */
-  projectnaam: string
   adres: string
   /** Los van `adres`, zodat zoeken op de plaats ook in de planning werkt. */
   plaats: string | null

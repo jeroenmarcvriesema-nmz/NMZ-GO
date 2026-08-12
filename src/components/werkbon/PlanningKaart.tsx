@@ -22,24 +22,35 @@ const KLEUREN = {
     bol: 'bg-gray-300 dark:bg-white/30',
     label: 'Nog niet gestart',
     tekst: 'text-gray-500 dark:text-white/50',
+    // Wat nog niet begonnen is blijft neutraal. Anders krijgt een week
+    // vol werk dat nog moet starten de meeste kleur van allemaal, en
+    // dat is precies verkeerd om.
+    vlak: 'bg-white dark:bg-surface-dark-2 border-gray-100 dark:border-white/10',
+    balkbed: 'bg-gray-100 dark:bg-white/10',
   },
   actief: {
     rand: 'border-l-blue-500',
     bol: 'bg-blue-500',
     label: 'Bezig',
     tekst: 'text-blue-700 dark:text-blue-400',
+    vlak: 'bg-blue-50/70 dark:bg-blue-500/10 border-blue-100 dark:border-blue-500/20',
+    balkbed: 'bg-blue-100 dark:bg-blue-500/20',
   },
   afgerond: {
     rand: 'border-l-green-500',
     bol: 'bg-green-500',
     label: 'Afgerond',
     tekst: 'text-green-700 dark:text-green-400',
+    vlak: 'bg-green-50/70 dark:bg-green-500/10 border-green-100 dark:border-green-500/20',
+    balkbed: 'bg-green-100 dark:bg-green-500/20',
   },
   stilgelegd: {
     rand: 'border-l-brand-red',
     bol: 'bg-brand-red',
     label: 'Ligt stil',
     tekst: 'text-brand-red dark:text-red-400',
+    vlak: 'bg-brand-red-light dark:bg-brand-red/10 border-brand-red/30 dark:border-brand-red/30',
+    balkbed: 'bg-brand-red/15 dark:bg-brand-red/20',
   },
 } as const
 
@@ -86,10 +97,15 @@ export function PlanningKaart({ item, onOpen, loopIn, loopUit, ruim }: PlanningK
     <button
       onClick={onOpen}
       className={cn(
-        'group w-full text-left rounded-lg border border-l-[3px] bg-white dark:bg-surface-dark-2',
-        'border-gray-100 dark:border-white/10 shadow-sm',
+        'group w-full text-left rounded-lg border border-l-[3px] shadow-sm',
         'hover:shadow-md hover:-translate-y-px active:translate-y-0',
         'transition-all duration-150 ease-brand',
+        // Het hele vlak in de kleur van de status, niet alleen het
+        // randje links. In een week van dertig blokjes zie je zo van een
+        // meter afstand welke kolom loopt en welke stilligt, zonder één
+        // woord te lezen. Zacht genoeg om de tekst leesbaar te houden —
+        // de kleur is de achtergrond, niet de boodschap.
+        k.vlak,
         k.rand,
         ruim ? 'p-3.5' : 'p-2.5',
       )}
@@ -147,7 +163,7 @@ export function PlanningKaart({ item, onOpen, loopIn, loopUit, ruim }: PlanningK
       {/* Een dunne balk onderin in plaats van een percentage in cijfers:
           in een kolom van vier klussen wil je scannen, niet rekenen. */}
       {item.punten > 0 && item.status !== 'niet_gestart' && (
-        <div className="mt-2 h-1 rounded-full bg-gray-100 dark:bg-white/10 overflow-hidden">
+        <div className={cn('mt-2 h-1 rounded-full overflow-hidden', k.balkbed)}>
           <div
             className={cn('h-full rounded-full transition-all duration-300', k.bol)}
             style={{ width: `${voortgang}%` }}

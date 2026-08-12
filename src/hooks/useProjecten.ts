@@ -26,17 +26,19 @@ export function usePlanning() {
 
   useEffect(() => {
     const fetch = async () => {
-      // Géén filter op project meer. Die stond er omdat de planning
-      // ooit uit projecten kwam, maar sinds de klussen uit ClickUp komen
-      // hangt er geen enkele werkbon aan een project — elke klus is een
-      // losse bon. Gevolg: de planning was leeg terwijl er
-      // tweeëntwintig klussen stonden.
+      // Géén project meer, in geen enkele vorm. Het filter erop is er
+      // eerder al uit gegaan — sinds de klussen uit ClickUp komen hangt
+      // geen enkele werkbon aan een project en was de planning leeg
+      // terwijl er tweeëntwintig klussen stonden. De join zelf bleef
+      // daarna nog staan en leverde bij elke rij een leeg `project` op,
+      // want `projecten` heeft nul rijen en nul van de dertig
+      // werkbonnen heeft een `project_id`. Nu weg, met `projectId` en
+      // `projectnaam` erbij: die las niemand meer.
       const { data, error } = await supabase
         .from('werkbonnen')
         .select(`
           id, datum, adres, plaats, bonnummer, status, kluiscode,
           geplande_start, geplande_eind, stilgelegd_op, opgeleverd_op,
-          project:projecten ( id, naam, status ),
           taken ( id, voltooid ),
           werkbon_medewerkers ( persoon:personen(naam) )
         `)
@@ -51,8 +53,6 @@ export function usePlanning() {
             id: w.id,
             datum: w.geplande_start ?? w.datum,
             eind: w.geplande_eind ?? w.geplande_start ?? w.datum,
-            projectId: w.project?.id ?? null,
-            projectnaam: w.project?.naam ?? '',
             adres: w.adres ?? '',
             plaats: w.plaats ?? null,
             bonnummer: w.bonnummer ?? null,
@@ -62,7 +62,7 @@ export function usePlanning() {
             medewerkers: (w.werkbon_medewerkers || [])
               .map((wm: any) => wm.persoon?.naam)
               .filter(Boolean),
-            // Zonder project vertelt de bon zelf hoe hij ervoor staat.
+            // De bon vertelt zelf hoe hij ervoor staat.
             status: (w.stilgelegd_op ? 'stilgelegd'
                    : w.opgeleverd_op || w.status === 'voltooid' ? 'afgerond'
                    : w.status === 'bezig' ? 'actief'

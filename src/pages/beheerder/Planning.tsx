@@ -43,7 +43,6 @@ export default function Planning() {
         adres: p.adres,
         plaats: p.plaats,
         bonnummer: p.bonnummer,
-        projectnaam: p.projectnaam,
         kluiscode: p.kluiscode,
         medewerkers: p.medewerkers.map((naam) => ({ naam })),
       },
@@ -155,14 +154,28 @@ export default function Planning() {
           const dagItems = zichtbaar.filter((p) => p.datum <= dagStr && (p.eind ?? p.datum) >= dagStr)
 
           return (
-            <div key={i} className="flex flex-col">
+            <div
+              key={i}
+              className={cn(
+                // Eén omhulsel om kop en inhoud in plaats van twee losse
+                // vlakken die tegen elkaar aan liggen: zo is een dag
+                // zichtbaar één ding, en kan vandaag als geheel oplichten
+                // in plaats van alleen een gele hoed te krijgen.
+                'flex flex-col rounded-xl border overflow-hidden shadow-sm',
+                isVandaag
+                  ? 'border-brand-yellow ring-1 ring-brand-yellow/40'
+                  : 'border-gray-100 dark:border-white/10'
+              )}
+            >
               {/* Dag header */}
               <div
                 className={cn(
-                  'rounded-t-xl px-3 py-2.5 border-b',
+                  'px-3 py-2.5 border-b',
                   isVandaag
                     ? 'bg-brand-yellow border-brand-yellow-dark'
-                    : 'bg-white dark:bg-surface-dark-2 border-gray-100 dark:border-white/10'
+                    // Stond in hetzelfde wit als de inhoud eronder, en
+                    // las daardoor niet als kop.
+                    : 'bg-surface-2 dark:bg-surface-dark-3 border-gray-100 dark:border-white/10'
                 )}
               >
                 <div className={cn('text-sm font-bold', isVandaag ? 'text-gray-900' : 'text-gray-700 dark:text-white/80')}>
@@ -174,7 +187,7 @@ export default function Planning() {
               </div>
 
               {/* Items */}
-              <div className="flex-1 bg-white dark:bg-surface-dark-2 border border-t-0 border-gray-100 dark:border-white/10 rounded-b-xl p-2 space-y-2 min-h-[120px]">
+              <div className="flex-1 bg-white dark:bg-surface-dark-2 p-2 space-y-2 min-h-[120px]">
                 {(() => {
                   const dubbel = dubbelOpDag(dagItems)
                   return dubbel.size > 0 ? (
@@ -220,8 +233,13 @@ export default function Planning() {
           const dagItems = zichtbaar.filter((p) => p.datum <= dagStr && (p.eind ?? p.datum) >= dagStr)
 
           return (
-            <div key={i} className="bg-white dark:bg-surface-dark-2 rounded-xl border border-gray-100 dark:border-white/10 shadow-sm overflow-hidden">
-              <div className={cn('px-4 py-3 flex items-center justify-between', isVandaag ? 'bg-brand-yellow' : 'bg-gray-50 dark:bg-white/5 border-b border-gray-100 dark:border-white/10')}>
+            <div className={cn(
+              'bg-white dark:bg-surface-dark-2 rounded-xl border shadow-sm overflow-hidden',
+              isVandaag
+                ? 'border-brand-yellow ring-1 ring-brand-yellow/40'
+                : 'border-gray-100 dark:border-white/10'
+            )} key={i}>
+              <div className={cn('px-4 py-3 flex items-center justify-between', isVandaag ? 'bg-brand-yellow' : 'bg-surface-2 dark:bg-surface-dark-3 border-b border-gray-100 dark:border-white/10')}>
                 <div>
                   <span className={cn('text-sm font-bold', isVandaag ? 'text-gray-900' : 'text-gray-700 dark:text-white/80')}>
                     {DAG_NAMEN[i]}

@@ -14,6 +14,15 @@
 - **[FIX]** De schil van Vandaag was een component-in-een-component. Die krijgt bij elke hertekening een nieuwe identiteit, waarna React de hele inhoud opnieuw ophangt: elk afvinkpunt vroeg zijn ondertekende fotolinks dan opnieuw op en de miniaturen knipperden terug naar een grijs vakje.
 - **[FIX]** Het bijschrift bij "Uit te voeren punten" stond ernáást en duwde de kop op een telefoon van 390 pixels over drie regels uiteen. Staat nu eronder.
 
+### Kleur op de weekplanning
+- **[FEATURE]** Een klus in de planning kreeg zijn status alleen mee als randje van drie pixels en een bolletje. Het hele kaartje draagt nu die kleur: blauw voor bezig, groen voor afgerond, rood voor stilgelegd. Van een meter afstand zie je welke kolom loopt en welke stilligt zonder één woord te lezen.
+- Wat nog niet begonnen is blijft bewust neutraal. Anders krijgt een week vol werk dat nog moet starten de meeste kleur van allemaal, en dat is precies verkeerd om.
+- **[FIX]** De dagkop stond in hetzelfde wit als de inhoud eronder en las daardoor niet als kop. Die heeft nu een eigen tint (`surface-2` / `surface-dark-3`).
+- **[FEATURE]** Vandaag licht op als hele kolom — gele rand rondom in plaats van alleen een gele hoed bovenop.
+
+### Het laatste draadje van de projecten
+- **[FIX]** `usePlanning()` joinde nog `project:projecten` en vulde daarmee `PlanningItem.projectId` en `projectnaam`. Die join gaf bij elke rij een leeg project terug — nul rijen in de tabel, nul van de dertig werkbonnen met een `project_id` — en `projectId` werd sinds de opruiming hierboven door niemand meer gelezen. Join en velden zijn weg.
+
 ### De projectdetailpagina is weg
 - **[FIX]** `/projecten/:id` was een dode route. Sinds de projectenpagina op klusgroepen is herbouwd wees er niets meer naartoe, en de pagina las nog de tabel `projecten` — nul rijen, en van de dertig werkbonnen heeft er nul een `project_id`. Wie de URL intypte kreeg "Project niet gevonden"; nu stuurt de app je terug naar je eigen startscherm.
 - Het tabblad "Foto's" op die pagina tekende nepvakjes: `n` identieke gele blokjes met een fototeken, met een handje-cursor die nergens heen ging.
