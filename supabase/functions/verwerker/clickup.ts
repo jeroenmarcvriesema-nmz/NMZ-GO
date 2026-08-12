@@ -656,7 +656,12 @@ export async function statusBijwerken(
   if (soort === 'stilgelegd') {
     const reden = bon.stilleg_reden ?? 'geen reden vastgelegd'
     status = statusUitReden(reden, i)
-    tekst = `Stilgelegd in NMZ GO: ${reden}\nNieuwe opleverdatum: ${bon.geplande_eind ?? 'onbekend'}`
+    // Geen "nieuwe opleverdatum" meer: sinds migratie 027 schuift die
+    // niet op. Hoelang een klus stilligt is op dit moment niet te
+    // zeggen — bij asbest komt er een inventarisatie achteraan en geen
+    // dag. Een datum noemen die niemand heeft vastgesteld is erger dan
+    // geen datum noemen, zeker in een taak die de opdrachtgever leest.
+    tekst = `Stilgelegd in NMZ GO: ${reden}\nDe planning is niet verschoven; de nieuwe datum wordt door de planner bepaald.`
   } else if (soort === 'hervat') {
     status = i.trigger_status
     tekst = 'Weer hervat in NMZ GO.'

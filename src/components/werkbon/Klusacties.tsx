@@ -179,9 +179,16 @@ export function Klusacties({ werkbon, onKlaar }: Props) {
         title="Klus stilleggen"
       >
         <div className="space-y-4">
+          {/* Er stond dat de opleverdatum één dag opschoof. Dat deed de
+              database ook, en dat is er sinds migratie 027 uit: hoelang
+              een klus stilligt weet niemand op het moment dat je hem
+              stillegt. Bij asbest is dat geen dag maar een
+              inventarisatie. De planning verschuift dus niet — dat
+              blijft een keuze van de planner. */}
           <p className="text-sm text-gray-600 dark:text-white/60">
-            {werkbon.adres} gaat op stil. De opleverdatum schuift één dag op en
-            de taak in ClickUp krijgt een passende status met je reden erbij.
+            {werkbon.adres} gaat op stil. De taak in ClickUp krijgt een passende
+            status met je reden erbij. De planning verschuift niet: dat blijft
+            een keuze van de planner.
           </p>
 
           <div>

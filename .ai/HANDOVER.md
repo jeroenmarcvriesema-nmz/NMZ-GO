@@ -65,6 +65,15 @@ Afspraken die daarbij horen:
 - **Migratienummers.** Tot en met 025 is gebruikt. De fotoketen neemt
   **026**. Zit je in de andere sessie en heb je ook een migratie nodig,
   pak dan 027 en hoger — nooit een nummer hergebruiken.
+- **`clickup.ts` is gewijzigd zonder uitrol.** De opmerking bij
+  `stilgelegd` noemde een "Nieuwe opleverdatum". Die bestaat niet meer
+  (zie migratie 027) en de regel is aangepast in de broncode, maar
+  **niet uitgerold** — jij bent degene die die functie uitrolt, en een
+  halve uitrol heeft de verwerker eerder plat gelegd. Neem deze
+  wijziging mee in jouw eerstvolgende `deploy_edge_function`, met alle
+  vijf bestanden.
+- **Migratie 027 bestaat al** (`werkbon_stilleggen` schuift de planning
+  niet meer op). 026 is nog vrij en blijft voor jou; pak anders 028.
 - **De aanvraagknop van het opleverrapport staat al live.** Wie erop
   drukt maakt een rij in `rapportages` én een wachtrijtaak
   `rapportage.genereren`. Die taaksoort heeft nog geen handler, dus de
