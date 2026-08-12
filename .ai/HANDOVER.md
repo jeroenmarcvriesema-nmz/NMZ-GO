@@ -6,6 +6,34 @@ Lees hoofdstuk 0 als eerste — dat is de actuele stand. De hoofdstukken daarna 
 
 ---
 
+# 0a. Synchroniciteitscontrole — 12 augustus 2026, 19:20
+
+Gecontroleerd op verzoek van de eigenaar: lopen git, GitHub, de database, de edge functions en Netlify gelijk? Alles hieronder is geverifieerd tegen de bron, niet aangenomen. **Eén ding klopt niet en staat onderaan.**
+
+| Onderdeel | Stand |
+|---|---|
+| Migratiebestanden ↔ database | **Gelijk.** 31 bestanden (001–031), alle effecten aanwezig. `001` en `002` staan niet in `supabase_migrations` (van vóór dat logboek); 003–031 wel, inclusief `storingen_alleen_eigenaar` (030) en `werkdag_automatisch_afsluiten` (031). Steekproef op de policy van `fouten` en op de functies van 027/031: aanwezig. |
+| Edge function `opdracht-lezen` | v1, gelijk aan de repo. |
+| Edge function `ploeg-bijwerken` | v1, gelijk aan de repo. |
+| **Edge function `verwerker`** | **v12 — lóópt achter op de repo.** Zie `DEPLOYMENT.md`. |
+| pg_cron | `nmzgo-verwerker` (elke minuut), `nmzgo-clickup-hartslag` (\*/5 4–19 UTC), `nmzgo-werkdagen-afsluiten` (:05 elk uur). **`nmzgo-fotos-opruimen` uit migratie 027 staat er niet** — blok E is nooit uitgevoerd. |
+| GitHub, open PR's | Geen. De vier PR's die er ooit waren zijn gesloten zonder merge; er wordt rechtstreeks op `main` gewerkt. |
+| Netlify | Volgt `main` automatisch. **Niet te verifiëren vanuit een sessie** — de agent-proxy blokkeert `nmz-go.netlify.app`. Controleer in het Netlify-dashboard of de laatste deploy hoort bij de HEAD van `main`. |
+
+**Branches:**
+
+| Branch | Stand | Wat ermee moet |
+|---|---|---|
+| `main` | HEAD | — |
+| `claude/manual-add-file-upload-pdf-47c4q2` | 4 vóór, 0 achter | Klaar om te mergen (bevat `main`). |
+| `claude/fotos-werkdagflow-bfro09` | 0/0 | Volledig in `main`; mag weg. |
+| `claude/verification-roles-test-n5t4ec` | 0 vóór, 37 achter | Volledig in `main`; mag weg. |
+| `feature/dark-mode-redesign` | 9 vóór, **geen gemeenschappelijke voorouder** | Losse geschiedenis van vóór de her-init (Sprint 2/3). De inhoud zit inhoudelijk allang in `main`. Niet mergen — hoogstens opruimen. |
+
+**Het ene dat niet klopt:** de uitgerolde `verwerker` mist drie dingen die wél in de repo staan — de handler `onderhoud.fotos_opruimen` (+ `opruimen.ts`), de stilleg-tekst die geen verschoven opleverdatum meer belooft (migratie 029 is wél toegepast, dus productie meldt daar nu iets onjuists), en `register.ts` waarmee de ronde het personenregister bijwerkt. Zolang die deploy niet gebeurt: nieuwe ClickUp-namen komen alleen binnen via de knop "Uit ClickUp ophalen", en de fotobucket wordt niet opgeruimd.
+
+---
+
 # 0. Actuele stand — augustus 2026
 
 ## LEES DIT EERST — waar je begint
