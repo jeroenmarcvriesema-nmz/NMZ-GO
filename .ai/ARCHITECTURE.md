@@ -66,6 +66,16 @@ Geen server-side rendering en geen custom backend. Wél twee Supabase edge funct
 | `opdracht-lezen` | Eén werkopdracht-PDF lezen en de punten teruggeven. Schrijft niets weg en gebruikt géén service-role: hij werkt met het token van de aanroeper, dus RLS geldt onverkort. | aan |
 | `ploeg-bijwerken` | De namenlijst van het ClickUp-medewerkersveld ophalen en het personenregister aanvullen (knop "Uit ClickUp ophalen"). Service-role uitsluitend voor het token uit Vault; alle lees- en schrijfacties lopen via de client van de aanroeper, dus onder RLS. | aan |
 
+Wat er in de database vanzelf draait (pg_cron), zoals het er nu écht bij staat:
+
+| Job | Ritme | Doet |
+|---|---|---|
+| `nmzgo-verwerker` | elke minuut | trekt de verwerkingswachtrij leeg via de edge function |
+| `nmzgo-clickup-hartslag` | elke 5 min, 04–19 UTC | zet een synchronisatieronde in de wachtrij |
+| `nmzgo-werkdagen-afsluiten` | elk uur op :05 | sluit werkdagen die niet zijn afgemeld op 17:00 (migratie 031) |
+
+`nmzgo-fotos-opruimen` uit migratie 027 staat **niet** in `cron.job`: blok E van die migratie is nooit uitgevoerd. De opruimronde draait dus niet, en de bijbehorende handler zit ook nog niet in de uitgerolde `verwerker` — zie `DEPLOYMENT.md`.
+
 Twee modules worden door meer dan één functie gebruikt en staan daarom bewust op één plek: `verwerker/ontleden.ts` (het ontleden van een werkopdracht) en `verwerker/register.ts` (het personenregister gelijkhouden met ClickUp). Een tweede kopie loopt uit de pas, en dan hangt de uitkomst af van welke weg iets toevallig neemt.
 
 De PDF-leeslaag (`unpdf`) staat daarmee uitsluitend op de server — de frontend heeft er geen dependency voor. De parser zelf (`verwerker/ontleden.ts`) is één bestand zonder Deno-afhankelijkheden, wordt door beide routes gebruikt en is getest in `tests/ontleden.test.ts`; een handmatig aangereikte opdracht levert dus dezelfde punten op als dezelfde opdracht via ClickUp.

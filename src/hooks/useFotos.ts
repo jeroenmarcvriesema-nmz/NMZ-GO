@@ -1,13 +1,26 @@
 import { supabase } from '@/lib/supabase'
 import { verkleinFoto } from '@/lib/afbeelding'
+import { duidUploadfout, type Uploadfout } from '@/lib/uploadfout'
 
 export function useFotos() {
+  /**
+   * Waaróm het misging, niet alleen dát het misging.
+   *
+   * De sessie wordt hier pas opgehaald als er al iets mis is: bij een
+   * geslaagde upload is het een netwerkrondje voor niets, en dat telt
+   * op een halve streep bereik.
+   */
+  const duid = async (boodschap: string | null): Promise<Uploadfout> => {
+    const { data } = await supabase.auth.getSession()
+    return duidUploadfout(boodschap, navigator.onLine, !!data.session)
+  }
+
   const upload = async (
     werkbonId: string,
     taakId: string,
     uploaderId: string,
     file: File
-  ) => {
+  ): Promise<{ error: unknown; fout: Uploadfout | null }> => {
     // Eerst verkleinen. Een telefoonfoto van acht megabyte over 4G
     // vanuit een kruipruimte is een upload van minuten die op een
     // slechte verbinding halverwege strandt — en daarna moet diezelfde
@@ -22,7 +35,7 @@ export function useFotos() {
       .from('werkbon-fotos')
       .upload(storagePath, bestand, { upsert: false })
 
-    if (uploadError) return { error: uploadError }
+    if (uploadError) return { error: uploadError, fout: await duid(uploadError.message) }
 
     const { error: dbError } = await supabase.from('fotos').insert({
       werkbon_id: werkbonId,
@@ -32,7 +45,13 @@ export function useFotos() {
       bestandsnaam,
     })
 
-    return { error: dbError }
+    // Het bestand staat er dan wél en de rij niet — dat is het geval
+    // waarin niemand de foto ooit terugziet. Het opruimen van zulke
+    // weesbestanden gebeurt in de nachtronde (migratie 027); hier telt
+    // dat de gebruiker het weet en het opnieuw kan sturen.
+    if (dbError) return { error: dbError, fout: await duid(dbError.message) }
+
+    return { error: null, fout: null }
   }
 
   // Ondertekende URL in plaats van een publieke link. De bucket is

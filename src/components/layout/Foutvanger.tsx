@@ -1,7 +1,8 @@
 import { Component, type ReactNode } from 'react'
 import { meldFout } from '@/lib/foutmelder'
+import { isVersiefout, herlaadVoorNieuweVersie } from '@/lib/versie'
 import { Button } from '@/components/ui/Button'
-import { IconAlertTriangle, IconRefresh, IconHome } from '@tabler/icons-react'
+import { IconAlertTriangle, IconRefresh, IconHome, IconDownload } from '@tabler/icons-react'
 
 interface Props {
   children: ReactNode
@@ -36,6 +37,15 @@ export class Foutvanger extends Component<Props, State> {
   }
 
   componentDidCatch(fout: Error) {
+    // Een verouderde pagina na een uitrol is geen crash. Eerst proberen
+    // te herladen; lukt dat niet (of is het net geprobeerd), dan blijft
+    // het scherm hieronder staan met een knop.
+    if (isVersiefout(fout)) {
+      void meldFout(fout, 'render')
+      herlaadVoorNieuweVersie()
+      return
+    }
+
     // De plek staat vóór de boodschap in plaats van in `cause`: dan is
     // hij zichtbaar in de lijst zonder dat je een regel hoeft open te
     // klappen, en de stacktrace blijft die van de echte fout.
@@ -45,6 +55,41 @@ export class Foutvanger extends Component<Props, State> {
 
   render() {
     if (!this.state.fout) return this.props.children
+
+    // Twee heel verschillende gebeurtenissen, twee schermen. "Er is een
+    // nieuwe versie" is geen storing en hoort er ook niet als een
+    // storing uit te zien — anders belt iemand kantoor over iets wat
+    // één druk op de knop is.
+    if (isVersiefout(this.state.fout)) {
+      return (
+        <div className="min-h-screen flex items-center justify-center p-6 bg-surface-2 dark:bg-surface-dark">
+          <div className="w-full max-w-md bg-white dark:bg-surface-dark-2 rounded-lg shadow-lg px-6 py-10 text-center">
+            <div className="w-12 h-12 mx-auto rounded-full bg-brand-yellow-light dark:bg-brand-yellow/15 flex items-center justify-center text-brand-yellow-dark dark:text-brand-yellow">
+              <IconDownload className="w-6 h-6" />
+            </div>
+
+            <h1 className="mt-4 text-lg font-bold text-gray-900 dark:text-white">
+              Er is een nieuwe versie
+            </h1>
+            <p className="mt-2 text-sm leading-relaxed text-gray-500 dark:text-white/50">
+              De app is bijgewerkt terwijl je hem openstaan had. Tik hieronder;
+              je bent zo weer waar je was. Er gaat niets verloren — afvinken en
+              foto&apos;s zijn meteen naar de server gegaan.
+            </p>
+
+            <Button
+              variant="primary"
+              size="lg"
+              fullWidth
+              className="mt-6"
+              onClick={() => window.location.reload()}
+            >
+              <IconRefresh className="w-4 h-4" /> App bijwerken
+            </Button>
+          </div>
+        </div>
+      )
+    }
 
     return (
       <div className="min-h-screen flex items-center justify-center p-6 bg-surface-2 dark:bg-surface-dark">

@@ -1,5 +1,20 @@
 # NMZ GO — Changelog
 
+## Een uitrol mag de man in het veld niet omvergooien
+
+- **[FIX]** Elke keer dat er een nieuwe versie werd uitgerold, klapte de app bij iedereen die hem al open had staan. De oorzaak zit in de combinatie van twee dingen die los prima zijn: elk scherm wordt apart ingeladen met een hash in de bestandsnaam, en `netlify.toml` stuurt alles wat niet bestaat door naar `index.html`. Een telefoon die sinds vanochtend openstaat vraagt dus om een bestand dat niet meer bestaat en krijgt HTML terug in plaats van JavaScript: *"'text/html' is not a valid JavaScript MIME type"*. Op 12 augustus stond dat acht keer in het foutenlogboek, bij twee gebruikers, op een dag met drie uitrollen.
+- Nu vangt de app het zelf op. Vite meldt zo'n mislukte inlaadpoging, en de app herlaadt zichzelf — hoogstens één keer per minuut, want een herlaadlus is erger dan de fout. Komt het tóch bij de Foutvanger terecht, dan staat er geen rood storingsscherm maar "Er is een nieuwe versie" met één knop. Het is namelijk geen storing.
+- **[FIX]** Een mislukte foto-upload gaf altijd dezelfde zin: *"De foto kon niet worden opgeslagen. Probeer het opnieuw."* Dat klopt zelden. Er zijn drie gevallen met drie verschillende vervolgstappen: geen bereik (straks opnieuw), sessie verlopen doordat de telefoon lang op de achtergrond stond (opnieuw inloggen — drukken helpt niet), of een echte serverfout (kantoor bellen). De app zegt nu welke van de drie het is.
+- **[FEATURE]** En vooral: **de foto blijft klaarstaan.** Mislukt het versturen, dan houdt het scherm het bestand vast en staat er een knop "Foto opnieuw versturen" — met dezelfde foto, zonder dat iemand terug de kruipruimte in moet.
+- **[FEATURE]** 9 tests erbij (`uploadfout`), **152 in totaal**.
+
+## Een werkdag die niet wordt afgemeld
+
+- **[FIX]** Wie 's avonds vergat af te melden, liet een werkdag openstaan — en die telde daarna voor **nul uren**, want `usePersoonDetail` slaat een log zonder stoptijd over. Op het dashboard stond zo iemand tot in de nacht "aan het werk". Twee dagen stonden er open, waarvan één van twee dagen oud.
+- **[FEATURE]** Migratie 031: `werkdagen_afsluiten()` zet zo'n dag dicht op **17:00**, in Amsterdamse tijd van zijn eigen datum (niet in UTC — anders verschuift het moment met de zomertijd). Draait elk uur via pg_cron; de functie kijkt zelf of vijf uur al geweest is, dus de werkdag van vanmiddag blijft gewoon lopen.
+- 17:00 is een aanname en geen meting, en dat staat er ook bij: de nieuwe kolom `automatisch_afgesloten` maakt het verschil zichtbaar tussen "hij heeft afgemeld" en "de computer heeft het dichtgezet". Meldt iemand alsnog zelf af of hervat hij zijn dag, dan gaat die vlag weer uit.
+- Wat dit **niet** is: urenregistratie. Geen pauzes, geen correcties, geen goedkeuring — die grens uit migratie 006 blijft staan. Dit repareert alleen dat een dag helemaal niet meetelde.
+
 ## De ploeg groeide niet mee met ClickUp
 
 - **[FIX]** Wie in ClickUp bij het veld *Medewerkers* werd toegevoegd, bestond in NMZ GO niet. De oorzaak: "De ploeg" komt uit de tabel `personen`, en die is één keer met de hand gevuld door migratie 010/014 met 32 namen. **Niets werkte die lijst ooit bij** — de synchronisatie leest hem alleen om namen op een klus te herkennen, en de app had geen enkele knop om iemand toe te voegen. Verversen hielp dus niet: de namen stonden nergens.
