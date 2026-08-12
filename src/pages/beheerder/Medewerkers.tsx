@@ -17,7 +17,7 @@ import { Select } from '@/components/ui/Select'
 import { Dropdown } from '@/components/ui/Dropdown'
 import { rolLabel, ROL_LABEL } from '@/lib/utils'
 import { toast } from '@/store/toastStore'
-import { IconLink, IconCopy, IconKey, IconCheck, IconUsers, IconUserPlus, IconChevronRight } from '@tabler/icons-react'
+import { IconLink, IconCopy, IconKey, IconCheck, IconUsers, IconUserPlus, IconChevronRight, IconRefresh } from '@tabler/icons-react'
 
 // De eigenaarsrol staat er bewust niet bij: die kan alleen een eigenaar
 // toekennen, en de database weigert het van iedereen anders. Hem tonen
@@ -49,6 +49,16 @@ export default function Medewerkers() {
   const [kandidaatRol, setKandidaatRol] = useState<Rol>('medewerker')
   const [uitnodigenBezig, setUitnodigenBezig] = useState(false)
   const [uitnodigingVoor, setUitnodigingVoor] = useState<Persoon | null>(null)
+
+  // Iemand met de hand aan de ploeg toevoegen. De synchronisatie haalt
+  // de namen uit ClickUp op, maar niet iedereen staat daarin — en op
+  // een nieuwe naam wachten tot de volgende ronde is geen antwoord als
+  // hij vanmiddag ingepland moet worden.
+  const [nieuwOpen, setNieuwOpen] = useState(false)
+  const [nieuwNaam, setNieuwNaam] = useState('')
+  const [nieuwLabel, setNieuwLabel] = useState('')
+  const [nieuwBezig, setNieuwBezig] = useState(false)
+  const [verversBezig, setVerversBezig] = useState(false)
 
   useEffect(() => {
     supabase.from('profiles').select('*').order('naam')
@@ -98,6 +108,83 @@ export default function Medewerkers() {
     setUitnodigingLink(`${window.location.origin}/registreer?token=${token}`)
     setKandidaat(null)
     setLinkModal(true)
+  }
+
+  /**
+   * De ploeg ophalen uit ClickUp.
+   *
+   * De namenlijst in de app kwam uit een migratie en werd door niets
+   * bijgewerkt: wie er in ClickUp bij kwam, bestond hier niet. De
+   * synchronisatieronde vult hem nu aan, maar die draait elke vijf
+   * minuten — deze knop is voor het moment dat je er niet op wilt
+   * wachten. Voegt alleen toe; niemand verdwijnt hierdoor.
+   */
+  const verversPloeg = async () => {
+    setVerversBezig(true)
+    const { data, error } = await supabase.functions.invoke<{
+      toegevoegd?: string[]; gelezen?: number; fout?: string
+    }>('ploeg-bijwerken', { body: {} })
+    setVerversBezig(false)
+
+    if (error || data?.fout) {
+      // De uitleg staat in de body van het antwoord; supabase-js geeft
+      // zelf alleen "non-2xx status code" mee.
+      let melding = data?.fout ?? null
+      const context = (error as { context?: Response } | null)?.context
+      if (!melding && context && typeof context.json === 'function') {
+        try { melding = ((await context.json()) as { fout?: string })?.fout ?? null } catch { /* geen leesbare body */ }
+      }
+      toast.fout(melding ?? 'De ploeg kon niet worden bijgewerkt. Probeer het opnieuw.')
+      return
+    }
+
+    const { data: verse } = await supabase
+      .from('personen').select('*').eq('actief', true).order('naam')
+    setPloeg((verse as Persoon[]) || [])
+
+    const { data: inst } = await supabase
+      .from('clickup_instellingen').select('medewerker_labels').maybeSingle()
+    setClickupLabels(inst?.medewerker_labels ?? [])
+
+    const nieuw = data?.toegevoegd ?? []
+    toast.goed(nieuw.length
+      ? `${nieuw.length === 1 ? 'Toegevoegd' : `${nieuw.length} namen toegevoegd`}: ${nieuw.join(', ')}`
+      : `Niets nieuws — alle ${data?.gelezen ?? 0} namen uit ClickUp stonden er al in.`)
+  }
+
+  /**
+   * Een naam aan de ploeg toevoegen.
+   *
+   * De ClickUp-naam is optioneel maar wel de sleutel: staat hij er,
+   * dan herkent de synchronisatie deze persoon op een klus. Laat je hem
+   * leeg, dan bestaat de persoon alleen hier — genoeg om uit te nodigen
+   * en handmatig aan een werkbon te koppelen.
+   */
+  const voegPersoonToe = async () => {
+    const naam = nieuwNaam.trim()
+    const label = nieuwLabel.trim()
+    if (!naam || !profile?.tenant_id) return
+
+    setNieuwBezig(true)
+    const { data, error } = await supabase
+      .from('personen')
+      .insert({ tenant_id: profile.tenant_id, naam, clickup_label: label || null })
+      .select()
+      .single()
+    setNieuwBezig(false)
+
+    if (error || !data) {
+      toast.fout(error?.code === '23505'
+        ? 'Die ClickUp-naam hangt al aan iemand anders in de ploeg.'
+        : 'De persoon kon niet worden toegevoegd. Probeer het opnieuw.')
+      return
+    }
+
+    setPloeg((lijst) => [...lijst, data as Persoon].sort((a, b) => a.naam.localeCompare(b.naam)))
+    setNieuwOpen(false)
+    setNieuwNaam('')
+    setNieuwLabel('')
+    toast.goed(`${naam} staat in de ploeg. Nodig hem hieronder uit voor een account.`)
   }
 
   const kopieer = async () => {
@@ -287,9 +374,21 @@ export default function Medewerkers() {
           <SectionHeading
             title={`De ploeg (${ploeg.length})`}
             actions={
-              <span className="text-xs text-gray-400 dark:text-white/40">
-                {ploeg.filter((p) => !p.profile_id).length} zonder account
-              </span>
+              <>
+                <span className="text-xs text-gray-400 dark:text-white/40">
+                  {ploeg.filter((p) => !p.profile_id).length} zonder account
+                </span>
+                {magGebruikersBeheren && (
+                  <>
+                    <Button variant="secondary" size="sm" loading={verversBezig} onClick={verversPloeg}>
+                      <IconRefresh className="w-4 h-4" /> Uit ClickUp ophalen
+                    </Button>
+                    <Button variant="secondary" size="sm" onClick={() => setNieuwOpen(true)}>
+                      <IconUserPlus className="w-4 h-4" /> Persoon toevoegen
+                    </Button>
+                  </>
+                )}
+              </>
             }
           />
           {/* Twee kolommen op een breed scherm: drieëndertig namen in
@@ -398,6 +497,48 @@ export default function Medewerkers() {
             </Button>
             <Button variant="secondary" className="flex-1" onClick={() => setNaamKandidaat(null)}>
               Annuleren
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={nieuwOpen}
+        onClose={() => setNieuwOpen(false)}
+        title="Persoon toevoegen aan de ploeg"
+      >
+        <div className="space-y-4">
+          <p className="text-sm leading-relaxed text-gray-500 dark:text-white/50">
+            De ploeg wordt bij elke synchronisatieronde aangevuld met de namen uit
+            het ClickUp-veld <em>Medewerkers</em>. Staat iemand daar niet in, of moet
+            hij er nú in, dan zet je hem hier neer.
+          </p>
+
+          <Input
+            label="Naam"
+            value={nieuwNaam}
+            onChange={(e) => setNieuwNaam(e.target.value)}
+            placeholder="Bijv. Nico Kuijt"
+            autoFocus
+          />
+
+          <Input
+            label="ClickUp-naam (optioneel)"
+            value={nieuwLabel}
+            onChange={(e) => setNieuwLabel(e.target.value)}
+            placeholder="Precies zoals hij in ClickUp staat"
+            hint="Hierop koppelt de synchronisatie hem aan een klus. Laat leeg als hij niet in ClickUp staat — je kunt hem later alsnog koppelen."
+          />
+
+          <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+            <Button variant="secondary" onClick={() => setNieuwOpen(false)}>Annuleren</Button>
+            <Button
+              variant="primary"
+              loading={nieuwBezig}
+              disabled={!nieuwNaam.trim()}
+              onClick={voegPersoonToe}
+            >
+              <IconUserPlus className="w-4 h-4" /> Toevoegen
             </Button>
           </div>
         </div>

@@ -1,5 +1,14 @@
 # NMZ GO — Changelog
 
+## De ploeg groeide niet mee met ClickUp
+
+- **[FIX]** Wie in ClickUp bij het veld *Medewerkers* werd toegevoegd, bestond in NMZ GO niet. De oorzaak: "De ploeg" komt uit de tabel `personen`, en die is één keer met de hand gevuld door migratie 010/014 met 32 namen. **Niets werkte die lijst ooit bij** — de synchronisatie leest hem alleen om namen op een klus te herkennen, en de app had geen enkele knop om iemand toe te voegen. Verversen hielp dus niet: de namen stonden nergens.
+- **[FEATURE]** De synchronisatieronde houdt het register nu gelijk met ClickUp. De keuzelijst van het medewerkersveld zit al in elke taak die hij toch al ophaalt, dus dat kost geen extra aanroep. Nieuwe namen worden aangemaakt (naam én ClickUp-koppeling), en de labellijst in de instellingen groeit mee.
+- **[FEATURE]** Knop **"Uit ClickUp ophalen"** op de medewerkerspagina, voor wie niet op de volgende ronde wil wachten omdat er vanmiddag iemand ingepland moet worden. Werkt ook in een week zonder klussen: de nieuwe edge function `ploeg-bijwerken` vraagt de veldenlijst rechtstreeks bij ClickUp op. De service-role wordt daar voor precies één ding gebruikt — het token uit Vault — en al het lezen en schrijven daarna gaat door de client van de aanroeper, dus RLS bepaalt wat mag.
+- **[FEATURE]** Knop **"Persoon toevoegen"** ernaast: naam en optioneel de ClickUp-naam. Nodig voor wie helemaal niet in ClickUp staat, en als noodklep als de koppeling hapert.
+- Twee dingen gebeuren bewust **niet**: er wordt niemand verwijderd als een naam uit ClickUp verdwijnt (er hangen werkbonnen, uren en misschien een account aan), en een bestaande koppeling wordt nooit stilletjes gebroken — de labellijst is de vereniging van wat ClickUp aanbiedt en wat al in gebruik is.
+- De regels staan in één bestand (`verwerker/register.ts`) dat door allebei de wegen wordt gebruikt. Twee kopieën lopen uit de pas, en dan hangt het van de route af of iemand wel of niet in de ploeg belandt.
+
 ## De werkopdracht mag er ook met de hand in
 
 - **[FEATURE]** Bij het handmatig aanmaken van een werkbon kun je nu de **werkopdracht als PDF** aanreiken. De punten onder *Uit te voeren werkzaamheden* worden eruit gehaald en staan meteen als taken op de bon — met dezelfde parser als de ClickUp-route, dus dezelfde punten voor dezelfde opdracht. Kluiscode, inspecteur, telefoonnummer, adres en werkvoorbereiding komen mee, en het opdrachtnummer van de werkvoorbereider wordt het bonnummer (migratie 022).

@@ -30,6 +30,7 @@
 import { SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 import { leesPdf, ontleed } from './werkopdracht.ts'
 import { statusUitReden, type Statussen } from './statusregels.ts'
+import { veldOpties, werkRegisterBij } from './register.ts'
 
 export { statusUitReden }
 export type { Statussen }
@@ -49,6 +50,7 @@ interface Instellingen {
   veld_kluiscode: string | null
   veld_werkopdracht: string | null
   veld_werktekening: string | null
+  medewerker_labels: string[]
   uitgesloten_punten: string[]
   actief: boolean
 }
@@ -476,6 +478,11 @@ export async function synchroniseer(
   const proef: Record<string, unknown>[] = []
   const overgeslagen: Bevinding[] = []
 
+  // De keuzelijst van het medewerkersveld, opgepikt van de eerste taak
+  // die hem draagt — gratis, want die taken halen we toch al op. Wat
+  // ermee gebeurt staat in register.ts.
+  let opties: string[] = []
+
   // Meerdere statussen, want een taak schuift in het weekend van
   // "volgende week" naar "deze week". Alleen op de eerste filteren
   // betekent dat hij daarna uit beeld verdwijnt: bestaande bonnen
@@ -495,6 +502,7 @@ export async function synchroniseer(
     for (const taak of resultaat.tasks ?? []) {
       gezien++
       const adres = taak.name ?? '(zonder naam)'
+      if (opties.length === 0) opties = veldOpties(taak, i.veld_medewerkers)
 
       try {
         const uit = await verwerkTaak(db, tenantId, taak, ctx)
@@ -520,6 +528,18 @@ export async function synchroniseer(
     }
   }
 
+  // Nooit de ronde omgooien. De werkbonnen zijn hierboven al verwerkt;
+  // een hapering in het bijwerken van de ploeg mag daar niet toe leiden
+  // dat de hele taak als mislukt terugkomt en opnieuw wordt gedraaid.
+  // Het komt terug in het resultaat, en de volgende ronde probeert het
+  // gewoon opnieuw — er gaat niets verloren.
+  let register: Record<string, unknown>
+  try {
+    register = await werkRegisterBij(db, tenantId, opties, i.medewerker_labels ?? [], droogloop)
+  } catch (e) {
+    register = { fout: e instanceof Error ? e.message : String(e) }
+  }
+
   return {
     droogloop,
     gezien,
@@ -527,6 +547,7 @@ export async function synchroniseer(
     bijgewerkt,
     ongewijzigd,
     overgeslagen,
+    register,
     namen_zonder_persoon: [...ctx.ongekoppeldeNamen],
     zonder_account: [...new Set(
       [...ctx.perLabel.values()].filter((p) => !p.heeftAccount).map((p) => p.naam),
