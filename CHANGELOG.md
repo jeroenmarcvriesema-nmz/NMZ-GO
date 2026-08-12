@@ -19,6 +19,7 @@
 - Wat nog niet begonnen is blijft bewust neutraal. Anders krijgt een week vol werk dat nog moet starten de meeste kleur van allemaal, en dat is precies verkeerd om.
 - **[FIX]** De dagkop stond in hetzelfde wit als de inhoud eronder en las daardoor niet als kop. Die heeft nu een eigen tint (`surface-2` / `surface-dark-3`).
 - **[FEATURE]** Vandaag licht op als hele kolom — gele rand rondom in plaats van alleen een gele hoed bovenop.
+- **[FEATURE]** Zaterdag heeft een eigen tint. Hij hoort in de planning — er wordt afgemaakt en garantiewerk gedaan — maar het is geen dag als de andere vijf, en een volle zaterdag zegt iets anders dan een volle dinsdag. Leisteen, geen nieuwe felle kleur: blauw, groen en rood zijn vergeven aan de status van een klus en geel is vandaag. Is het zaterdag én vandaag, dan wint vandaag.
 
 ### Het laatste draadje van de projecten
 - **[FIX]** `usePlanning()` joinde nog `project:projecten` en vulde daarmee `PlanningItem.projectId` en `projectnaam`. Die join gaf bij elke rij een leeg project terug — nul rijen in de tabel, nul van de dertig werkbonnen met een `project_id` — en `projectId` werd sinds de opruiming hierboven door niemand meer gelezen. Join en velden zijn weg.

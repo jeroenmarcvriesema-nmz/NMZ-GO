@@ -16,6 +16,26 @@ import { IconAlertTriangle, IconSearch, IconX } from '@tabler/icons-react'
 // garantiewerk, en hoort dus gewoon in de planning.
 const DAG_NAMEN = ['Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag']
 
+/**
+ * Zaterdag is de zesde kolom, en de laatste.
+ *
+ * Hij hoort in de planning — er wordt afgemaakt en garantiewerk gedaan —
+ * maar het is geen dag als de andere vijf: wat hier staat is bijwerk, en
+ * een volle zaterdag zegt iets anders dan een volle dinsdag. Daarom een
+ * eigen tint in plaats van dezelfde grijze kop als de rest.
+ *
+ * Bewust leisteen en geen nieuwe felle kleur. Blauw, groen en rood zijn
+ * vergeven aan de status van een klus; geel is vandaag. Een dag van de
+ * week hoort geen kleur te lenen die ergens anders iets betekent.
+ */
+const ZATERDAG = 5
+
+const ZATERDAGTINT = {
+  kop: 'bg-slate-200/70 dark:bg-slate-400/20 border-slate-300/70 dark:border-slate-400/20',
+  vlak: 'bg-slate-50/60 dark:bg-slate-400/[0.07]',
+  rand: 'border-slate-200 dark:border-slate-400/20',
+}
+
 export default function Planning() {
   const { planning, loading } = usePlanning()
   const navigate = useNavigate()
@@ -151,6 +171,9 @@ export default function Planning() {
         {dagen.map((dag, i) => {
           const dagStr = isoDatum(dag)
           const isVandaag = dag.getTime() === vandaag.getTime()
+          // Vandaag wint van zaterdag: als het zaterdag ís, is "vandaag"
+          // het antwoord op de vraag die je stelt als je hier kijkt.
+          const isZaterdag = i === ZATERDAG && !isVandaag
           const dagItems = zichtbaar.filter((p) => p.datum <= dagStr && (p.eind ?? p.datum) >= dagStr)
 
           return (
@@ -162,8 +185,8 @@ export default function Planning() {
                 // zichtbaar één ding, en kan vandaag als geheel oplichten
                 // in plaats van alleen een gele hoed te krijgen.
                 'flex flex-col rounded-xl border overflow-hidden shadow-sm',
-                isVandaag
-                  ? 'border-brand-yellow ring-1 ring-brand-yellow/40'
+                isVandaag ? 'border-brand-yellow ring-1 ring-brand-yellow/40'
+                  : isZaterdag ? ZATERDAGTINT.rand
                   : 'border-gray-100 dark:border-white/10'
               )}
             >
@@ -171,8 +194,8 @@ export default function Planning() {
               <div
                 className={cn(
                   'px-3 py-2.5 border-b',
-                  isVandaag
-                    ? 'bg-brand-yellow border-brand-yellow-dark'
+                  isVandaag ? 'bg-brand-yellow border-brand-yellow-dark'
+                    : isZaterdag ? ZATERDAGTINT.kop
                     // Stond in hetzelfde wit als de inhoud eronder, en
                     // las daardoor niet als kop.
                     : 'bg-surface-2 dark:bg-surface-dark-3 border-gray-100 dark:border-white/10'
@@ -187,7 +210,10 @@ export default function Planning() {
               </div>
 
               {/* Items */}
-              <div className="flex-1 bg-white dark:bg-surface-dark-2 p-2 space-y-2 min-h-[120px]">
+              <div className={cn(
+                'flex-1 p-2 space-y-2 min-h-[120px]',
+                isZaterdag ? ZATERDAGTINT.vlak : 'bg-white dark:bg-surface-dark-2'
+              )}>
                 {(() => {
                   const dubbel = dubbelOpDag(dagItems)
                   return dubbel.size > 0 ? (
@@ -230,16 +256,23 @@ export default function Planning() {
         {dagen.map((dag, i) => {
           const dagStr = isoDatum(dag)
           const isVandaag = dag.getTime() === vandaag.getTime()
+          const isZaterdag = i === ZATERDAG && !isVandaag
           const dagItems = zichtbaar.filter((p) => p.datum <= dagStr && (p.eind ?? p.datum) >= dagStr)
 
           return (
             <div className={cn(
-              'bg-white dark:bg-surface-dark-2 rounded-xl border shadow-sm overflow-hidden',
-              isVandaag
-                ? 'border-brand-yellow ring-1 ring-brand-yellow/40'
+              'rounded-xl border shadow-sm overflow-hidden',
+              isZaterdag ? ZATERDAGTINT.vlak : 'bg-white dark:bg-surface-dark-2',
+              isVandaag ? 'border-brand-yellow ring-1 ring-brand-yellow/40'
+                : isZaterdag ? ZATERDAGTINT.rand
                 : 'border-gray-100 dark:border-white/10'
             )} key={i}>
-              <div className={cn('px-4 py-3 flex items-center justify-between', isVandaag ? 'bg-brand-yellow' : 'bg-surface-2 dark:bg-surface-dark-3 border-b border-gray-100 dark:border-white/10')}>
+              <div className={cn(
+                'px-4 py-3 flex items-center justify-between',
+                isVandaag ? 'bg-brand-yellow'
+                  : isZaterdag ? cn(ZATERDAGTINT.kop, 'border-b')
+                  : 'bg-surface-2 dark:bg-surface-dark-3 border-b border-gray-100 dark:border-white/10'
+              )}>
                 <div>
                   <span className={cn('text-sm font-bold', isVandaag ? 'text-gray-900' : 'text-gray-700 dark:text-white/80')}>
                     {DAG_NAMEN[i]}
