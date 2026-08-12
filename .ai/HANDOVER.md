@@ -15,8 +15,8 @@ Gecontroleerd op verzoek van de eigenaar: lopen git, GitHub, de database, de edg
 | Migratiebestanden ↔ database | **Gelijk.** 31 bestanden (001–031), alle effecten aanwezig. `001` en `002` staan niet in `supabase_migrations` (van vóór dat logboek); 003–031 wel, inclusief `storingen_alleen_eigenaar` (030) en `werkdag_automatisch_afsluiten` (031). Steekproef op de policy van `fouten` en op de functies van 027/031: aanwezig. |
 | Edge function `opdracht-lezen` | v1, gelijk aan de repo. |
 | Edge function `ploeg-bijwerken` | v1, gelijk aan de repo. |
-| **Edge function `verwerker`** | **v12 — lóópt achter op de repo.** Zie `DEPLOYMENT.md`. |
-| pg_cron | `nmzgo-verwerker` (elke minuut), `nmzgo-clickup-hartslag` (\*/5 4–19 UTC), `nmzgo-werkdagen-afsluiten` (:05 elk uur). **`nmzgo-fotos-opruimen` uit migratie 027 staat er niet** — blok E is nooit uitgevoerd. |
+| Edge function `verwerker` | v13, gelijk aan de repo (uitgerold en teruggelezen ter controle op 12 augustus, 19:40). |
+| pg_cron | Vier jobs, alle vier actief: `nmzgo-verwerker` (elke minuut), `nmzgo-clickup-hartslag` (\*/5 4–19 UTC), `nmzgo-werkdagen-afsluiten` (:05 elk uur), `nmzgo-fotos-opruimen` (03:15 UTC). |
 | GitHub, open PR's | Geen. De vier PR's die er ooit waren zijn gesloten zonder merge; er wordt rechtstreeks op `main` gewerkt. |
 | Netlify | Volgt `main` automatisch. **Niet te verifiëren vanuit een sessie** — de agent-proxy blokkeert `nmz-go.netlify.app`. Controleer in het Netlify-dashboard of de laatste deploy hoort bij de HEAD van `main`. |
 
@@ -30,7 +30,11 @@ Gecontroleerd op verzoek van de eigenaar: lopen git, GitHub, de database, de edg
 | `claude/verification-roles-test-n5t4ec` | 0 vóór, 37 achter | Volledig in `main`; mag weg. |
 | `feature/dark-mode-redesign` | 9 vóór, **geen gemeenschappelijke voorouder** | Losse geschiedenis van vóór de her-init (Sprint 2/3). De inhoud zit inhoudelijk allang in `main`. Niet mergen — hoogstens opruimen. |
 
-**Het ene dat niet klopt:** de uitgerolde `verwerker` mist drie dingen die wél in de repo staan — de handler `onderhoud.fotos_opruimen` (+ `opruimen.ts`), de stilleg-tekst die geen verschoven opleverdatum meer belooft (migratie 029 is wél toegepast, dus productie meldt daar nu iets onjuists), en `register.ts` waarmee de ronde het personenregister bijwerkt. Zolang die deploy niet gebeurt: nieuwe ClickUp-namen komen alleen binnen via de knop "Uit ClickUp ophalen", en de fotobucket wordt niet opgeruimd.
+**Wat er die avond nog is rechtgezet.** De `verwerker` liep achter op de repo en is uitgerold (v13). Daarmee zijn drie dingen live gegaan die alleen in de repo stonden: `register.ts` (de ronde vult het personenregister aan), de stilleg-tekst die geen verschoven opleverdatum meer belooft — migratie 029 was wél toegepast, dus productie meldde daar iets onjuists — en de handler `onderhoud.fotos_opruimen`. Blok E van migratie 027 is daarna alsnog uitgevoerd, zodat die handler ook echt wordt aangeroepen.
+
+De eerste ronde op v13 (17:45 UTC) bewees het meteen: `register: {gelezen: 35, toegevoegd: ["Jeffrey Huizenga", "Anthony", "Nico Kuijt"]}` — precies de drie namen die de eigenaar in ClickUp had toegevoegd en die in de app niet bestonden. 29 taken gezien, geen enkele mislukt.
+
+Vóór het aanzetten van de opruimcron is gecontroleerd wat hij zou raken: nul foto's en nul weesbestanden. De eerste die in aanmerking komt is die van 10 augustus, en pas veertien dagen na oplevering — er gebeurt dus niets vóór eind augustus.
 
 ---
 

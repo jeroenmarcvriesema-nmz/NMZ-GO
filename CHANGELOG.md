@@ -1,5 +1,12 @@
 # NMZ GO — Changelog
 
+## Repo en productie weer op één lijn
+
+- **[FIX]** De edge function `verwerker` liep achter op de repo en is uitgerold (v13). Daarmee gingen drie dingen live die alleen in de code stonden: het bijwerken van het personenregister tijdens elke ronde, de stilleg-tekst naar ClickUp die geen verschoven opleverdatum meer belooft (migratie 029 was al toegepast, dus productie meldde daar iets onjuists), en de handler voor het opruimen van de fotobucket.
+- De eerste ronde op de nieuwe versie bewees het meteen: `toegevoegd: ["Jeffrey Huizenga", "Anthony", "Nico Kuijt"]` — precies de drie namen die in ClickUp waren toegevoegd en in de app niet bestonden. 29 taken gezien, niets mislukt.
+- **[FIX]** Blok E van migratie 027 was nooit uitgevoerd: de cronjob `nmzgo-fotos-opruimen` bestond niet, dus de opruimronde van de fotobucket draaide nooit. Staat nu ingepland op 03:15 UTC. Vooraf gecontroleerd wat hij zou raken: nul foto's, nul weesbestanden — de wachttijd van veertien dagen na oplevering betekent dat er tot eind augustus niets gebeurt.
+- **[FEATURE]** Elke deploy wordt voortaan teruggelezen en byte-voor-byte met de repo vergeleken; hoe dat gaat en welk onschuldig verschil je kunt tegenkomen staat in `DEPLOYMENT.md`. De volledige stand van git, database, functies en cron staat in `HANDOVER.md` (hoofdstuk 0a).
+
 ## Een uitrol mag de man in het veld niet omvergooien
 
 - **[FIX]** Elke keer dat er een nieuwe versie werd uitgerold, klapte de app bij iedereen die hem al open had staan. De oorzaak zit in de combinatie van twee dingen die los prima zijn: elk scherm wordt apart ingeladen met een hash in de bestandsnaam, en `netlify.toml` stuurt alles wat niet bestaat door naar `index.html`. Een telefoon die sinds vanochtend openstaat vraagt dus om een bestand dat niet meer bestaat en krijgt HTML terug in plaats van JavaScript: *"'text/html' is not a valid JavaScript MIME type"*. Op 12 augustus stond dat acht keer in het foutenlogboek, bij twee gebruikers, op een dag met drie uitrollen.

@@ -73,8 +73,7 @@ Wat er in de database vanzelf draait (pg_cron), zoals het er nu écht bij staat:
 | `nmzgo-verwerker` | elke minuut | trekt de verwerkingswachtrij leeg via de edge function |
 | `nmzgo-clickup-hartslag` | elke 5 min, 04–19 UTC | zet een synchronisatieronde in de wachtrij |
 | `nmzgo-werkdagen-afsluiten` | elk uur op :05 | sluit werkdagen die niet zijn afgemeld op 17:00 (migratie 031) |
-
-`nmzgo-fotos-opruimen` uit migratie 027 staat **niet** in `cron.job`: blok E van die migratie is nooit uitgevoerd. De opruimronde draait dus niet, en de bijbehorende handler zit ook nog niet in de uitgerolde `verwerker` — zie `DEPLOYMENT.md`.
+| `nmzgo-fotos-opruimen` | dagelijks 03:15 UTC | zet een opruimronde voor de fotobucket in de wachtrij (migratie 027) |
 
 Twee modules worden door meer dan één functie gebruikt en staan daarom bewust op één plek: `verwerker/ontleden.ts` (het ontleden van een werkopdracht) en `verwerker/register.ts` (het personenregister gelijkhouden met ClickUp). Een tweede kopie loopt uit de pas, en dan hangt de uitkomst af van welke weg iets toevallig neemt.
 
