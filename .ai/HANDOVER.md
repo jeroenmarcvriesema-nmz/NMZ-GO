@@ -184,6 +184,27 @@ Daarmee is `projecten` ook uit `usePlanning()` verdwenen: de join
 `PlanningItem.projectId` en `projectnaam` zijn met de join mee weg. In
 `src/` staat nu geen enkele verwijzing meer naar die tabel.
 
+**Eén kleurtaal, en waarom die er niet was.** Niets zet ooit
+`werkbonnen.status` op `'bezig'` — de ClickUp-synchronisatie raakt de
+kolom niet aan en de handmatige knop op de werkbon gebruikt niemand.
+Alle dertig bonnen staan op `'open'`, ook Gaaspstraat 46 met zeven
+afgevinkte punten en elf foto's. Elk scherm noemde dat "nog niet
+gestart". Dat is de reden dat de kleurtaal nergens te zien was.
+
+`src/lib/klusstand.ts` is nu de enige bron: `klusstand()` leidt de stand
+af uit de feiten (stilgelegd → opgeleverd → voltooid → een afgevinkt
+punt → anders niet gestart) en `STANDEN` geeft de kleuren. Grijs niet
+gestart, blauw bezig, groen afgerond en opgeleverd, rood ligt stil.
+Geel doet niet mee aan status — dat blijft merk, knoppen, vandaag en
+voortgangsbalken. Doorgevoerd op planning, Alle werkbonnen, Mijn bonnen,
+Mijn week, Afgerond, Archief, Rapporten en beide werkbonschermen.
+`groepsstatus()` in `klusgroepen.ts` leunde op dezelfde dode kolom en is
+meegegaan. `StatusBadge` is verdwenen; niemand gebruikte hem nog.
+
+De kleurwas over lijstkaarten staat aan via één schakelaar, `KLEURWAS`
+in `klusstand.ts`. Uit betekent: alleen de rand links en de badge dragen
+kleur, kaart blijft wit. De eigenaar wilde die keuze openhouden.
+
 **Kleur op de weekplanning.** Een klus droeg zijn status alleen als
 randje van drie pixels; nu draagt het hele kaartje de kleur — blauw
 bezig, groen afgerond, rood stilgelegd, en neutraal wat nog niet

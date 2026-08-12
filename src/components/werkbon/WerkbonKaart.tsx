@@ -1,8 +1,9 @@
 import { useNavigate } from 'react-router-dom'
 import { Card } from '@/components/ui/Card'
-import { Badge, StatusBadge } from '@/components/ui/Badge'
+import { Badge } from '@/components/ui/Badge'
 import { ProgressBar } from '@/components/ui/ProgressBar'
-import { berekenVoortgang, formatDatumKort } from '@/lib/utils'
+import { berekenVoortgang, formatDatumKort, cn } from '@/lib/utils'
+import { standkleur, KLEURWAS } from '@/lib/klusstand'
 import { weeknummer } from '@/lib/planning'
 import type { Werkbon } from '@/types'
 import {
@@ -42,9 +43,15 @@ export function WerkbonKaart({ werkbon, linkPrefix = '/werkbonnen', looptDoor }:
   const fotos = taken.flatMap((t) => t.fotos ?? []).length
   const stil = Boolean(werkbon.stilgelegd_op)
 
+  // De rand was geel voor open, bezig én afgerond — dus voor bijna elke
+  // bon — en zei daarmee niets. Nu draagt hij de stand van de klus, in
+  // dezelfde kleuren als de weekplanning.
+  const k = standkleur(werkbon)
+
   return (
     <Card
-      accent={stil ? 'red' : werkbon.opgeleverd_op ? 'green' : 'yellow'}
+      vlak={KLEURWAS ? cn(k.vlak, k.omlijsting) : undefined}
+      className={cn('border-l-4', k.rand)}
       onClick={() => navigate(`${linkPrefix}/${werkbon.id}`)}
     >
       <div className="flex items-start justify-between gap-3 mb-2">
@@ -60,10 +67,7 @@ export function WerkbonKaart({ werkbon, linkPrefix = '/werkbonnen', looptDoor }:
           </div>
         </div>
         <div className="flex flex-col items-end gap-1 flex-shrink-0">
-          {werkbon.opgeleverd_op
-            ? <Badge variant="green">Opgeleverd</Badge>
-            : <StatusBadge status={werkbon.status} />}
-          {stil && <Badge variant="red">Ligt stil</Badge>}
+          <Badge variant={k.badge}>{k.label}</Badge>
         </div>
       </div>
 

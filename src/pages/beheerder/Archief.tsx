@@ -8,6 +8,7 @@ import { ErrorState } from '@/components/ui/ErrorState'
 import { useArchief, type ArchiefBon, type ArchiefFoto } from '@/hooks/useArchief'
 import { useFotos } from '@/hooks/useFotos'
 import { formatDatum, cn } from '@/lib/utils'
+import { standkleur } from '@/lib/klusstand'
 import {
   IconSearch, IconMapPin, IconPhoto, IconCircleCheck, IconCircle,
   IconChevronDown, IconArchive, IconUsers, IconX,
@@ -146,9 +147,13 @@ function BonRegel({ bon, open, onToggle }: { bon: ArchiefBon; open: boolean; onT
           </div>
 
           <div className="flex flex-wrap items-center gap-2 mt-2">
-            <Badge variant={bon.opgeleverd_op ? 'green' : bon.status === 'voltooid' ? 'yellow' : 'gray'}>
-              {bon.opgeleverd_op ? 'Opgeleverd' : bon.status === 'voltooid' ? 'Afgerond' : 'Loopt nog'}
-            </Badge>
+            {/* Dezelfde kleurtaal als de rest: "Afgerond" stond hier
+                op geel, en "loopt nog" op grijs ook als er al de halve
+                bon was afgevinkt. */}
+            {(() => {
+              const k = standkleur({ status: bon.status, opgeleverd_op: bon.opgeleverd_op, puntenKlaar: klaar })
+              return <Badge variant={k.badge}>{k.label}</Badge>
+            })()}
             <span className="text-xs text-gray-400 dark:text-white/40">
               {klaar}/{punten.length} punten
             </span>

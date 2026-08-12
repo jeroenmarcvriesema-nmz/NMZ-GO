@@ -8,6 +8,7 @@ import { TaakItem } from '@/components/taak/TaakItem'
 import { Klusinfo } from '@/components/werkbon/Klusinfo'
 import { supabase } from '@/lib/supabase'
 import { berekenVoortgang, formatDatum, cn } from '@/lib/utils'
+import { standkleur } from '@/lib/klusstand'
 import { IconCheck, IconAlertCircle, IconCircleCheck, IconCalendar, IconListCheck } from '@tabler/icons-react'
 import type { Werkbon } from '@/types'
 
@@ -51,6 +52,8 @@ export function Klusuitvoering({
 
   const taken = werkbon.taken ?? []
   const voortgang = berekenVoortgang(taken)
+  // Dezelfde stand en kleur als op de lijstschermen en de planning.
+  const k = standkleur(werkbon)
   const aantalKlaar = taken.filter((t) => t.voltooid).length
   const allesAfgevinkt = taken.length > 0 && aantalKlaar === taken.length
 
@@ -100,6 +103,10 @@ export function Klusuitvoering({
               {werkbon.adres}
             </h1>
             <p className="text-sm text-gray-500 dark:text-white/60 mt-0.5">{werkbon.projectnaam}</p>
+            <span className={cn('inline-flex items-center gap-1.5 mt-2 text-xs font-semibold', k.tekst)}>
+              <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', k.bol)} />
+              {k.label}
+            </span>
           </div>
           <div className="text-right flex-shrink-0">
             <div className={cn('text-2xl font-extrabold tabular-nums',

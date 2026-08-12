@@ -149,7 +149,7 @@ export default function Rapporten() {
                         ].filter(Boolean).join(' · ')}
                       </div>
                       <div className="flex flex-wrap items-center gap-2 mt-2">
-                        <Badge variant={w.opgeleverd_op ? 'green' : 'yellow'}>
+                        <Badge variant="green">
                           {w.opgeleverd_op ? 'Opgeleverd' : 'Afgerond'}
                         </Badge>
                         <span className="text-xs text-gray-400 dark:text-white/40">
