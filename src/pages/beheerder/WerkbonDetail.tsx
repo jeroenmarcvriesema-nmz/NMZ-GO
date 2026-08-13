@@ -9,6 +9,8 @@ import { ProgressBar } from '@/components/ui/ProgressBar'
 import { TaakItem } from '@/components/taak/TaakItem'
 import { Klusacties } from '@/components/werkbon/Klusacties'
 import { Klusinfo } from '@/components/werkbon/Klusinfo'
+import { Werkdocumenten } from '@/components/werkbon/Werkdocumenten'
+import { Klusplanning } from '@/components/werkbon/Klusplanning'
 import { Opleverrapport } from '@/components/werkbon/Opleverrapport'
 import { Spinner } from '@/components/ui/Spinner'
 import { Modal } from '@/components/ui/Modal'
@@ -17,7 +19,7 @@ import { useTaken } from '@/hooks/useTaken'
 import { berekenVoortgang, formatDatum } from '@/lib/utils'
 import { standkleur } from '@/lib/klusstand'
 import { supabase } from '@/lib/supabase'
-import { IconArrowLeft, IconPlus, IconCalendar, IconMapPin, IconUsers, IconFileText, IconAlertCircle } from '@tabler/icons-react'
+import { IconArrowLeft, IconPlus, IconCalendar, IconMapPin, IconUsers, IconFileText, IconAlertCircle, IconCheck, IconArrowBackUp } from '@tabler/icons-react'
 
 export default function WerkbonDetail() {
   const { id } = useParams<{ id: string }>()
@@ -35,6 +37,7 @@ export default function WerkbonDetail() {
   const voortgang = berekenVoortgang(werkbon.taken || [])
   // Dezelfde stand en kleur als op de lijstschermen en de planning.
   const k = standkleur(werkbon)
+  const puntenOpen = (werkbon.taken || []).filter((t) => !t.voltooid).length
 
   const handlePuntOpslaan = async () => {
     if (!nieuwPunt.titel.trim()) return
@@ -46,7 +49,21 @@ export default function WerkbonDetail() {
     setOpslaan(false)
   }
 
-  const handleStatus = async (status: 'open' | 'bezig' | 'voltooid') => {
+  /**
+   * Afronden of heropenen — één handeling per moment.
+   *
+   * Hier stonden drie knopjes: open, bezig, voltooid. "Bezig" schreef
+   * een waarde die niets in de app ooit las en die niemand zette; de
+   * eigenaar bevestigde dat hij een klus daar nooit op zet. Sinds de
+   * app de stand uit de afgevinkte punten afleidt, is die knop een
+   * keuze zonder gevolg.
+   *
+   * Wat overblijft is wat wél iets doet: 'voltooid' is de voorwaarde
+   * voor opleveren (`werkbon_opleveren()` weigert alles daaronder),
+   * bepaalt welke bon morgen op Vandaag staat, en vult Afgerond en
+   * Rapporten. Heropenen blijft nodig voor als het te vroeg gebeurde.
+   */
+  const handleStatus = async (status: 'open' | 'voltooid') => {
     setStatusFout(null)
     const { data, error } = await supabase
       .from('werkbonnen')
@@ -87,13 +104,44 @@ export default function WerkbonDetail() {
             </div>
           </div>
           <div className="mt-4"><ProgressBar value={voortgang} size="md" variant={voortgang === 100 ? 'green' : 'yellow'} /></div>
-          <div className="flex gap-2 mt-4 flex-wrap">
-            {(['open','bezig','voltooid'] as const).map((s) => (
-              <button key={s} onClick={() => handleStatus(s)}
-                className={`px-3 py-1.5 rounded-sm text-xs font-semibold border transition-all ${werkbon.status === s ? 'bg-brand-yellow text-gray-900 border-brand-yellow-dark' : 'bg-white dark:bg-surface-dark-2 text-gray-500 dark:text-white/50 border-gray-200 dark:border-white/10 hover:border-gray-400 dark:hover:border-white/30'}`}>
-                {s.charAt(0).toUpperCase() + s.slice(1)}
-              </button>
-            ))}
+          {/* Eén handeling, en alleen als hij kan. De database weigert
+              'voltooid' zolang er een punt openstaat — dat hoorde je
+              hiervoor pas ná het klikken, als foutmelding. Nu staat er
+              vooraf hoeveel er nog open is. */}
+          <div className="flex items-center gap-3 mt-4 flex-wrap">
+            {/* Opgeleverd is een dichtgeklapt dossier: de klant heeft
+                bericht, ClickUp staat op opgeleverd en de foto's zijn
+                onderweg naar de bijlage. Dat weer openbreken met een
+                knop hoort niet — hier stond er wél een, mét de tekst
+                "kan zolang hij nog niet is opgeleverd" eronder. */}
+            {werkbon.opgeleverd_op ? (
+              <span className="text-xs text-gray-400 dark:text-white/40">
+                Deze klus is opgeleverd en ligt daarmee vast.
+              </span>
+            ) : werkbon.status === 'voltooid' ? (
+              <>
+                <Button variant="secondary" size="sm" onClick={() => handleStatus('open')}>
+                  <IconArrowBackUp className="w-4 h-4" /> Heropenen
+                </Button>
+                <span className="text-xs text-gray-400 dark:text-white/40">
+                  Deze bon staat op afgerond. Heropenen kan zolang hij nog niet is opgeleverd.
+                </span>
+              </>
+            ) : puntenOpen > 0 ? (
+              <span className="text-xs text-gray-400 dark:text-white/40">
+                Nog {puntenOpen} van de {(werkbon.taken || []).length} punten open — afronden kan
+                zodra de ploeg alles heeft afgevinkt.
+              </span>
+            ) : (
+              <>
+                <Button variant="primary" size="sm" onClick={() => handleStatus('voltooid')}>
+                  <IconCheck className="w-4 h-4" /> Werkbon afronden
+                </Button>
+                <span className="text-xs text-gray-400 dark:text-white/40">
+                  Alle punten zijn afgevinkt.
+                </span>
+              </>
+            )}
           </div>
           {statusFout && (
             <div className="flex items-start gap-2 text-xs text-brand-red dark:text-red-400 bg-brand-red-light dark:bg-brand-red/10 border border-brand-red rounded-sm p-3 mt-3">
@@ -110,6 +158,15 @@ export default function WerkbonDetail() {
             documenten, werkvoorbereiding. Kantoor moet kunnen
             controleren wat de ploeg voor zich krijgt. */}
         <Klusinfo werkbon={werkbon} />
+
+        {/* Waar deze klus in de weekplanning staat. Bij een handmatige
+            bon is dit de enige plek waar dat te zetten valt. */}
+        <Klusplanning werkbon={werkbon} onKlaar={refetch} />
+
+        {/* Kantoor kan de werkopdracht en de tekening er alsnog bij
+            zetten. Bij een klus uit ClickUp komen ze vanzelf mee, bij
+            een handmatige bon of een tekening die later los komt niet. */}
+        <Werkdocumenten werkbon={werkbon} onKlaar={refetch} />
 
         {/* De drie tekstvelden van het rapport bestonden als kolom sinds
             migratie 002 maar hadden nergens een invoerveld, en

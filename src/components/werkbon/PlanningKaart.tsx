@@ -23,6 +23,7 @@ function feitenVan(item: PlanningItem) {
     status: item.status === 'afgerond' ? 'voltooid' : 'open',
     stilgelegd_op: item.status === 'stilgelegd' ? 'ja' : null,
     puntenKlaar: item.puntenKlaar,
+    punten: item.punten,
   }
 }
 
@@ -139,6 +140,12 @@ export function PlanningKaart({ item, onOpen, loopIn, loopUit, ruim }: PlanningK
       {stand === 'stilgelegd' && (
         <div className="flex items-center gap-1 mt-2 text-[11px] font-semibold text-brand-red dark:text-red-400">
           <IconPlayerPause className="w-3 h-3 flex-shrink-0" /> wacht op een besluit
+        </div>
+      )}
+
+      {stand === 'af_te_ronden' && (
+        <div className="flex items-center gap-1 mt-2 text-[11px] font-semibold text-violet-700 dark:text-violet-400">
+          <IconCircleCheck className="w-3 h-3 flex-shrink-0" /> wacht op afronden
         </div>
       )}
 

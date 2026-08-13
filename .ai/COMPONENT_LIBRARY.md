@@ -166,6 +166,19 @@ Dit document beschrijft elke bestaande component in `src/components/`, plus de c
 **Styling:** kaart met status-afhankelijke kleur (groen bij voltooid), foto-thumbnails, camera-uploadveld, `Button` voor afvinken.
 **Regels:** een taak kan **niet** afgevinkt worden zonder minstens één foto (`heeftFoto`-check) — dit is een productregel, geen losse UI-beperking; bij wijzigingen aan deze flow eerst controleren of dit nog steeds de gewenste productregel is (zie `PROJECT.md`).
 
+### DocumentKiezer
+**Bestand:** `src/components/werkbon/DocumentKiezer.tsx`
+**Doel:** één PDF kiezen (werkopdracht of werktekening): tonen wat er ligt, vervangen, weghalen.
+**Gebruik:** `<DocumentKiezer label="Werkopdracht (PDF)" waarde={naam} bezig={bezig} onKies={fn} onWis={fn} />`
+**Styling:** één regel van minstens 56 px, gestippelde rand zolang er niets ligt, `IconFileTypePdf` in merkrood zodra er wel iets ligt.
+**Regels:** uploadt zelf niets en kent de werkbon niet — hij geeft alleen het gekozen bestand door. Dat is nodig omdat het bestand bij een nieuwe bon pas ná het opslaan de opslag in kan (het pad begint met het werkbon-id) en op een bestaande bon meteen. Valideren doet `controleerDocument()` in `lib/opdracht.ts`.
+
+### Werkdocumenten
+**Bestand:** `src/components/werkbon/Werkdocumenten.tsx`
+**Doel:** de werkopdracht en de werktekening beheren op een bestaande bon (kantoor).
+**Gebruik:** `<Werkdocumenten werkbon={werkbon} onKlaar={refetch} />`
+**Regels:** alleen op kantoorschermen. De ploeg ziet dezelfde documenten via `Klusinfo` — daar als knop om te openen, hier om te vervangen. Schrijven mag alleen wie werk mag beheren; dat wordt door de policies uit migratie 012 afgedwongen, niet door dit component.
+
 ---
 
 ## Nog te bouwen (volgens `UI_GUIDELINES.md` / `FEATURE_BACKLOG.md`)

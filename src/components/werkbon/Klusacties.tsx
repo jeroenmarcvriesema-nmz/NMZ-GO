@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth'
 import type { Werkbon } from '@/types'
 import {
   IconPlayerPause, IconPlayerPlay, IconCircleCheck,
-  IconAlertTriangle, IconInfoCircle,
+  IconAlertTriangle, IconInfoCircle, IconCalendarRepeat,
 } from '@tabler/icons-react'
 
 interface Props {
@@ -29,9 +29,19 @@ interface Props {
  * er sowieso niet doorheen. Dit scherm zegt het alleen eerder, zodat je
  * geen foutmelding krijgt maar een duidelijke vraag.
  */
+/**
+ * Waarmee een reden begint als de klus opnieuw ingepland moet worden.
+ *
+ * De database leidt de ClickUp-status af uit de tekst van de reden
+ * (`statusUitReden`): staat "opnieuw inplannen" erin, dan gaat de taak
+ * naar die status. Dat werkte al, maar je moest het maar net weten en
+ * precies zo tikken. De knop zet het er nu zelf voor.
+ */
+const OPNIEUW = 'Opnieuw inplannen'
+
 export function Klusacties({ werkbon, onKlaar }: Props) {
   const { magWerkBeheren } = useAuth()
-  const [stillegModal, setStillegModal] = useState(false)
+  const [modal, setModal] = useState<null | 'stilleggen' | 'opnieuw'>(null)
   const [reden, setReden] = useState('')
   const [bezig, setBezig] = useState(false)
   const [overlap, setOverlap] = useState<any[]>([])
@@ -40,29 +50,37 @@ export function Klusacties({ werkbon, onKlaar }: Props) {
 
   const stil = Boolean(werkbon.stilgelegd_op)
   const opgeleverd = Boolean(werkbon.opgeleverd_op)
+  // Een klus die opnieuw ingepland moet worden ligt óók stil, maar om
+  // een andere reden. Dat verschil hoort op het scherm te staan.
+  const wachtOpPlanning = stil && (werkbon.stilleg_reden ?? '').toLowerCase().startsWith(OPNIEUW.toLowerCase())
 
   const stilleggen = async () => {
     if (reden.trim().length < 3) return
+    const volledig = modal === 'opnieuw' ? `${OPNIEUW}: ${reden.trim()}` : reden.trim()
+
     setBezig(true)
     const { data, error } = await supabase.rpc('werkbon_stilleggen', {
       p_werkbon: werkbon.id,
-      p_reden: reden.trim(),
+      p_reden: volledig,
     })
     setBezig(false)
 
     if (error) {
-      toast.fout(error.message || 'Stilleggen lukte niet. Probeer het opnieuw.')
+      toast.fout(error.message || 'Dat lukte niet. Probeer het opnieuw.')
       return
     }
 
-    setStillegModal(false)
+    const opnieuw = modal === 'opnieuw'
+    setModal(null)
     setReden('')
     const gevonden = (data as any)?.overlap ?? []
     setOverlap(gevonden)
 
     toast.goed(gevonden.length > 0
-      ? `Klus stilgelegd — let op ${gevonden.length} mogelijke overlap`
-      : 'Klus stilgelegd, ClickUp wordt bijgewerkt')
+      ? `${opnieuw ? 'Klus gaat opnieuw ingepland worden' : 'Klus stilgelegd'} — let op ${gevonden.length} mogelijke overlap`
+      : opnieuw
+        ? 'Klus staat op opnieuw inplannen, ClickUp wordt bijgewerkt'
+        : 'Klus stilgelegd, ClickUp wordt bijgewerkt')
     onKlaar()
   }
 
@@ -99,7 +117,7 @@ export function Klusacties({ werkbon, onKlaar }: Props) {
             <IconAlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-orange-600 dark:text-orange-400" />
             <div className="min-w-0">
               <div className="text-sm font-bold text-orange-800 dark:text-orange-300">
-                Deze klus ligt stil
+                {wachtOpPlanning ? 'Deze klus moet opnieuw ingepland worden' : 'Deze klus ligt stil'}
               </div>
               <div className="text-sm text-orange-700 dark:text-orange-200/80 mt-0.5">
                 {werkbon.stilleg_reden}
@@ -123,14 +141,30 @@ export function Klusacties({ werkbon, onKlaar }: Props) {
               <IconPlayerPlay className="w-4 h-4" /> Klus hervatten
             </Button>
           ) : (
-            <Button
-              variant="secondary"
-              className="min-h-[44px]"
-              disabled={opgeleverd}
-              onClick={() => setStillegModal(true)}
-            >
-              <IconPlayerPause className="w-4 h-4" /> Klus stilleggen
-            </Button>
+            <>
+              <Button
+                variant="secondary"
+                className="min-h-[44px]"
+                disabled={opgeleverd}
+                onClick={() => setModal('stilleggen')}
+              >
+                <IconPlayerPause className="w-4 h-4" /> Klus stilleggen
+              </Button>
+
+              {/* Eigen knop, want dit is een andere beslissing dan
+                  stilleggen: de klus gaat niet verder vandaag én moet
+                  een nieuwe plek in de planning krijgen. Tot nu toe
+                  kwam je er alleen door precies "opnieuw inplannen" in
+                  de reden te typen. */}
+              <Button
+                variant="secondary"
+                className="min-h-[44px]"
+                disabled={opgeleverd}
+                onClick={() => setModal('opnieuw')}
+              >
+                <IconCalendarRepeat className="w-4 h-4" /> Opnieuw inplannen
+              </Button>
+            </>
           )}
 
           {!opgeleverd && (
@@ -174,9 +208,9 @@ export function Klusacties({ werkbon, onKlaar }: Props) {
       </Card>
 
       <Modal
-        open={stillegModal}
-        onClose={() => { setStillegModal(false); setReden('') }}
-        title="Klus stilleggen"
+        open={modal !== null}
+        onClose={() => { setModal(null); setReden('') }}
+        title={modal === 'opnieuw' ? 'Klus opnieuw inplannen' : 'Klus stilleggen'}
       >
         <div className="space-y-4">
           {/* Er stond dat de opleverdatum één dag opschoof. Dat deed de
@@ -186,34 +220,49 @@ export function Klusacties({ werkbon, onKlaar }: Props) {
               inventarisatie. De planning verschuift dus niet — dat
               blijft een keuze van de planner. */}
           <p className="text-sm text-gray-600 dark:text-white/60">
-            {werkbon.adres} gaat op stil. De taak in ClickUp krijgt een passende
-            status met je reden erbij. De planning verschuift niet: dat blijft
-            een keuze van de planner.
+            {modal === 'opnieuw' ? (
+              <>
+                {werkbon.adres} gaat naar <em>opnieuw inplannen/later</em> in ClickUp.
+                De klus blijft bestaan met al zijn punten en foto's; hij wacht op
+                een nieuwe datum van de planner. Zet die datum daarna hieronder
+                bij <strong>Planning</strong> en hervat de klus.
+              </>
+            ) : (
+              <>
+                {werkbon.adres} gaat op stil. De taak in ClickUp krijgt een passende
+                status met je reden erbij. De planning verschuift niet: dat blijft
+                een keuze van de planner.
+              </>
+            )}
           </p>
 
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-white/70 mb-1.5">
-              Waarom ligt de klus stil?
+              {modal === 'opnieuw' ? 'Waarom moet hij opnieuw ingepland worden?' : 'Waarom ligt de klus stil?'}
             </label>
             <textarea
               value={reden}
               onChange={(e) => setReden(e.target.value)}
               rows={3}
               autoFocus
-              placeholder="Bijvoorbeeld: ziekte, geen compleet koppel"
+              placeholder={modal === 'opnieuw'
+                ? 'Bijvoorbeeld: bewoner niet thuis, vloer nog niet vrij'
+                : 'Bijvoorbeeld: ziekte, geen compleet koppel'}
               className="w-full rounded-sm border border-gray-200 dark:border-white/10 bg-white dark:bg-surface-dark-2 px-3 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:border-brand-yellow transition-all"
             />
             {/* Geen keuzelijst: wie een klus stillegt heeft haast. Wel
-                deze hint, want twee woorden sturen de ClickUp-status. */}
-            <p className="text-xs text-gray-400 dark:text-white/40 mt-1.5">
-              Staat er <strong>asbest</strong> in, dan gaat de taak naar de
-              asbeststatus. Bij <strong>opnieuw inplannen</strong> naar die
-              status. Verder wordt het "on hold".
-            </p>
+                deze hint, want één woord stuurt de ClickUp-status. */}
+            {modal === 'stilleggen' && (
+              <p className="text-xs text-gray-400 dark:text-white/40 mt-1.5">
+                Staat er <strong>asbest</strong> in, dan gaat de taak naar de
+                asbeststatus. Verder wordt het "on hold". Moet de klus een nieuwe
+                datum krijgen, gebruik dan de knop <strong>Opnieuw inplannen</strong>.
+              </p>
+            )}
           </div>
 
           <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
-            <Button variant="secondary" onClick={() => { setStillegModal(false); setReden('') }}>
+            <Button variant="secondary" onClick={() => { setModal(null); setReden('') }}>
               Annuleren
             </Button>
             <Button
@@ -222,7 +271,9 @@ export function Klusacties({ werkbon, onKlaar }: Props) {
               disabled={reden.trim().length < 3}
               onClick={stilleggen}
             >
-              <IconPlayerPause className="w-4 h-4" /> Stilleggen
+              {modal === 'opnieuw'
+                ? <><IconCalendarRepeat className="w-4 h-4" /> Opnieuw inplannen</>
+                : <><IconPlayerPause className="w-4 h-4" /> Stilleggen</>}
             </Button>
           </div>
         </div>

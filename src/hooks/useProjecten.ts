@@ -12,9 +12,10 @@ import type { PlanningItem, ProjectStatus } from '@/types'
 // `/projecten/:id` is verwijderd — daar wees niets meer naartoe en hij
 // kon niets tonen.
 //
-// Wat overbleef is wat wél gebruikt wordt: de weekplanning, en de twee
-// statushelpers die de projectenlijst gebruikt om een groep klussen een
-// kleur en een label te geven.
+// Wat overbleef is de weekplanning. De twee statushelpers die hier ook
+// stonden — statusLabel en statusKleur, met "Actief" waar de rest van
+// de app "Bezig" zegt — zijn weg: de projectenpagina haalt woord en
+// kleur nu uit `lib/klusstand.ts`, net als elk ander scherm.
 // ============================================================
 
 // De planning is afgeleid uit werkbonnen: elke werkbon met een datum is
@@ -76,28 +77,4 @@ export function usePlanning() {
   }, [])
 
   return { planning, loading, error }
-}
-
-export function statusLabel(s: ProjectStatus): string {
-  const map: Record<ProjectStatus, string> = {
-    actief: 'Actief',
-    stilgelegd: 'Ligt stil',
-    niet_gestart: 'Niet gestart',
-    op_schema: 'Op schema',
-    vertraging: 'Vertraging',
-    afgerond: 'Afgerond',
-  }
-  return map[s]
-}
-
-export function statusKleur(s: ProjectStatus): string {
-  const map: Record<ProjectStatus, string> = {
-    actief: 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-500/30',
-    niet_gestart: 'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-white/50 border-gray-200 dark:border-white/10',
-    op_schema: 'bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 border-green-200 dark:border-green-500/30',
-    vertraging: 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/30',
-    afgerond: 'bg-green-100 dark:bg-green-500/15 text-green-800 dark:text-green-400 border-green-300 dark:border-green-500/30',
-    stilgelegd: 'bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-300 dark:border-orange-500/30',
-  }
-  return map[s]
 }

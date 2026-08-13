@@ -6,6 +6,38 @@ Lees hoofdstuk 0 als eerste — dat is de actuele stand. De hoofdstukken daarna 
 
 ---
 
+# 0a. Synchroniciteitscontrole — 12 augustus 2026, 19:20
+
+Gecontroleerd op verzoek van de eigenaar: lopen git, GitHub, de database, de edge functions en Netlify gelijk? Alles hieronder is geverifieerd tegen de bron, niet aangenomen. **Eén ding klopt niet en staat onderaan.**
+
+| Onderdeel | Stand |
+|---|---|
+| Migratiebestanden ↔ database | **Gelijk.** 31 bestanden (001–031), alle effecten aanwezig. `001` en `002` staan niet in `supabase_migrations` (van vóór dat logboek); 003–031 wel, inclusief `storingen_alleen_eigenaar` (030) en `werkdag_automatisch_afsluiten` (031). Steekproef op de policy van `fouten` en op de functies van 027/031: aanwezig. |
+| Edge function `opdracht-lezen` | v1, gelijk aan de repo. |
+| Edge function `ploeg-bijwerken` | v1, gelijk aan de repo. |
+| Edge function `verwerker` | v13, gelijk aan de repo (uitgerold en teruggelezen ter controle op 12 augustus, 19:40). |
+| pg_cron | Vier jobs, alle vier actief: `nmzgo-verwerker` (elke minuut), `nmzgo-clickup-hartslag` (\*/5 4–19 UTC), `nmzgo-werkdagen-afsluiten` (:05 elk uur), `nmzgo-fotos-opruimen` (03:15 UTC). |
+| GitHub, open PR's | Geen. De vier PR's die er ooit waren zijn gesloten zonder merge; er wordt rechtstreeks op `main` gewerkt. |
+| Netlify | Volgt `main` automatisch. **Niet te verifiëren vanuit een sessie** — de agent-proxy blokkeert `nmz-go.netlify.app`. Controleer in het Netlify-dashboard of de laatste deploy hoort bij de HEAD van `main`. |
+
+**Branches:**
+
+| Branch | Stand | Wat ermee moet |
+|---|---|---|
+| `main` | HEAD | — |
+| `claude/manual-add-file-upload-pdf-47c4q2` | 4 vóór, 0 achter | Klaar om te mergen (bevat `main`). |
+| `claude/fotos-werkdagflow-bfro09` | 0/0 | Volledig in `main`; mag weg. |
+| `claude/verification-roles-test-n5t4ec` | 0 vóór, 37 achter | Volledig in `main`; mag weg. |
+| `feature/dark-mode-redesign` | 9 vóór, **geen gemeenschappelijke voorouder** | Losse geschiedenis van vóór de her-init (Sprint 2/3). De inhoud zit inhoudelijk allang in `main`. Niet mergen — hoogstens opruimen. |
+
+**Wat er die avond nog is rechtgezet.** De `verwerker` liep achter op de repo en is uitgerold (v13). Daarmee zijn drie dingen live gegaan die alleen in de repo stonden: `register.ts` (de ronde vult het personenregister aan), de stilleg-tekst die geen verschoven opleverdatum meer belooft — migratie 029 was wél toegepast, dus productie meldde daar iets onjuists — en de handler `onderhoud.fotos_opruimen`. Blok E van migratie 027 is daarna alsnog uitgevoerd, zodat die handler ook echt wordt aangeroepen.
+
+De eerste ronde op v13 (17:45 UTC) bewees het meteen: `register: {gelezen: 35, toegevoegd: ["Jeffrey Huizenga", "Anthony", "Nico Kuijt"]}` — precies de drie namen die de eigenaar in ClickUp had toegevoegd en die in de app niet bestonden. 29 taken gezien, geen enkele mislukt.
+
+Vóór het aanzetten van de opruimcron is gecontroleerd wat hij zou raken: nul foto's en nul weesbestanden. De eerste die in aanmerking komt is die van 10 augustus, en pas veertien dagen na oplevering — er gebeurt dus niets vóór eind augustus.
+
+---
+
 # 0. Actuele stand — augustus 2026
 
 ## LEES DIT EERST — waar je begint
@@ -189,6 +221,54 @@ Daarmee is `projecten` ook uit `usePlanning()` verdwenen: de join
 `project:projecten` gaf bij elke rij een leeg project terug, en
 `PlanningItem.projectId` en `projectnaam` zijn met de join mee weg. In
 `src/` staat nu geen enkele verwijzing meer naar die tabel.
+
+**Storingen staan op `/storingen` en zijn alleen voor de eigenaar.** Ze
+stonden als kaart op het dashboard en waren leesbaar voor alle vijf de
+kantoorrollen. Het slot zit nu op drie plekken: menu (`Sidebar`,
+`MobileNav`, achter `isEigenaar`), route (`EigenaarGuard` in `App.tsx`,
+slot `'eigenaar'` in `lib/rollen.ts`) en database. Alleen de derde is
+beveiliging.
+
+> **LET OP — migratie 030 is nog niet toegepast.** Het bestand staat in
+> `supabase/migrations/030_storingen_alleen_eigenaar.sql` maar is nog
+> niet tegen de database gedraaid. Zolang dat niet is gebeurd is de
+> storingenpagina alleen in de frontend afgeschermd en kan elke
+> kantoorrol de tabel `fouten` gewoon bevragen. Draai hem, en controleer
+> daarna met de query onderaan het migratiebestand.
+
+**Het dashboard telde een derde van het werk.** De KPI's lazen
+`werkbonnen` met `datum = vandaag`: vijf van de eenendertig bonnen,
+terwijl er veertien lopen. `useDashboard` haalt nu een tweede, smalle
+query op over de hele voorraad en telt met `klusstand()`. De volgorde
+van het scherm is omgedraaid: cijfers, dan projectoverzicht en
+activiteit, dan pas de meldingen.
+
+**Eén woordenlijst.** `ProjectTabel` en `useProjecten` hadden elk een
+eigen statuslijstje; die zijn weg. `Klusgroep.status` is nu een
+`Klusstand` in plaats van een `ProjectStatus`, en `STANDVOLGORDE` in
+`lib/klusstand.ts` is de enige sorteervolgorde — dashboard, projecten en
+planning gebruiken hem. "Mijn week" van de zwamsaneerder bewust niet.
+
+**De statusknoppen op de werkbon zijn vereenvoudigd.** De drie knopjes
+(Open/Bezig/Voltooid) zijn één handeling geworden: afronden als alles is
+afgevinkt, heropenen als de bon al op afgerond staat, en anders de reden
+waarom afronden nog niet kan. Een opgeleverde bon biedt geen heropenen
+meer aan — dat dossier is dicht. Het filter op Alle werkbonnen draait nu
+op de afgeleide stand (Alle · Niet gestart · Bezig · Afgerond · Ligt
+stil) in plaats van op de kolom, waar twee van de vier knoppen altijd
+nul resultaten gaven.
+
+De kolom `werkbonnen.status` blijft bestaan met alle drie de waarden, en
+`klusstand()` accepteert `'bezig'` nog steeds. Alleen schrijft de app die
+waarde nergens meer. Geen migratie.
+
+Een bon waar alles is afgevinkt maar die nog niet is afgerond heeft een
+eigen stand gekregen: `af_te_ronden`, "Klaar om af te ronden", in
+violet. Zes standen dus. Violet en niet amber, want geel is merkkleur;
+en niet turkoois, want dat lag in donkere modus te dicht bij groen — en
+het verschil met "klaar" is precies waarvoor deze stand bestaat. Op
+Alle werkbonnen heeft hij een eigen filterknop: dat is de wachtrij van
+kantoor.
 
 **Eén kleurtaal, en waarom die er niet was.** Niets zet ooit
 `werkbonnen.status` op `'bezig'` — de ClickUp-synchronisatie raakt de

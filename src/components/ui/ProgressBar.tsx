@@ -4,7 +4,7 @@ interface ProgressBarProps {
   value: number
   className?: string
   size?: 'sm' | 'md'
-  variant?: 'yellow' | 'green' | 'red'
+  variant?: 'yellow' | 'green' | 'red' | 'violet'
 }
 
 export function ProgressBar({ value, className, size = 'sm', variant = 'yellow' }: ProgressBarProps) {
@@ -14,6 +14,10 @@ export function ProgressBar({ value, className, size = 'sm', variant = 'yellow' 
     yellow: 'bg-gradient-to-r from-brand-yellow to-brand-yellow-dark',
     green:  'bg-gradient-to-r from-green-500 to-green-600',
     red:    'bg-gradient-to-r from-brand-red to-brand-red-dark',
+    // Hoort bij de stand "klaar om af te ronden". Zonder deze variant
+    // sloeg de balk op honderd procent om naar groen — op een kaart die
+    // juist zegt dat de klus nog níét is afgerond.
+    violet: 'bg-gradient-to-r from-violet-500 to-violet-600',
   }
   return (
     <div className={cn('w-full bg-surface-2 dark:bg-white/10 rounded-full overflow-hidden', heights[size], className)}>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { klusstand, vergelijkStand, type Klusstand } from '@/lib/klusstand'
 
 // ── Dashboard ──────────────────────────────────────────────────
 // Draaide tot nu toe op mock data. Nu op de echte tabellen:
@@ -16,12 +17,31 @@ export interface ProjectRegel {
   projectnaam: string
   adres: string
   team: string[]
-  status: 'gestart' | 'niet_gestart' | 'achter' | 'afgerond'
+  /**
+   * Dezelfde stand als op de werkbonnen, de planning en het archief.
+   *
+   * Dit was een eigen lijstje — 'gestart' | 'niet_gestart' | 'achter' |
+   * 'afgerond' — met eigen kleuren, waaronder rood voor "achter".
+   * Rood betekent elders "ligt stil", en "Bezig" heette hier "Gestart".
+   * Eén woordenlijst dus, uit `lib/klusstand.ts`.
+   */
+  stand: Klusstand
+  /**
+   * Achter op schema: al twee uur bezig en nog geen halve bon af.
+   *
+   * Bewust géén stand maar een vlag ernaast. Het gaat over het tempo
+   * van vandaag en niet over waar de klus staat — een klus kan
+   * tegelijk "bezig" én achter zijn, en dat is precies de combinatie
+   * die je wilt zien.
+   */
+  achter: boolean
   voortgang: number             // 0-100
   aantalFotos: number
   aantalTaken: number
   aantalTakenKlaar: number
   laatsteUpdate: string | null  // ISO timestamp
+  /** Startdatum, voor de tweede sortering binnen dezelfde stand. */
+  start: string
 }
 
 export interface Melding {
@@ -39,23 +59,42 @@ export interface Activiteit {
   type: 'start' | 'fotos' | 'afgerond' | 'info'
 }
 
+/**
+ * De werkvoorraad geteld per stand.
+ *
+ * Het dashboard telde uitsluitend werkbonnen met `datum = vandaag`.
+ * Dat zijn er vijf van de eenendertig, terwijl er veertien klussen
+ * daadwerkelijk lopen: een klus die vorige week begon en tot volgende
+ * week doorloopt heeft `datum` in het verleden en viel er dus buiten.
+ * Het dashboard toonde daarmee een derde van de werkelijkheid.
+ *
+ * Deze telling gaat over álle openstaande klussen, met dezelfde standen
+ * als de rest van de app (`lib/klusstand.ts`) — geen tweede
+ * statuslogica.
+ */
+export type Werkvoorraad = Record<Klusstand, number>
+
 export interface DashboardData {
-  actieveProjecten: number
+  /** Alle openstaande klussen, per stand. */
+  werkvoorraad: Werkvoorraad
+  /** Klussen waarvan de opleverdatum voorbij is en die nog niet af zijn. */
+  uitgelopen: number
   vandaagGestart: number
-  nogNietGestart: number
   achterOpSchema: number
-  vandaagAfgerond: number
   projecten: ProjectRegel[]
   meldingen: Melding[]
   activiteit: Activiteit[]
 }
 
+const GEEN_VOORRAAD: Werkvoorraad = {
+  niet_gestart: 0, bezig: 0, af_te_ronden: 0, afgerond: 0, opgeleverd: 0, stilgelegd: 0,
+}
+
 const LEEG: DashboardData = {
-  actieveProjecten: 0,
+  werkvoorraad: GEEN_VOORRAAD,
+  uitgelopen: 0,
   vandaagGestart: 0,
-  nogNietGestart: 0,
   achterOpSchema: 0,
-  vandaagAfgerond: 0,
   projecten: [],
   meldingen: [],
   activiteit: [],
@@ -85,6 +124,11 @@ const SELECT = `
   werkbon_medewerkers ( persoon:personen ( id, naam ) )
 `
 
+const VOORRAAD_SELECT = `
+  id, status, stilgelegd_op, opgeleverd_op, datum, geplande_start, geplande_eind,
+  taken ( id, voltooid )
+`
+
 function tijdKort(iso: string): string {
   return new Date(iso).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })
 }
@@ -102,15 +146,23 @@ export function useDashboard(): { data: DashboardData; loading: boolean; error: 
     setLoading(true)
     const vandaag = new Date().toISOString().split('T')[0]
 
-    const [bonnenRes, logsRes] = await Promise.all([
+    const [bonnenRes, logsRes, voorraadRes] = await Promise.all([
       supabase.from('werkbonnen').select(SELECT).eq('datum', vandaag),
       supabase.from('werkdag_logs')
         .select('werkbon_id, start_tijd, stop_tijd, medewerker:profiles ( naam )')
         .eq('datum', vandaag),
+      // Alles, maar smal: alleen wat nodig is om de stand te bepalen.
+      // Eenendertig rijen met per punt een id en een vinkje — een
+      // fractie van de zware select hierboven, en het enige antwoord op
+      // "hoeveel klussen lopen er nu".
+      supabase.from('werkbonnen').select(VOORRAAD_SELECT),
     ])
 
-    if (bonnenRes.error || logsRes.error) {
-      setError(bonnenRes.error?.message ?? logsRes.error?.message ?? 'Onbekende fout')
+    if (bonnenRes.error || logsRes.error || voorraadRes.error) {
+      setError(
+        bonnenRes.error?.message ?? logsRes.error?.message
+        ?? voorraadRes.error?.message ?? 'Onbekende fout'
+      )
       setLoading(false)
       return
     }
@@ -139,20 +191,12 @@ export function useDashboard(): { data: DashboardData; loading: boolean; error: 
         (max, f) => (!max || f.created_at > max ? f.created_at : max), null
       )
 
-      let status: ProjectRegel['status']
-      if (b.status === 'voltooid') {
-        status = 'afgerond'
-      } else if (!gestartOp) {
-        status = 'niet_gestart'
-      } else if (
+      const achter = Boolean(
+        gestartOp &&
         urenSinds(gestartOp) >= UREN_VOOR_VOORTGANG &&
         aantalTaken > 0 &&
         aantalTakenKlaar / aantalTaken < VOORTGANG_DREMPEL
-      ) {
-        status = 'achter'
-      } else {
-        status = 'gestart'
-      }
+      )
 
       return {
         id: b.id,
@@ -161,7 +205,9 @@ export function useDashboard(): { data: DashboardData; loading: boolean; error: 
         team: (b.werkbon_medewerkers || [])
           .map((wm: any) => wm.persoon?.naam)
           .filter(Boolean),
-        status,
+        stand: klusstand(b),
+        achter,
+        start: b.geplande_start ?? b.datum ?? '',
         voortgang,
         aantalFotos: fotos.length,
         aantalTaken,
@@ -172,12 +218,23 @@ export function useDashboard(): { data: DashboardData; loading: boolean; error: 
       }
     })
 
+    // Op stand gesorteerd, niet op de volgorde waarin de database ze
+    // teruggaf. Wat stilligt of op afronden wacht staat bovenaan; bij
+    // gelijke stand het werk dat het langst loopt.
+    projecten.sort((a, b) => vergelijkStand(a, b, (p) => ({
+      status: p.stand === 'afgerond' ? 'voltooid' : 'open',
+      stilgelegd_op: p.stand === 'stilgelegd' ? 'ja' : null,
+      opgeleverd_op: p.stand === 'opgeleverd' ? 'ja' : null,
+      puntenKlaar: p.aantalTakenKlaar,
+      punten: p.aantalTaken,
+    }), (p) => p.start))
+
     // ── Meldingen ────────────────────────────────────────────────
     const meldingen: Melding[] = []
     const naVerwachteStart = new Date().getHours() >= START_VERWACHT_UUR
 
     projecten.forEach((p) => {
-      if (p.status === 'niet_gestart' && naVerwachteStart) {
+      if (p.stand === 'niet_gestart' && naVerwachteStart) {
         meldingen.push({
           id: `niet-gestart-${p.id}`, type: 'niet_gestart',
           tekst: 'Nog niet gestart', project: p.adres,
@@ -186,7 +243,7 @@ export function useDashboard(): { data: DashboardData; loading: boolean; error: 
       }
 
       const gestartOp = startPerBon.get(p.id)
-      if (gestartOp && p.aantalFotos === 0 && urenSinds(gestartOp) >= UREN_ZONDER_FOTO && p.status !== 'afgerond') {
+      if (gestartOp && p.aantalFotos === 0 && urenSinds(gestartOp) >= UREN_ZONDER_FOTO && p.stand !== 'afgerond') {
         meldingen.push({
           id: `geen-fotos-${p.id}`, type: 'geen_fotos',
           tekst: "Geen foto's ontvangen", project: p.adres,
@@ -194,7 +251,7 @@ export function useDashboard(): { data: DashboardData; loading: boolean; error: 
         })
       }
 
-      if (p.status === 'achter') {
+      if (p.achter) {
         meldingen.push({
           id: `achter-${p.id}`, type: 'controle',
           tekst: 'Achter op schema', project: p.adres,
@@ -251,13 +308,30 @@ export function useDashboard(): { data: DashboardData; loading: boolean; error: 
 
     activiteit.sort((a, z) => a.tijd.localeCompare(z.tijd))
 
+    // ── Werkvoorraad ─────────────────────────────────────────────
+    // Over álle klussen, niet alleen die van vandaag. Dezelfde standen
+    // als op de werkbonnen, de planning en het archief.
+    const werkvoorraad: Werkvoorraad = { ...GEEN_VOORRAAD }
+    let uitgelopen = 0
+
+    for (const b of (voorraadRes.data ?? []) as any[]) {
+      const stand = klusstand(b)
+      werkvoorraad[stand] += 1
+
+      // Uitgelopen: de opleverdatum is voorbij en de klus is niet af.
+      // Dat is iets anders dan "achter op schema" hieronder, wat over
+      // het tempo van vandaag gaat.
+      const eind = b.geplande_eind ?? b.geplande_start ?? b.datum
+      const open = stand !== 'afgerond' && stand !== 'opgeleverd'
+      if (open && eind && eind < vandaag) uitgelopen += 1
+    }
+
     setError(null)
     setData({
-      actieveProjecten: projecten.filter((p) => p.status !== 'afgerond').length,
+      werkvoorraad,
+      uitgelopen,
       vandaagGestart: startPerBon.size,
-      nogNietGestart: projecten.filter((p) => p.status === 'niet_gestart').length,
-      achterOpSchema: projecten.filter((p) => p.status === 'achter').length,
-      vandaagAfgerond: projecten.filter((p) => p.status === 'afgerond').length,
+      achterOpSchema: projecten.filter((p) => p.achter).length,
       projecten,
       meldingen,
       activiteit,

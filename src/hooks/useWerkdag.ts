@@ -112,9 +112,13 @@ export function useWerkdag(werkbonId: string | null) {
     setBezig(true)
 
     const nu = new Date()
+    // De vlag mee terugzetten: dit is een echte afmelding, ook als de
+    // nachtronde de dag eerder al op 17:00 had dichtgezet (migratie
+    // 031). Blijft hij staan, dan noemt de administratie later een
+    // opgeschreven tijd een aanname.
     const { data, error } = await supabase
       .from('werkdag_logs')
-      .update({ stop_tijd: nu.toISOString() })
+      .update({ stop_tijd: nu.toISOString(), automatisch_afgesloten: false })
       .eq('id', state.werkdagLogId)
       .select('id')
 
@@ -143,7 +147,7 @@ export function useWerkdag(werkbonId: string | null) {
 
     const { data, error } = await supabase
       .from('werkdag_logs')
-      .update({ stop_tijd: null })
+      .update({ stop_tijd: null, automatisch_afgesloten: false })
       .eq('id', state.werkdagLogId)
       .select('id')
 

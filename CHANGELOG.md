@@ -7,6 +7,75 @@
 - **[FIX]** De synchronisatie las maar één pagina van ClickUp. Die geeft er honderd per keer terug en zegt in `last_page` of er meer zijn — dat werd niet gelezen. Nu staan er 26 taken op de triggerstatussen, dus het viel niet op; op de dag dat het er meer worden zou de rest zonder melding verdwijnen. Wordt nu doorgebladerd.
 - **[FIX]** "Geen werkopdracht-PDF op de taak" zei niet wat er moest gebeuren. De melding noemt nu allebei de plekken waar gekeken is.
 - Twee klussen blijven bewust buiten de app staan, met reden in het resultaat: bij Amsteldijk 157 HS staat de werkopdracht in de ClickUp-omschrijving in plaats van in een PDF, en Project Utrecht heeft geen enkele bijlage.
+## Een klus met de hand inplannen
+
+- **[FEATURE]** Bij het handmatig aanmaken van een werkbon kun je nu een **startdatum en een opleverdatum** invullen. Zonder die twee viel een handmatige bon terug op "vandaag" en stond hij dus in de verkeerde week — precies het geval dat je nodig hebt als een klus niet vanzelf uit ClickUp komt. De opleverdatum mag leeg blijven; dan is het een klus van één dag.
+- **[FEATURE]** Op de werkbon zelf staat nu een kaart **Planning** waarmee je die twee datums alsnog kunt wijzigen. Een typefout betekende hiervoor: bon weggooien en opnieuw aanmaken. Bij een klus uit ClickUp staat erbij dat ClickUp wint — de eerstvolgende ronde zet de datums daar terug.
+- **[FEATURE]** Eigen knop **"Opnieuw inplannen"** naast stilleggen. De ClickUp-status *opnieuw inplannen/later* was al bereikbaar, maar alleen door precies die woorden in de reden te typen; nu zet de knop dat zelf. De melding op de bon zegt dan "Deze klus moet opnieuw ingepland worden" in plaats van "ligt stil" — dezelfde toestand, een andere beslissing.
+- Geen migratie: de database leidt de ClickUp-status al af uit de reden (`statusUitReden`, migratie 015).
+
+## Repo en productie weer op één lijn
+
+- **[FIX]** De edge function `verwerker` liep achter op de repo en is uitgerold (v13). Daarmee gingen drie dingen live die alleen in de code stonden: het bijwerken van het personenregister tijdens elke ronde, de stilleg-tekst naar ClickUp die geen verschoven opleverdatum meer belooft (migratie 029 was al toegepast, dus productie meldde daar iets onjuists), en de handler voor het opruimen van de fotobucket.
+- De eerste ronde op de nieuwe versie bewees het meteen: `toegevoegd: ["Jeffrey Huizenga", "Anthony", "Nico Kuijt"]` — precies de drie namen die in ClickUp waren toegevoegd en in de app niet bestonden. 29 taken gezien, niets mislukt.
+- **[FIX]** Blok E van migratie 027 was nooit uitgevoerd: de cronjob `nmzgo-fotos-opruimen` bestond niet, dus de opruimronde van de fotobucket draaide nooit. Staat nu ingepland op 03:15 UTC. Vooraf gecontroleerd wat hij zou raken: nul foto's, nul weesbestanden — de wachttijd van veertien dagen na oplevering betekent dat er tot eind augustus niets gebeurt.
+- **[FEATURE]** Elke deploy wordt voortaan teruggelezen en byte-voor-byte met de repo vergeleken; hoe dat gaat en welk onschuldig verschil je kunt tegenkomen staat in `DEPLOYMENT.md`. De volledige stand van git, database, functies en cron staat in `HANDOVER.md` (hoofdstuk 0a).
+
+## Een uitrol mag de man in het veld niet omvergooien
+
+- **[FIX]** Elke keer dat er een nieuwe versie werd uitgerold, klapte de app bij iedereen die hem al open had staan. De oorzaak zit in de combinatie van twee dingen die los prima zijn: elk scherm wordt apart ingeladen met een hash in de bestandsnaam, en `netlify.toml` stuurt alles wat niet bestaat door naar `index.html`. Een telefoon die sinds vanochtend openstaat vraagt dus om een bestand dat niet meer bestaat en krijgt HTML terug in plaats van JavaScript: *"'text/html' is not a valid JavaScript MIME type"*. Op 12 augustus stond dat acht keer in het foutenlogboek, bij twee gebruikers, op een dag met drie uitrollen.
+- Nu vangt de app het zelf op. Vite meldt zo'n mislukte inlaadpoging, en de app herlaadt zichzelf — hoogstens één keer per minuut, want een herlaadlus is erger dan de fout. Komt het tóch bij de Foutvanger terecht, dan staat er geen rood storingsscherm maar "Er is een nieuwe versie" met één knop. Het is namelijk geen storing.
+- **[FIX]** Een mislukte foto-upload gaf altijd dezelfde zin: *"De foto kon niet worden opgeslagen. Probeer het opnieuw."* Dat klopt zelden. Er zijn drie gevallen met drie verschillende vervolgstappen: geen bereik (straks opnieuw), sessie verlopen doordat de telefoon lang op de achtergrond stond (opnieuw inloggen — drukken helpt niet), of een echte serverfout (kantoor bellen). De app zegt nu welke van de drie het is.
+- **[FEATURE]** En vooral: **de foto blijft klaarstaan.** Mislukt het versturen, dan houdt het scherm het bestand vast en staat er een knop "Foto opnieuw versturen" — met dezelfde foto, zonder dat iemand terug de kruipruimte in moet.
+- **[FEATURE]** 9 tests erbij (`uploadfout`), **152 in totaal**.
+
+## Een werkdag die niet wordt afgemeld
+
+- **[FIX]** Wie 's avonds vergat af te melden, liet een werkdag openstaan — en die telde daarna voor **nul uren**, want `usePersoonDetail` slaat een log zonder stoptijd over. Op het dashboard stond zo iemand tot in de nacht "aan het werk". Twee dagen stonden er open, waarvan één van twee dagen oud.
+- **[FEATURE]** Migratie 031: `werkdagen_afsluiten()` zet zo'n dag dicht op **17:00**, in Amsterdamse tijd van zijn eigen datum (niet in UTC — anders verschuift het moment met de zomertijd). Draait elk uur via pg_cron; de functie kijkt zelf of vijf uur al geweest is, dus de werkdag van vanmiddag blijft gewoon lopen.
+- 17:00 is een aanname en geen meting, en dat staat er ook bij: de nieuwe kolom `automatisch_afgesloten` maakt het verschil zichtbaar tussen "hij heeft afgemeld" en "de computer heeft het dichtgezet". Meldt iemand alsnog zelf af of hervat hij zijn dag, dan gaat die vlag weer uit.
+- Wat dit **niet** is: urenregistratie. Geen pauzes, geen correcties, geen goedkeuring — die grens uit migratie 006 blijft staan. Dit repareert alleen dat een dag helemaal niet meetelde.
+
+## De ploeg groeide niet mee met ClickUp
+
+- **[FIX]** Wie in ClickUp bij het veld *Medewerkers* werd toegevoegd, bestond in NMZ GO niet. De oorzaak: "De ploeg" komt uit de tabel `personen`, en die is één keer met de hand gevuld door migratie 010/014 met 32 namen. **Niets werkte die lijst ooit bij** — de synchronisatie leest hem alleen om namen op een klus te herkennen, en de app had geen enkele knop om iemand toe te voegen. Verversen hielp dus niet: de namen stonden nergens.
+- **[FEATURE]** De synchronisatieronde houdt het register nu gelijk met ClickUp. De keuzelijst van het medewerkersveld zit al in elke taak die hij toch al ophaalt, dus dat kost geen extra aanroep. Nieuwe namen worden aangemaakt (naam én ClickUp-koppeling), en de labellijst in de instellingen groeit mee.
+- **[FEATURE]** Knop **"Uit ClickUp ophalen"** op de medewerkerspagina, voor wie niet op de volgende ronde wil wachten omdat er vanmiddag iemand ingepland moet worden. Werkt ook in een week zonder klussen: de nieuwe edge function `ploeg-bijwerken` vraagt de veldenlijst rechtstreeks bij ClickUp op. De service-role wordt daar voor precies één ding gebruikt — het token uit Vault — en al het lezen en schrijven daarna gaat door de client van de aanroeper, dus RLS bepaalt wat mag.
+- **[FEATURE]** Knop **"Persoon toevoegen"** ernaast: naam en optioneel de ClickUp-naam. Nodig voor wie helemaal niet in ClickUp staat, en als noodklep als de koppeling hapert.
+- Twee dingen gebeuren bewust **niet**: er wordt niemand verwijderd als een naam uit ClickUp verdwijnt (er hangen werkbonnen, uren en misschien een account aan), en een bestaande koppeling wordt nooit stilletjes gebroken — de labellijst is de vereniging van wat ClickUp aanbiedt en wat al in gebruik is.
+- De regels staan in één bestand (`verwerker/register.ts`) dat door allebei de wegen wordt gebruikt. Twee kopieën lopen uit de pas, en dan hangt het van de route af of iemand wel of niet in de ploeg belandt.
+
+## De werkopdracht mag er ook met de hand in
+
+- **[FEATURE]** Bij het handmatig aanmaken van een werkbon kun je nu de **werkopdracht als PDF** aanreiken. De punten onder *Uit te voeren werkzaamheden* worden eruit gehaald en staan meteen als taken op de bon — met dezelfde parser als de ClickUp-route, dus dezelfde punten voor dezelfde opdracht. Kluiscode, inspecteur, telefoonnummer, adres en werkvoorbereiding komen mee, en het opdrachtnummer van de werkvoorbereider wordt het bonnummer (migratie 022).
+- Wat al ingevuld staat blijft staan. Zijn er al punten ingetypt, dan overschrijft de PDF ze niet maar verschijnt er een knop *Punten overnemen*. Tien punten kwijtraken omdat je de tekening erbij zocht is geen wisselgeld.
+- Is het geen NMZ-werkopdracht, dan valt de herkenning terug op opsommingstekens en nummers — dezelfde herkenning als het tabblad *Gripp import* — en zegt het scherm er eerlijk bij dat de punten nagelopen moeten worden. Een scan zonder tekstlaag levert een duidelijke melding op in plaats van een lege lijst.
+- **[FEATURE]** **Werkopdracht en werktekening als PDF toevoegen**, zowel bij het aanmaken als achteraf op een bestaande bon. De opslag ervoor bestond al sinds migratie 012 — besloten bucket, kolommen `opdracht_pad` en `tekening_pad`, en de knoppen op de bon — maar werd alleen gevuld door de ClickUp-synchronisatie. Een klus die met de hand werd aangemaakt kreeg ze dus nooit, en een tekening die later los kwam kon er niet meer bij zonder de bon opnieuw te maken.
+- **[FEATURE]** Nieuwe edge function `opdracht-lezen`: één PDF erin, de punten eruit. Hij schrijft niets weg en gebruikt geen service-role — hij werkt met het token van de gebruiker, dus RLS geldt onverkort en wie geen werk mag beheren komt er niet voorbij de deur. De PDF-leeslaag zit daarmee op de server, niet in de bundel van een telefoon.
+- **[FEATURE]** 9 tests erbij (`opdracht`), **143 in totaal**.
+- Geen migratie nodig: bucket, kolommen en policies stonden er al.
+
+## Dashboard, projecten, planning en de storingen
+
+### Storingen zijn van de eigenaar
+- **[FIX]** De crashes van de app stonden als kaart bovenaan het dashboard, boven het werk. Dat is de verkeerde volgorde: het dashboard gaat over klussen, en een uitvoerder die zijn week inplant heeft niets aan een stacktrace. Ze staan nu op een eigen pagina, `/storingen`, met een eigen lege staat en een foutstaat, en kijken veertien dagen terug in plaats van zeven.
+- **[FIX]** En ze waren te breed zichtbaar. `fouten_select_kantoor` stond open voor alle vijf de kantoorrollen, terwijl er in staat wat er misging op het toestel van een collega — pad, browser en naam. **Migratie 030** vervangt die policy door `fouten_select_eigenaar` op de bestaande `public.is_eigenaar()`. Het slot zit nu op drie plekken: het menu toont de ingang niet, de route stuurt je weg, en de database geeft niets terug. Alleen die derde is beveiliging.
+
+### Het dashboard zag een derde van het werk
+- **[FIX]** De KPI's lazen `werkbonnen` met de datum van vandaag: vijf van de eenendertig bonnen, terwijl er veertien klussen daadwerkelijk lopen. Een klus die vorige week begon en volgende week doorloopt heeft `datum` in het verleden en viel er volledig buiten — en dat is nou juist de klus waar je iets van wilt weten. De tegels tellen nu de hele werkvoorraad.
+- **[FEATURE]** Vijf tegels in de standen van de app: Ligt stil · Klaar om af te ronden · Bezig · Niet gestart · Uitgelopen. "Uitgelopen" is de opleverdatum die voorbij is terwijl de klus niet af is, en is aanklikbaar naar `/uitloop`.
+- **[FIX]** De volgorde van het dashboard: eerst de cijfers, dan het projectoverzicht en de activiteit van vandaag, en pas onderaan de operationele meldingen. Die stonden bovenaan, wat las als een storingspagina met een dashboard eronder.
+- **[FIX]** Élke KPI-tegel kwam omhoog bij hover, ook de tien die nergens heen gaan. Dat belooft dat er iets gebeurt als je klikt. Nu doet alleen de tegel die dat waarmaakt het nog.
+
+### Eén woordenlijst, en sorteren op wat er van je gevraagd wordt
+- **[FIX]** Het projectoverzicht op het dashboard had een eigen statuslijstje — "Gestart" waar de rest van de app "Bezig" zegt, en rood voor "achter" terwijl rood elders "ligt stil" betekent. De projectenpagina had er ook een, met "Loopt" en "Actief". Alles komt nu uit `lib/klusstand.ts`. "Achter op schema" is behouden maar staat náást de stand: het gaat over tempo, en een klus kan tegelijk bezig én achter zijn.
+- **[FEATURE]** Eén sorteervolgorde (`STANDVOLGORDE`) op dashboard, projecten en planning: ligt stil → klaar om af te ronden → bezig → niet gestart → afgerond → opgeleverd, en binnen dezelfde stand de oudste eerst. De projectenpagina stond op "nieuwste datum eerst", waardoor een klus van volgende maand bóven een klus stond die vandaag stillag.
+- **[FEATURE]** Het statusfilter op Projecten heeft dezelfde zes knoppen als Alle werkbonnen.
+- De planning van de zwamsaneerder ("Mijn week") is bewust niet aangeraakt: die kijkt naar één dag met één of twee klussen en heeft aan sorteren niets.
+
+### Planning
+- **[FIX]** "Naar deze week" was grijze tekst tussen twee grijze pijlen — het las als een bijschrift, niet als een knop, terwijl het de meest gebruikte handeling op dat scherm is. Nu de bestaande `secondary`-knop met een terugpijl en het doelweeknummer erin: "Naar deze week (wk 33)".
+- **[FEATURE]** Elke dagkop heeft een telling met een bolletje in de zwaarste stand van die dag. Je ziet bij het openslaan van de week in welke kolommen iets te doen is zonder één kaart te lezen.
 
 ## Het scherm van de man in het veld
 
@@ -21,6 +90,21 @@
 - **[FEATURE]** Een werkbon afronden kan nu ook vanaf Vandaag. Dat zat alleen op het andere scherm, dus de laatste handeling van de klus was precies de handeling waarvoor je moest doorklikken.
 - **[FIX]** De schil van Vandaag was een component-in-een-component. Die krijgt bij elke hertekening een nieuwe identiteit, waarna React de hele inhoud opnieuw ophangt: elk afvinkpunt vroeg zijn ondertekende fotolinks dan opnieuw op en de miniaturen knipperden terug naar een grijs vakje.
 - **[FIX]** Het bijschrift bij "Uit te voeren punten" stond ernáást en duwde de kop op een telefoon van 390 pixels over drie regels uiteen. Staat nu eronder.
+
+### "Klaar om af te ronden" is een eigen stand
+
+- **[FEATURE]** Een bon waar de ploeg alles had afgevinkt maar die nog niet was afgerond, heette "Bezig" op 100% — een tegenspraak, en groen zou te vroeg zijn geweest want er moet nog iemand op afronden drukken voordat kantoor kan opleveren. Dat is nu een eigen stand tussen bezig en afgerond in: **Klaar om af te ronden**, in violet.
+- Violet is een bewuste omweg. Amber zou de gewone keuze zijn voor "hier moet iemand iets doen", maar geel is merkkleur. Turkoois stond er eerst en lag te dicht bij groen: in donkere modus was een klus die wacht niet te onderscheiden van een klus die klaar is, en juist dat verschil is de hele reden dat deze stand bestaat.
+- Zichtbaar op alle schermen die de kleurtaal gebruiken, met een eigen filterknop op Alle werkbonnen: dat is de wachtrij van kantoor.
+- Een bon zonder punten telt niet mee — nul van nul is geen voltooide klus maar een verse bon waarvan de werkopdracht nog niet is ontleed.
+- **[FEATURE]** 2 tests erbij, **136 in totaal**.
+
+### De statusknoppen op de werkbon
+
+- **[FIX]** Op de werkbon stonden drie knopjes — Open, Bezig, Voltooid — waarmee kantoor de kolom met de hand zette. "Bezig" schreef een waarde die niets in de app las en die niemand ooit zette. Nu de stand uit de afgevinkte punten komt, was dat een keuze zonder gevolg. Er staat nu één handeling, passend bij het moment: **Werkbon afronden** als alles is afgevinkt, **Heropenen** als de bon al op afgerond staat, en anders de reden waarom afronden nog niet kan ("nog 16 van de 23 punten open"). Dat is wat de database toch al afdwong — je hoorde het alleen pas ná het klikken.
+- **[FIX]** Een opgeleverde bon bood nog steeds "Heropenen" aan, met eronder de tekst "kan zolang hij nog niet is opgeleverd" — terwijl er direct naast "Opgeleverd en bevestigd" stond. Opgeleverd is een dichtgeklapt dossier: de klant heeft bericht, ClickUp staat op opgeleverd en de foto's zijn onderweg. Die knop is weg.
+- **[FIX]** De filterknoppen op Alle werkbonnen waren Alle · Open · Bezig · Voltooid en lazen dezelfde dode kolom: twee van de vier gaven altijd nul resultaten. Het zijn nu Alle · Niet gestart · Bezig · Afgerond · Ligt stil — dezelfde vijf woorden en kleuren als op de kaarten eronder, en ze werken alle vijf. "Afgerond" vangt ook het opgeleverde werk.
+- De kolom zelf blijft ongemoeid: `'open' | 'bezig' | 'voltooid'` staat nog in de database en in het type, en `klusstand()` accepteert `'bezig'` nog steeds als de waarde er ooit toch in komt. Geen migratie.
 
 ### Eén kleurtaal, op alle schermen
 

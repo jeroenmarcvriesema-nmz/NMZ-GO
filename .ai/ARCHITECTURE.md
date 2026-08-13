@@ -58,7 +58,28 @@ Elke nieuwe route wordt aan een van deze guards gekoppeld — er is geen route z
 
 Precies **één globale store** (`authStore`, Zustand) voor sessie/profiel. Alle overige data (werkbonnen, taken, projecten, planning) leeft **lokaal per hook-aanroep** via `useState`/`useEffect`, niet in een globale store. Dit is bewust: domeindata hoeft niet cross-page gedeeld te worden, en het voorkomt stale-cache-problemen.
 
-Geen server-side rendering, geen edge functions, geen custom backend op dit moment. Zie `ROADMAP.md` voor waar dit richting de toekomst zou kunnen uitbreiden (bv. voor PDF-generatie) — dat is een architecturale beslissing die eerst expliciet met de gebruiker wordt besproken.
+Geen server-side rendering en geen custom backend. Wél twee Supabase edge functions in `supabase/functions/`, allebei voor werk dat niet in een browser thuishoort:
+
+| Functie | Rol | JWT |
+|---|---|---|
+| `verwerker` | De verwerkingswachtrij: ClickUp-synchronisatie, foto's, statusterugkoppeling, opruimen. Aangeroepen door pg_cron of via `clickup_hartslag()`. Draait op de service-role. | uit (cron) |
+| `opdracht-lezen` | Eén werkopdracht-PDF lezen en de punten teruggeven. Schrijft niets weg en gebruikt géén service-role: hij werkt met het token van de aanroeper, dus RLS geldt onverkort. | aan |
+| `ploeg-bijwerken` | De namenlijst van het ClickUp-medewerkersveld ophalen en het personenregister aanvullen (knop "Uit ClickUp ophalen"). Service-role uitsluitend voor het token uit Vault; alle lees- en schrijfacties lopen via de client van de aanroeper, dus onder RLS. | aan |
+
+Wat er in de database vanzelf draait (pg_cron), zoals het er nu écht bij staat:
+
+| Job | Ritme | Doet |
+|---|---|---|
+| `nmzgo-verwerker` | elke minuut | trekt de verwerkingswachtrij leeg via de edge function |
+| `nmzgo-clickup-hartslag` | elke 5 min, 04–19 UTC | zet een synchronisatieronde in de wachtrij |
+| `nmzgo-werkdagen-afsluiten` | elk uur op :05 | sluit werkdagen die niet zijn afgemeld op 17:00 (migratie 031) |
+| `nmzgo-fotos-opruimen` | dagelijks 03:15 UTC | zet een opruimronde voor de fotobucket in de wachtrij (migratie 027) |
+
+Twee modules worden door meer dan één functie gebruikt en staan daarom bewust op één plek: `verwerker/ontleden.ts` (het ontleden van een werkopdracht) en `verwerker/register.ts` (het personenregister gelijkhouden met ClickUp). Een tweede kopie loopt uit de pas, en dan hangt de uitkomst af van welke weg iets toevallig neemt.
+
+De PDF-leeslaag (`unpdf`) staat daarmee uitsluitend op de server — de frontend heeft er geen dependency voor. De parser zelf (`verwerker/ontleden.ts`) is één bestand zonder Deno-afhankelijkheden, wordt door beide routes gebruikt en is getest in `tests/ontleden.test.ts`; een handmatig aangereikte opdracht levert dus dezelfde punten op als dezelfde opdracht via ClickUp.
+
+Zie `ROADMAP.md` voor waar dit richting de toekomst zou kunnen uitbreiden (bv. voor PDF-generatie) — dat is een architecturale beslissing die eerst expliciet met de gebruiker wordt besproken.
 
 ---
 

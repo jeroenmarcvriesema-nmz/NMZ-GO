@@ -6,7 +6,7 @@ import { useTaken } from '@/hooks/useTaken'
 import { useFotos } from '@/hooks/useFotos'
 import { useAuth } from '@/hooks/useAuth'
 import type { Taak } from '@/types'
-import { IconCamera, IconCameraOff, IconCheck, IconSquare, IconPhoto, IconAlertCircle, IconArchive } from '@tabler/icons-react'
+import { IconCamera, IconCameraOff, IconCheck, IconSquare, IconPhoto, IconAlertCircle, IconArchive, IconRefresh } from '@tabler/icons-react'
 
 interface TaakItemProps {
   taak: Taak
@@ -22,6 +22,9 @@ export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps
   const [uploading, setUploading] = useState(false)
   const [toggling, setToggling] = useState(false)
   const [fout, setFout] = useState<string | null>(null)
+  // De foto die niet aankwam. Zolang deze gevuld is, staat er een knop
+  // om hem nog eens te versturen — hij is niet kwijt.
+  const [wachtendeFoto, setWachtendeFoto] = useState<File | null>(null)
   const [fotoplichtBezig, setFotoplichtBezig] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const fotos = taak.fotos ?? []
@@ -79,15 +82,36 @@ export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps
   // de offerte waar niets van te fotograferen valt.
   const magAfvinken = heeftFoto || !taak.foto_vereist
 
-  const handleFotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file || !profile) return
+  /**
+   * De foto versturen, en hem vasthouden als dat niet lukt.
+   *
+   * Het bestand blijft in het geheugen staan tot het gelukt is. Dat is
+   * het verschil tussen "probeer het opnieuw" als loze tekst en een
+   * knop die het daadwerkelijk opnieuw doet — met dezelfde foto, zonder
+   * dat iemand terug de kruipruimte in moet.
+   */
+  const verstuurFoto = async (file: File) => {
+    if (!profile || uploading) return
     setFout(null)
     setUploading(true)
-    const { error } = await upload(werkbonId, taak.id, profile.id, file)
+    const { fout: probleem } = await upload(werkbonId, taak.id, profile.id, file)
     setUploading(false)
-    if (error) { setFout('De foto kon niet worden opgeslagen. Probeer het opnieuw.'); return }
+
+    if (probleem) {
+      setFout(probleem.tekst)
+      setWachtendeFoto(probleem.opnieuw ? file : null)
+      return
+    }
+
+    setWachtendeFoto(null)
     await onRefresh()
+  }
+
+  const handleFotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    // Leegmaken: dezelfde foto nog eens kiezen moet opnieuw iets doen.
+    e.target.value = ''
+    if (file) await verstuurFoto(file)
   }
 
   const wisselFotoplicht = async () => {
@@ -266,8 +290,26 @@ export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps
           )}
 
           {fout && (
-            <div className="w-full flex items-start gap-2 text-xs text-brand-red dark:text-red-400 bg-brand-red-light dark:bg-brand-red/10 border border-brand-red rounded-sm p-2.5 mt-1">
-              <IconAlertCircle className="w-4 h-4 flex-shrink-0" />{fout}
+            <div className="w-full flex flex-col gap-2 text-xs text-brand-red dark:text-red-400 bg-brand-red-light dark:bg-brand-red/10 border border-brand-red rounded-sm p-2.5 mt-1">
+              <div className="flex items-start gap-2">
+                <IconAlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span className="leading-relaxed">{fout}</span>
+              </div>
+
+              {/* Alleen als er ook echt iets klaarstaat om te versturen.
+                  Een knop die niets vasthoudt is een belofte die je niet
+                  waarmaakt. */}
+              {wachtendeFoto && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={uploading}
+                  className="self-start min-h-[44px]"
+                  onClick={() => verstuurFoto(wachtendeFoto)}
+                >
+                  <IconRefresh className="w-4 h-4" /> Foto opnieuw versturen
+                </Button>
+              )}
             </div>
           )}
         </div>
