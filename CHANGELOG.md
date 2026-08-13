@@ -1,5 +1,14 @@
 # NMZ GO — Changelog
 
+## Vier knoppen die stilletjes niets deden
+
+- **[FIX]** **De ploeg wijzigen, de planning verzetten, een punt toevoegen of weghalen, en een container of dixi afvinken werkten geen van alle.** Ze gaven `violates check constraint "werkbon_gebeurtenissen_soort_check"` en lieten de klus achter zoals hij was. Migratie 034 zet het recht.
+- De oorzaak zat in het logboek, niet in de knoppen. `werkbon_gebeurtenissen` kende sinds migratie 015 drie soorten — stilgelegd, hervat, opgeleverd — en elke handeling die er daarna bij kwam schrijft een eigen soort in dat logboek zonder dat de controle daarop is meegegroeid.
+- Waarom dat de hele handeling sloopt en niet alleen de regel eronder: die insert is de laatste stap ín de functie, en een functie is één transactie. De afgekeurde logregel rolt alles terug wat ervoor gebeurde. Kantoor zette dus een nieuwe ploeg op de bon, kreeg een foutmelding, en de oude ploeg stond er nog. Dat is het vervelendste soort fout — de foutmelding gaat over iets anders dan wat er misging.
+- Vier features die sinds hun eigen migratie geen enkele keer gewerkt kunnen hebben. Alle vier zaten ze achter een knop die kantoor pas in beeld kreeg toen het scherm eromheen af was, en dat is precies waarom het pas nu opviel.
+- De controle blijft staan en gaat niet weg: dit is het dossier waar je bij een discussie over uitloop of meerwerk op terugvalt, en het Uitloop-scherm filtert er hard op één soort — een typfout betekent daar een gebeurtenis die niemand meer terugvindt. De afspraak staat nu als commentaar op de controle in de database zelf: schrijf je een nieuwe soort, zet hem in dezelfde migratie erbij.
+- Bestaande gegevens blijven ongemoeid. Er stonden alleen soorten in die al waren toegestaan — de rest is nooit binnengekomen.
+
 ## Lopend, punten weghalen, en de containers
 
 ### Eén scherm voor wat er vandaag loopt
