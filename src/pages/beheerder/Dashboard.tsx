@@ -109,27 +109,49 @@ export default function Dashboard() {
           verderop.
 
           Wat aandacht vraagt staat vooraan: wat stilligt, dan wat op
-          één druk op de knop wacht, dan wat loopt. */}
+          één druk op de knop wacht, dan wat loopt.
+
+          Elke tegel gaat naar de werkbonnenlijst met dat filter al aan.
+          Alleen "Uitgelopen" wijkt af en houdt zijn eigen scherm: daar
+          staat de reden en de historie bij, en dat is een andere vraag
+          dan "welke klussen zijn dit".
+
+          Een tegel op nul gaat nergens heen. Doorklikken naar een lege
+          lijst is een belofte die niet wordt waargemaakt, en het haalt
+          bovendien het optillen bij hover weg — zie KpiCard. */}
       <div className="grid grid-cols-2 xl:grid-cols-5 gap-3 sm:gap-4 mb-8 sm:mb-10">
         <KpiCard
           label={STANDEN.stilgelegd.label}
           value={v.stilgelegd}
           icon={<IconPlayerPause />}
           variant={v.stilgelegd > 0 ? 'red' : 'neutral'}
+          onClick={v.stilgelegd > 0 ? () => navigate('/werkbonnen?stand=stilgelegd') : undefined}
+          actie={v.stilgelegd > 0 ? 'Bekijk klussen' : undefined}
         />
         <KpiCard
           label={STANDEN.af_te_ronden.kort}
           value={v.af_te_ronden}
           icon={<IconCircleCheck />}
           variant={v.af_te_ronden > 0 ? 'violet' : 'neutral'}
+          onClick={v.af_te_ronden > 0 ? () => navigate('/werkbonnen?stand=af_te_ronden') : undefined}
+          actie={v.af_te_ronden > 0 ? 'Bekijk klussen' : undefined}
         />
         <KpiCard
           label={STANDEN.bezig.label}
           value={v.bezig}
           icon={<IconPlayerPlay />}
           variant={v.bezig > 0 ? 'blue' : 'neutral'}
+          onClick={v.bezig > 0 ? () => navigate('/werkbonnen?stand=bezig') : undefined}
+          actie={v.bezig > 0 ? 'Bekijk klussen' : undefined}
         />
-        <KpiCard label={STANDEN.niet_gestart.kort} value={v.niet_gestart} icon={<IconClock />} variant="neutral" />
+        <KpiCard
+          label={STANDEN.niet_gestart.kort}
+          value={v.niet_gestart}
+          icon={<IconClock />}
+          variant="neutral"
+          onClick={v.niet_gestart > 0 ? () => navigate('/werkbonnen?stand=niet_gestart') : undefined}
+          actie={v.niet_gestart > 0 ? 'Bekijk klussen' : undefined}
+        />
         {/* De enige tegel die ergens heen gaat. Uitloop heeft een eigen
             scherm met de reden erbij; dit getal is het startpunt van die
             vraag en niet het antwoord. Zonder klussen die uitlopen is er

@@ -42,6 +42,19 @@ export interface ProjectRegel {
   laatsteUpdate: string | null  // ISO timestamp
   /** Startdatum, voor de tweede sortering binnen dezelfde stand. */
   start: string
+
+  // ── De werkdag van vandaag ──────────────────────────────────
+  // Deze stonden er al half in: `gestartOp` werd berekend en gebruikt
+  // om te bepalen of een klus achterloopt, maar kwam nergens op het
+  // scherm. Kantoor zag dus wél dat een klus achterliep en niet sinds
+  // hoe laat er iemand aan het werk was — precies het getal waarmee je
+  // de vraag "hoe kan dat" beantwoordt.
+  /** Vroegste starttijd van vandaag, over alle monteurs op deze bon. */
+  gestartOp: string | null
+  /** Laatste stoptijd, of null zolang er nog iemand bezig is. */
+  gestoptOp: string | null
+  /** Er staat nu iemand op deze klus: gestart en nog niet gestopt. */
+  looptNu: boolean
 }
 
 export interface Melding {
@@ -186,10 +199,21 @@ export function useDashboard(): { data: DashboardData; loading: boolean; error: 
     // Vroegste start per werkbon: als twee monteurs op dezelfde bon
     // staan, telt het moment waarop de eerste begon.
     const startPerBon = new Map<string, string>()
+    // De laatste stoptijd, en of er nog iemand loopt. Twee monteurs op
+    // dezelfde bon: zolang er één niet gestopt is, loopt de klus.
+    const stopPerBon = new Map<string, string>()
+    const loopdtNog = new Set<string>()
     logs.forEach((l) => {
       if (!l.werkbon_id) return
       const huidig = startPerBon.get(l.werkbon_id)
       if (!huidig || l.start_tijd < huidig) startPerBon.set(l.werkbon_id, l.start_tijd)
+
+      if (!l.stop_tijd) {
+        loopdtNog.add(l.werkbon_id)
+      } else {
+        const laatste = stopPerBon.get(l.werkbon_id)
+        if (!laatste || l.stop_tijd > laatste) stopPerBon.set(l.werkbon_id, l.stop_tijd)
+      }
     })
 
     const projecten: ProjectRegel[] = bonnen.map((b) => {
@@ -228,6 +252,11 @@ export function useDashboard(): { data: DashboardData; loading: boolean; error: 
         // De laatste foto zegt meer over "leeft dit nog" dan de
         // starttijd; valt daarop terug zolang er geen foto's zijn.
         laatsteUpdate: laatsteFoto ?? gestartOp,
+        gestartOp,
+        // Zolang er iemand bezig is heeft de klus geen eindtijd, ook al
+        // heeft zijn maat al gestopt.
+        gestoptOp: loopdtNog.has(b.id) ? null : (stopPerBon.get(b.id) ?? null),
+        looptNu: loopdtNog.has(b.id),
       }
     })
 

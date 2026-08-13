@@ -2,7 +2,41 @@ import { useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import type { ProjectRegel } from '@/hooks/useDashboard'
 import { STANDEN } from '@/lib/klusstand'
-import { IconPhoto, IconListCheck, IconChevronRight, IconMapPin, IconAlertTriangle } from '@tabler/icons-react'
+import { formatTijd, geefUren } from '@/hooks/useWerkdag'
+import {
+  IconPhoto, IconListCheck, IconChevronRight, IconMapPin, IconAlertTriangle, IconClock,
+} from '@tabler/icons-react'
+
+/**
+ * De werkdag van vandaag op deze klus.
+ *
+ * De starttijd werd al berekend — hij bepaalt of een klus "achter op
+ * schema" heet — maar kwam nergens op het scherm. Kantoor zag dus wél
+ * dat een klus achterliep en niet sinds hoe laat er iemand aan het werk
+ * was, terwijl dat precies het getal is waarmee je de vraag "hoe kan
+ * dat" beantwoordt.
+ *
+ * Loopt er nog iemand, dan telt de tijd door en staat er een groen
+ * stipje bij: dat onderscheidt "ze zijn nu bezig" van "ze zijn geweest".
+ * Zonder dat verschil is 08:12 een getal zonder betekenis.
+ */
+function Werktijd({ regel }: { regel: ProjectRegel }) {
+  if (!regel.gestartOp) return null
+
+  const start = new Date(regel.gestartOp)
+  const stop = regel.gestoptOp ? new Date(regel.gestoptOp) : null
+
+  return (
+    <span className="flex items-center gap-1 text-[11px] text-gray-500 dark:text-white/50 tabular-nums">
+      {regel.looptNu
+        ? <span className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0 animate-pulse" />
+        : <IconClock className="w-3 h-3 flex-shrink-0" />}
+      {regel.looptNu
+        ? <>sinds {formatTijd(start)} · {geefUren(start, null)} u</>
+        : <>{formatTijd(start)}–{formatTijd(stop)} · {geefUren(start, stop)} u</>}
+    </span>
+  )
+}
 
 /**
  * De stand van een klus, plus de vlag "achter op schema".
@@ -125,6 +159,7 @@ export function ProjectTabel({ projecten }: ProjectTabelProps) {
                   <IconPhoto className="w-3 h-3 flex-shrink-0" />
                   {p.aantalFotos}
                 </span>
+                <Werktijd regel={p} />
                 <span className="truncate">{formatRelatief(p.laatsteUpdate)}</span>
               </div>
             </div>
@@ -178,6 +213,7 @@ export function ProjectTabel({ projecten }: ProjectTabelProps) {
                       <IconPhoto className="w-3 h-3" />
                       {p.aantalFotos} foto's
                     </span>
+                    <Werktijd regel={p} />
                   </div>
                 </td>
                 <td className="py-4 text-right hidden 2xl:table-cell whitespace-nowrap">

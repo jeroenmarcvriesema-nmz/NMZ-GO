@@ -1,5 +1,14 @@
 # NMZ GO — Changelog
 
+## Doorklikken vanaf het dashboard, en de uren terug in beeld
+
+- **[FEATURE]** De vier tegels bovenaan het dashboard zijn nu **aantikbaar**. Klik op "Bezig" en je komt in de werkbonnenlijst met dat filter al aan — hetzelfde voor stilgelegd, af te ronden en niet gestart. Alleen "Uitgelopen" houdt zijn eigen scherm: daar staat de reden en de historie bij, en dat is een andere vraag dan "welke klussen zijn dit". Een tegel op nul gaat nergens heen; doorklikken naar een lege lijst is een belofte die niet wordt waargemaakt.
+- **[FEATURE]** **De werktijden staan weer bij de klussen.** Op het dashboard bij elke klus van vandaag: "sinds 08:12 · 3:14 u" met een groen stipje zolang er iemand loopt, of "08:12–16:30 · 8:18 u" als ze zijn geweest. Dat verschil is het hele punt — zonder dat is 08:12 een getal zonder betekenis.
+- Dit lag er al half in: de starttijd wérd berekend, want daarmee bepaalt het dashboard of een klus achterloopt. Alleen kwam hij nergens op het scherm. Kantoor zag dus wél dat een klus achterliep en niet sinds hoe laat er iemand aan het werk was.
+- **[FEATURE]** Nieuwe kaart **Werktijden** op de werkbon zelf, voor kantoor: per persoon per dag de start, de stop en het aantal uren, met het totaal bovenaan. De werkdaglogs bestaan sinds migratie 006 en werden door drie schermen gebruikt, maar nergens vanuit de klus — terwijl dat precies het getal is dat je bij een uitloopgesprek of een discussie over meerwerk nodig hebt.
+- Een dag die door de nachtelijke opruiming is dichtgezet staat er als **automatisch afgesloten** bij. Dat is geen gewerkte tijd maar een vergeten stopknop, en anders staat er een dag van tien uur in de lijst die niemand kan verantwoorden.
+- Een zwamsaneerder ziet deze kaart niet: zijn eigen tijden staan op Vandaag, de uren van zijn maat zijn niet aan hem.
+
 ## Asbest in het oranje, en twee knoppen erbij
 
 - **[FEATURE]** Een klus die op **asbest** stilligt is nu fel oranje: rand, vlak en badge op de planning en in de bonnenlijst, met het woord "asbest" erbij. Rood was al bezet door stilgelegd — en asbest ís stilgelegd, dus dat maakte geen onderscheid. Dit is dezelfde kleur die ClickUp aan "onhold door asbest" geeft: wie de twee borden naast elkaar heeft, ziet hetzelfde. Asbest gaat vóór uitloop: een asbestklus die ook over zijn datum heen is, blijft in de eerste plaats een asbestklus.

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom'
 import { PageWrapper } from '@/components/layout/PageWrapper'
 import { WerkbonKaart } from '@/components/werkbon/WerkbonKaart'
@@ -46,7 +47,23 @@ const STANDFILTERS: { label: string; value: Klusstand | 'alle' | 'uitloop' | 'as
 export default function Werkbonnen() {
   const navigate = useNavigate()
   const { werkbonnen, loading, error, refetch } = useWerkbonnen()
-  const [standFilter, setStandFilter] = useState<Klusstand | 'alle' | 'uitloop' | 'asbest'>('alle')
+  // Het filter mag uit de URL komen. De tegels op het dashboard zijn
+  // aantikbaar en landen hier met `?stand=bezig`; zonder dit zou zo'n
+  // tegel op de volledige lijst uitkomen en moest je het filter alsnog
+  // zelf zetten — dan is doorklikken geen antwoord maar een omweg.
+  //
+  // Eén keer als beginwaarde en daarna niet meer: wie hier op een
+  // andere knop drukt hoort niet teruggezet te worden door een
+  // parameter die nog in de adresbalk staat.
+  const [zoekParams] = useSearchParams()
+  const [standFilter, setStandFilter] = useState<Klusstand | 'alle' | 'uitloop' | 'asbest'>(
+    () => {
+      const uitUrl = zoekParams.get('stand')
+      return uitUrl && STANDFILTERS.some((f) => f.value === uitUrl)
+        ? (uitUrl as Klusstand | 'uitloop' | 'asbest')
+        : 'alle'
+    },
+  )
   const [zoek, setZoek] = useState('')
 
   // Per week kijken, of alles op een rij.

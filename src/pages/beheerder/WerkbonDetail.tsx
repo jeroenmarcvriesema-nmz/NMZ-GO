@@ -12,6 +12,7 @@ import { Klusinfo } from '@/components/werkbon/Klusinfo'
 import { Werkdocumenten } from '@/components/werkbon/Werkdocumenten'
 import { Klusplanning } from '@/components/werkbon/Klusplanning'
 import { Klusploeg } from '@/components/werkbon/Klusploeg'
+import { Werktijden } from '@/components/werkbon/Werktijden'
 import { Opleverrapport } from '@/components/werkbon/Opleverrapport'
 import { Spinner } from '@/components/ui/Spinner'
 import { Modal } from '@/components/ui/Modal'
@@ -165,6 +166,8 @@ export default function WerkbonDetail() {
         <Klusplanning werkbon={werkbon} onKlaar={refetch} />
 
         <Klusploeg werkbon={werkbon} onKlaar={refetch} />
+
+        <Werktijden werkbonId={werkbon.id} />
 
         {/* Kantoor kan de werkopdracht en de tekening er alsnog bij
             zetten. Bij een klus uit ClickUp komen ze vanzelf mee, bij
