@@ -1,5 +1,12 @@
 # NMZ GO — Changelog
 
+## Een klus met de hand inplannen
+
+- **[FEATURE]** Bij het handmatig aanmaken van een werkbon kun je nu een **startdatum en een opleverdatum** invullen. Zonder die twee viel een handmatige bon terug op "vandaag" en stond hij dus in de verkeerde week — precies het geval dat je nodig hebt als een klus niet vanzelf uit ClickUp komt. De opleverdatum mag leeg blijven; dan is het een klus van één dag.
+- **[FEATURE]** Op de werkbon zelf staat nu een kaart **Planning** waarmee je die twee datums alsnog kunt wijzigen. Een typefout betekende hiervoor: bon weggooien en opnieuw aanmaken. Bij een klus uit ClickUp staat erbij dat ClickUp wint — de eerstvolgende ronde zet de datums daar terug.
+- **[FEATURE]** Eigen knop **"Opnieuw inplannen"** naast stilleggen. De ClickUp-status *opnieuw inplannen/later* was al bereikbaar, maar alleen door precies die woorden in de reden te typen; nu zet de knop dat zelf. De melding op de bon zegt dan "Deze klus moet opnieuw ingepland worden" in plaats van "ligt stil" — dezelfde toestand, een andere beslissing.
+- Geen migratie: de database leidt de ClickUp-status al af uit de reden (`statusUitReden`, migratie 015).
+
 ## Repo en productie weer op één lijn
 
 - **[FIX]** De edge function `verwerker` liep achter op de repo en is uitgerold (v13). Daarmee gingen drie dingen live die alleen in de code stonden: het bijwerken van het personenregister tijdens elke ronde, de stilleg-tekst naar ClickUp die geen verschoven opleverdatum meer belooft (migratie 029 was al toegepast, dus productie meldde daar iets onjuists), en de handler voor het opruimen van de fotobucket.

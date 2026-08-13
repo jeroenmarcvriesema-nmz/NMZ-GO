@@ -10,6 +10,7 @@ import { TaakItem } from '@/components/taak/TaakItem'
 import { Klusacties } from '@/components/werkbon/Klusacties'
 import { Klusinfo } from '@/components/werkbon/Klusinfo'
 import { Werkdocumenten } from '@/components/werkbon/Werkdocumenten'
+import { Klusplanning } from '@/components/werkbon/Klusplanning'
 import { Opleverrapport } from '@/components/werkbon/Opleverrapport'
 import { Spinner } from '@/components/ui/Spinner'
 import { Modal } from '@/components/ui/Modal'
@@ -157,6 +158,10 @@ export default function WerkbonDetail() {
             documenten, werkvoorbereiding. Kantoor moet kunnen
             controleren wat de ploeg voor zich krijgt. */}
         <Klusinfo werkbon={werkbon} />
+
+        {/* Waar deze klus in de weekplanning staat. Bij een handmatige
+            bon is dit de enige plek waar dat te zetten valt. */}
+        <Klusplanning werkbon={werkbon} onKlaar={refetch} />
 
         {/* Kantoor kan de werkopdracht en de tekening er alsnog bij
             zetten. Bij een klus uit ClickUp komen ze vanzelf mee, bij

@@ -29,7 +29,13 @@ export default function WerkbonNieuw() {
   const [projectnaam, setProjectnaam] = useState('')
   const [adres, setAdres] = useState('')
   const [opdrachtgever, setOpdrachtgever] = useState('')
-  const [datum, setDatum] = useState(new Date().toISOString().split('T')[0])
+  // Start en oplevering, precies de twee velden waarop de planning
+  // draait. Een bon zonder startdatum valt terug op `datum` en komt
+  // daarmee op vandaag te staan — dat is voor een klus van volgende
+  // week het verkeerde antwoord, en tot nu toe het enige dat je kon
+  // geven.
+  const [startdatum, setStartdatum] = useState(new Date().toISOString().split('T')[0])
+  const [opleverdatum, setOpleverdatum] = useState('')
   const [medewerkers, setMedewerkers] = useState<string[]>([])
   const [taken, setTaken] = useState<TaakInput[]>([{ titel: '', omschrijving: '' }])
   const [grippTekst, setGrippTekst] = useState('')
@@ -144,7 +150,11 @@ export default function WerkbonNieuw() {
   }
 
   const handleSave = async () => {
-    if (!adres || !projectnaam || !datum) { toast.fout('Vul adres, projectnaam en datum in.'); return }
+    if (!adres || !projectnaam || !startdatum) { toast.fout('Vul adres, projectnaam en startdatum in.'); return }
+    if (opleverdatum && opleverdatum < startdatum) {
+      toast.fout('De opleverdatum ligt vóór de startdatum.')
+      return
+    }
     const geldig = taken.filter((t) => t.titel.trim())
     if (!geldig.length) { toast.fout('Voeg minimaal één taak toe.'); return }
     setLoading(true)
@@ -161,8 +171,19 @@ export default function WerkbonNieuw() {
         }
       : {}
 
+    // `datum` gelijk aan de startdatum, net als bij een klus uit
+    // ClickUp: daar is `datum` ook de dag waarop begonnen wordt. Zo
+    // betekent het veld overal hetzelfde, of een bon nu automatisch of
+    // met de hand ontstaat.
     const { data: wb, error: wbErr } = await supabase
-      .from('werkbonnen').insert({ bonnummer, projectnaam, adres, opdrachtgever, datum, aangemaakt_door: profile?.id, ...uitOpdracht })
+      .from('werkbonnen').insert({
+        bonnummer, projectnaam, adres, opdrachtgever,
+        datum: startdatum,
+        geplande_start: startdatum,
+        geplande_eind: opleverdatum || null,
+        aangemaakt_door: profile?.id,
+        ...uitOpdracht,
+      })
       .select().single()
 
     if (wbErr || !wb) {
@@ -211,10 +232,18 @@ export default function WerkbonNieuw() {
         <Card accent="yellow">
           <SectionHeading title="Werkbon informatie" />
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <Input label="Bonnummer" value={bonnummer} readOnly className="bg-surface-2 dark:bg-white/5 text-gray-400 dark:text-white/40"
-                hint={gelezen?.opdrachtnummer ? 'Overgenomen uit de werkopdracht' : undefined} />
-              <Input label="Datum" type="date" value={datum} onChange={(e) => setDatum(e.target.value)} />
+            <Input label="Bonnummer" value={bonnummer} readOnly className="bg-surface-2 dark:bg-white/5 text-gray-400 dark:text-white/40"
+              hint={gelezen?.opdrachtnummer ? 'Overgenomen uit de werkopdracht' : undefined} />
+
+            {/* De twee datums waar de planning op draait. Zonder deze
+                stond een handmatige bon altijd op vandaag. */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Input label="Startdatum" type="date" value={startdatum}
+                onChange={(e) => setStartdatum(e.target.value)} required />
+              <Input label="Opleverdatum (optioneel)" type="date" value={opleverdatum}
+                min={startdatum}
+                onChange={(e) => setOpleverdatum(e.target.value)}
+                hint="Leeg laten voor een klus van één dag" />
             </div>
             <Input label="Projectnaam" placeholder="Bijv. Renovatie badkamer" value={projectnaam} onChange={(e) => setProjectnaam(e.target.value)} required />
             <Input label="Adres" placeholder="Straat, huisnr, woonplaats" value={adres} onChange={(e) => setAdres(e.target.value)} required />
