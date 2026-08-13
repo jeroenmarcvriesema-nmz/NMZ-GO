@@ -74,9 +74,21 @@ export interface Activiteit {
  */
 export type Werkvoorraad = Record<Klusstand, number>
 
+/** Eén dag in de doorkijk: hoeveel klussen, en in welke standen. */
+export interface Weekdag {
+  datum: string
+  /** Maandag, dinsdag… */
+  naam: string
+  vandaag: boolean
+  aantal: number
+  verdeling: Werkvoorraad
+}
+
 export interface DashboardData {
   /** Alle openstaande klussen, per stand. */
   werkvoorraad: Werkvoorraad
+  /** De komende zes werkdagen, met wat er per dag loopt. */
+  doorkijk: Weekdag[]
   /** Klussen waarvan de opleverdatum voorbij is en die nog niet af zijn. */
   uitgelopen: number
   vandaagGestart: number
@@ -92,6 +104,7 @@ const GEEN_VOORRAAD: Werkvoorraad = {
 
 const LEEG: DashboardData = {
   werkvoorraad: GEEN_VOORRAAD,
+  doorkijk: [],
   uitgelopen: 0,
   vandaagGestart: 0,
   achterOpSchema: 0,
@@ -326,9 +339,45 @@ export function useDashboard(): { data: DashboardData; loading: boolean; error: 
       if (open && eind && eind < vandaag) uitgelopen += 1
     }
 
+    // ── Doorkijk ─────────────────────────────────────────────────
+    // Zes dagen vooruit vanaf vandaag, zaterdag inbegrepen. Wat het
+    // dashboard hiervoor niet vertelde is of morgen vol staat of leeg —
+    // en dat is de vraag waarvoor een planner naar de planning ging.
+    //
+    // Uit dezelfde rijen als de werkvoorraad hierboven: een klus telt
+    // mee op elke dag waarop hij loopt, want een klus van drie weken is
+    // elk van die dagen bezet werk.
+    const DAGNAMEN = ['zo', 'ma', 'di', 'wo', 'do', 'vr', 'za']
+    const doorkijk: Weekdag[] = []
+
+    for (let i = 0; i < 6; i++) {
+      const d = new Date()
+      d.setDate(d.getDate() + i)
+      const dagStr = d.toISOString().split('T')[0]
+      // Zondag wordt overgeslagen: er wordt niet gewerkt, en een lege
+      // kolom die er altijd is leest als een gat in de week.
+      if (d.getDay() === 0) continue
+
+      const verdeling: Werkvoorraad = { ...GEEN_VOORRAAD }
+      let aantal = 0
+
+      for (const b of (voorraadRes.data ?? []) as any[]) {
+        const stand = klusstand(b)
+        if (stand === 'afgerond' || stand === 'opgeleverd') continue
+        const van = b.geplande_start ?? b.datum
+        const tot = b.geplande_eind ?? b.geplande_start ?? b.datum
+        if (!van || van > dagStr || (tot ?? van) < dagStr) continue
+        verdeling[stand] += 1
+        aantal += 1
+      }
+
+      doorkijk.push({ datum: dagStr, naam: DAGNAMEN[d.getDay()], vandaag: i === 0, aantal, verdeling })
+    }
+
     setError(null)
     setData({
       werkvoorraad,
+      doorkijk,
       uitgelopen,
       vandaagGestart: startPerBon.size,
       achterOpSchema: projecten.filter((p) => p.achter).length,

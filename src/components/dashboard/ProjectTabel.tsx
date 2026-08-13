@@ -143,7 +143,7 @@ export function ProjectTabel({ projecten }: ProjectTabelProps) {
               <th className="text-left text-xs font-semibold text-gray-400 dark:text-white/40 pb-3 pr-4">Team</th>
               <th className="text-left text-xs font-semibold text-gray-400 dark:text-white/40 pb-3 pr-4">Status</th>
               <th className="text-left text-xs font-semibold text-gray-400 dark:text-white/40 pb-3 pr-4 min-w-[130px]">Voortgang</th>
-              <th className="text-right text-xs font-semibold text-gray-400 dark:text-white/40 pb-3 hidden lg:table-cell">Laatste update</th>
+              <th className="text-right text-xs font-semibold text-gray-400 dark:text-white/40 pb-3 hidden 2xl:table-cell">Laatste update</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50 dark:divide-white/5">
@@ -180,7 +180,7 @@ export function ProjectTabel({ projecten }: ProjectTabelProps) {
                     </span>
                   </div>
                 </td>
-                <td className="py-4 text-right hidden lg:table-cell whitespace-nowrap">
+                <td className="py-4 text-right hidden 2xl:table-cell whitespace-nowrap">
                   <span className="text-xs text-gray-400 dark:text-white/40">{formatRelatief(p.laatsteUpdate)}</span>
                 </td>
               </tr>

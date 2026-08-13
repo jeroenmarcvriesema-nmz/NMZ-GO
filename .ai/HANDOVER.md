@@ -231,6 +231,16 @@ Daarmee is `projecten` ook uit `usePlanning()` verdwenen: de join
 `PlanningItem.projectId` en `projectnaam` zijn met de join mee weg. In
 `src/` staat nu geen enkele verwijzing meer naar die tabel.
 
+**Twee nieuwe bouwstenen voor het beeld.** `components/dashboard/Standbalk.tsx`
+(de werkvoorraad als gestapelde balk, met of zonder legenda, en een
+`rijen`-variant voor kaarten met ruimte) en `components/ui/Voortgangsring.tsx`
+(voortgang als ring; kleur komt van buiten via een tekstklasse uit
+`STANDEN`). Beide gebruiken uitsluitend bestaande standkleuren.
+Toegepast op het dashboard (werkvoorraad + weekdoorkijk), de planning
+(streepje per dagkop) en Vandaag (dagkaart met ring). `Weekdoorkijk`
+leest `DashboardData.doorkijk`, dat in `useDashboard` uit dezelfde smalle
+voorraadquery komt — geen extra ronde naar de server.
+
 **Storingen staan op `/storingen` en zijn alleen voor de eigenaar.** Ze
 stonden als kaart op het dashboard en waren leesbaar voor alle vijf de
 kantoorrollen. Het slot zit nu op drie plekken: menu (`Sidebar`,
