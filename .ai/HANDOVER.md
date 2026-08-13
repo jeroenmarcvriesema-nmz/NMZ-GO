@@ -105,12 +105,21 @@ Afspraken die daarbij horen:
   aan de taak gevonden wordt. Rol je opnieuw uit, neem dan altijd alle
   zes de bestanden mee — een halve uitrol heeft de verwerker eerder
   plat gelegd.
-- **Twee klussen komen structureel niet binnen** en dat is geen bug:
-  bij Amsteldijk 157 HS staat de werkopdracht in de ClickUp-omschrijving
-  in plaats van in een PDF, en Project Utrecht heeft helemaal niets.
-  Ze staan met reden in `overgeslagen`. Wil je die soort ook
-  binnenhalen, dan is dat een parser voor de taakomschrijving — een
-  eigen klus, geen randgeval.
+- **Zes klussen komen niet binnen, en dat ligt niet aan de koppeling.**
+  Vier opdrachten wijken af van het sjabloon (Geusevesperstraat 36,
+  1925 Bloem Fonteinstraat 8, Klaas Katerstraat, C2313 Claushof), één
+  PDF is stuk (Dahliastraat 5) en Project Utrecht heeft geen bijlage.
+  Ze staan met reden in `overgeslagen`. Gebruik
+  `clickup.tekstproef` om te zien wat de parser er precies uit leest —
+  dat is waar die taaksoort voor is.
+- **De werktekening komt bijna nooit mee: 2 van de 44 bonnen.** De
+  tekening wordt alleen gezocht in velden waarvan de náám "tekening"
+  bevat. Hangt hij in het werkopdrachtveld (dat gebeurt) of los aan de
+  taak, dan blijft hij liggen. `TEKENING_BESTAND` in `clickup.ts` staat
+  er al voor klaar; het ontbreekt aan een fallback zoals
+  `opdrachtUitBijlagen` die voor de opdracht doet. Voor de man in de
+  kruipruimte is dat een echt gemis — de opdracht verwijst ernaar
+  ("groen = bovenaf, beige = onderaf").
 
 ### Voor de schermen-sessie — twee bevindingen van de eigenaar
 

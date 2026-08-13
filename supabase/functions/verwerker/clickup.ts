@@ -133,9 +133,27 @@ function labelNamen(taak: any, id: string | null): string[] {
     .filter(Boolean) as string[]
 }
 
-function uitVeld(v: any): { url: string; naam: string } | null {
+/**
+ * Eén bestand uit een bijlageveld.
+ *
+ * Een bijlageveld in ClickUp neemt méér dan één bestand aan, en de
+ * werkvoorbereider hangt de tekening geregeld in hetzelfde veld als de
+ * opdracht. Hier stond `v[0]`: blind de eerste. Bij Amsteldijk 157 HS
+ * stonden ze in de volgorde tekening, opdracht — en dus werd de
+ * tekening als werkopdracht ontleed, met "de kop ontbreekt" als
+ * uitkomst. Een klus zonder werkbon door een volgorde die niemand
+ * bewust heeft gekozen.
+ *
+ * Past er een naam bij `voorkeur`, dan die. Anders blijft het de
+ * eerste — dat is wat het altijd deed en voor één bestand is het
+ * hetzelfde.
+ */
+function uitVeld(v: any, voorkeur?: RegExp): { url: string; naam: string } | null {
   if (!Array.isArray(v) || v.length === 0) return null
-  const a = v[0]
+  const gekozen = voorkeur
+    ? v.find((x: any) => x?.url && voorkeur.test(String(x?.title ?? '')))
+    : null
+  const a = gekozen ?? v[0]
   return a?.url ? { url: a.url, naam: a.title ?? 'document.pdf' } : null
 }
 
@@ -149,14 +167,19 @@ function uitVeld(v: any): { url: string; naam: string } | null {
  * reden te zijn dat een zwamsaneerder zijn tekening mist, dus kijken we
  * in allebei.
  */
-function bijlage(taak: any, id: string | null, patroon: RegExp): { url: string; naam: string } | null {
-  const uitInstelling = uitVeld(veld(taak, id))
+function bijlage(
+  taak: any,
+  id: string | null,
+  patroon: RegExp,
+  voorkeur?: RegExp,
+): { url: string; naam: string } | null {
+  const uitInstelling = uitVeld(veld(taak, id), voorkeur)
   if (uitInstelling) return uitInstelling
 
   for (const f of taak.custom_fields ?? []) {
     if (f.type !== 'attachment') continue
     if (!patroon.test(String(f.name ?? ''))) continue
-    const gevonden = uitVeld(f.value)
+    const gevonden = uitVeld(f.value, voorkeur)
     if (gevonden) return gevonden
   }
   return null
@@ -165,10 +188,12 @@ function bijlage(taak: any, id: string | null, patroon: RegExp): { url: string; 
 const OPDRACHT_VELD = /werkopdracht/i
 const TEKENING_VELD = /tekening/i
 
-// Hoe een werkopdracht heet als hij los aan de taak hangt. De
-// inspecteur exporteert hem als "Opdracht_5146.pdf"; komt er een
-// herziene versie, dan zet de browser er "(1)" achter.
+// Zo heten de bestánden. De opdracht komt uit de export van de
+// inspecteur ("Opdracht_7178 Amsteldijk 157 HS te Amsterdam.pdf"); de
+// tekening krijgt "TEK" of "tekening" in de naam. Nodig zodra er meer
+// dan één bestand in hetzelfde veld hangt.
 const OPDRACHT_BESTAND = /opdracht/i
+const TEKENING_BESTAND = /tekening|(^|[^a-z])tek([^a-z]|$)/i
 
 /**
  * De werkopdracht als losse bijlage aan de ClickUp-taak.
@@ -204,7 +229,7 @@ async function opdrachtUitBijlagen(
       const naam = String(b?.title ?? '')
       const isPdf = String(b?.extension ?? '').toLowerCase() === 'pdf' ||
                     String(b?.mimetype ?? '').toLowerCase() === 'application/pdf'
-      return b?.url && isPdf && OPDRACHT_BESTAND.test(naam) && !TEKENING_VELD.test(naam)
+      return b?.url && isPdf && OPDRACHT_BESTAND.test(naam) && !TEKENING_BESTAND.test(naam)
     })
     // De nieuwste wint: een tweede upload is een herziening, geen kopie
     // die genegeerd mag worden.
@@ -322,7 +347,7 @@ async function verwerkTaak(
 
   // Eerst het veld, dan de losse bijlagen van de taak. Zie
   // `opdrachtUitBijlagen`: allebei komen in de praktijk voor.
-  const opdracht = bijlage(taak, i.veld_werkopdracht, OPDRACHT_VELD) ??
+  const opdracht = bijlage(taak, i.veld_werkopdracht, OPDRACHT_VELD, OPDRACHT_BESTAND) ??
                    await opdrachtUitBijlagen(taak, ctx.token)
   if (!opdracht) {
     return {
@@ -376,7 +401,7 @@ async function verwerkTaak(
         geplande_start: bon.geplande_start,
         geplande_eind: bon.geplande_eind,
         kluiscode: bon.kluiscode,
-        tekening: bijlage(taak, i.veld_werktekening, TEKENING_VELD) ? 'ja' : 'NEE',
+        tekening: bijlage(taak, i.veld_werktekening, TEKENING_VELD, TEKENING_BESTAND) ? 'ja' : 'NEE',
       },
     }
   }
@@ -425,7 +450,7 @@ async function verwerkTaak(
   // Documenten kopiëren. De URL's van ClickUp zijn kortlevend, dus een
   // link opslaan heeft geen zin.
   await bewaarDocument(db, bonId, pdfBytes, 'werkopdracht.pdf', 'opdracht_pad')
-  const tekening = bijlage(taak, i.veld_werktekening, TEKENING_VELD)
+  const tekening = bijlage(taak, i.veld_werktekening, TEKENING_VELD, TEKENING_BESTAND)
   if (tekening) {
     const t = await fetch(tekening.url)
     if (t.ok) {
@@ -670,7 +695,7 @@ export async function tekstproef(
   const token = await geefToken(db)
 
   const taak = await haal(`/task/${clickupTaakId}`, token)
-  const opdracht = bijlage(taak, i.veld_werkopdracht, OPDRACHT_VELD) ??
+  const opdracht = bijlage(taak, i.veld_werkopdracht, OPDRACHT_VELD, OPDRACHT_BESTAND) ??
                    await opdrachtUitBijlagen(taak, token)
   if (!opdracht) return { adres: taak.name, bevinding: 'geen werkopdracht-PDF op de taak' }
 
