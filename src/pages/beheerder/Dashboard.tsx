@@ -5,6 +5,8 @@ import { KpiCard } from '@/components/dashboard/KpiCard'
 import { MeldingItem } from '@/components/dashboard/MeldingItem'
 import { ProjectTabel } from '@/components/dashboard/ProjectTabel'
 import { ActivityFeed } from '@/components/dashboard/ActivityFeed'
+import { Standbalk } from '@/components/dashboard/Standbalk'
+import { Weekdoorkijk } from '@/components/dashboard/Weekdoorkijk'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { useDashboard } from '@/hooks/useDashboard'
@@ -71,6 +73,8 @@ export default function Dashboard() {
   // vorige week begon en volgende week doorloopt viel er helemaal
   // buiten, en dat is nou juist de klus waar je iets van wilt weten.
   const v = data.werkvoorraad
+  // Wat er nog te doen is: alles behalve wat af of opgeleverd is.
+  const openstaand = v.stilgelegd + v.af_te_ronden + v.bezig + v.niet_gestart
 
   const urgenteMeldingen = data.meldingen.filter(
     (m) => m.type === 'niet_gestart' || m.type === 'controle' || m.type === 'geen_fotos'
@@ -140,6 +144,41 @@ export default function Dashboard() {
         />
       </div>
 
+      {/* De vorm van de werkvoorraad, en hoe de week eruitziet.
+          Vijf getallen vertellen hoevéél er is maar niet hoe het staat:
+          of de voorraad vooral uit wachtend werk bestaat of uit klussen
+          die lopen, en of morgen vol staat of leeg. Dat is de vraag
+          waarvoor iemand anders naar de planning klikte om te tellen. */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 xl:gap-8 mb-8 sm:mb-10">
+        <div className="xl:col-span-2 min-w-0 bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-xl shadow-sm p-4 sm:p-6">
+          <SectionHeading
+            title="Werkvoorraad"
+            actions={
+              <span className="text-xs text-gray-400 dark:text-white/40">
+                {openstaand} {openstaand === 1 ? 'klus' : 'klussen'} open
+              </span>
+            }
+          />
+          <Standbalk
+            dik
+            rijen
+            verdeling={v}
+            leeg="Er staat niets open. Zodra de synchronisatie klussen binnenhaalt verschijnen ze hier."
+          />
+        </div>
+        <div className="min-w-0 bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-xl shadow-sm p-4 sm:p-6">
+          <SectionHeading
+            title="Deze week"
+            actions={
+              <Button variant="ghost" size="sm" onClick={() => navigate('/planning')}>
+                Planning →
+              </Button>
+            }
+          />
+          <Weekdoorkijk dagen={data.doorkijk} onDag={() => navigate('/planning')} />
+        </div>
+      </div>
+
       {/* Projectoverzicht + Activiteit */}
       {/* min-w-0 op beide kolommen. Zonder dat groeit een grid-kind mee
           met zijn inhoud in plaats van zich aan de kolom te houden, en
@@ -151,7 +190,10 @@ export default function Dashboard() {
             title="Projectoverzicht"
             actions={
               <>
-                <Button variant="ghost" size="sm" onClick={() => navigate('/planning')}>
+                {/* Op een telefoon passen twee knoppen niet naast de kop
+                    en liep "Alle projecten" het scherm uit. Planning
+                    staat daar al in de balk onderin. */}
+                <Button variant="ghost" size="sm" className="hidden sm:inline-flex" onClick={() => navigate('/planning')}>
                   <IconCalendar className="w-4 h-4" /> Planning
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => navigate('/projecten')}>

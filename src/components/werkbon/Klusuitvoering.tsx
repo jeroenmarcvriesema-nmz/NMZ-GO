@@ -27,6 +27,14 @@ interface Props {
   onRefresh: () => void
   /** Na een geslaagde afronding. Vandaag ververst; `/werkbon/:id` gaat terug. */
   onVoltooid?: () => void
+  /**
+   * Laat het percentage en de balk in de kop weg.
+   *
+   * Voor Vandaag: daar staat de voortgang al als ring bovenaan het
+   * scherm, twee kaarten hoger. Hetzelfde getal twee keer binnen tweehonderd
+   * pixels leest niet als bevestiging maar als ruis.
+   */
+  zonderVoortgang?: boolean
 }
 
 /**
@@ -46,6 +54,7 @@ interface Props {
  */
 export function Klusuitvoering({
   werkbon, kopje, laden, ophaalfout, readOnly, bijschrift, onRefresh, onVoltooid,
+  zonderVoortgang,
 }: Props) {
   const [voltooien, setVoltooien] = useState(false)
   const [fout, setFout] = useState<string | null>(null)
@@ -108,15 +117,19 @@ export function Klusuitvoering({
               {k.label}
             </span>
           </div>
-          <div className="text-right flex-shrink-0">
-            <div className={cn('text-2xl font-extrabold tabular-nums',
-              voortgang === 100 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white')}>
-              {voortgang}%
+          {!zonderVoortgang && (
+            <div className="text-right flex-shrink-0">
+              <div className={cn('text-2xl font-extrabold tabular-nums',
+                voortgang === 100 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white')}>
+                {voortgang}%
+              </div>
+              <div className="text-xs text-gray-400 dark:text-white/40">{aantalKlaar}/{taken.length} punten</div>
             </div>
-            <div className="text-xs text-gray-400 dark:text-white/40">{aantalKlaar}/{taken.length} punten</div>
-          </div>
+          )}
         </div>
-        <div className="mt-3"><ProgressBar value={voortgang} size="md" variant={voortgang === 100 ? 'green' : 'yellow'} /></div>
+        {!zonderVoortgang && (
+          <div className="mt-3"><ProgressBar value={voortgang} size="md" variant={voortgang === 100 ? 'green' : 'yellow'} /></div>
+        )}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 pt-3 border-t border-gray-50 dark:border-white/5 text-xs text-gray-400 dark:text-white/40">
           {/* Met "start" ervoor, anders leest een datum uit het verleden
               als een fout in plaats van als de startdatum. */}

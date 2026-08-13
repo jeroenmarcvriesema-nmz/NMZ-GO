@@ -5,16 +5,17 @@ import { useMijnPrestaties } from '@/hooks/useMijnPrestaties'
 import { usePlanningDoorkijk } from '@/hooks/usePlanningDoorkijk'
 import { PageWrapper } from '@/components/layout/PageWrapper'
 import { Klusuitvoering } from '@/components/werkbon/Klusuitvoering'
-import { KpiCard } from '@/components/dashboard/KpiCard'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { Spinner } from '@/components/ui/Spinner'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Avatar } from '@/components/ui/Avatar'
+import { Voortgangsring } from '@/components/ui/Voortgangsring'
 import { berekenVoortgang, cn } from '@/lib/utils'
 import { kiesVandaag, isoDatum } from '@/lib/planning'
+import { klusstand, STANDEN, type Klusstand } from '@/lib/klusstand'
 import {
   IconCalendar, IconPlayerPlay, IconPlayerStop,
-  IconListCheck, IconPhoto, IconClock, IconTrophy,
+  IconPhoto, IconClock, IconTrophy,
   IconUsers, IconCircleCheck,
 } from '@tabler/icons-react'
 
@@ -140,11 +141,12 @@ export default function MijnWerkbonnen() {
             ervoor" — dat is wat je wil zien als je je telefoon uit je
             zak haalt, niet iets waar je twintig afvinkpunten voor moet
             langsscrollen. */}
-        <Tegels
+        <Dagkaart
           aantalKlaar={taken.filter((t) => t.voltooid).length}
           aantalTaken={taken.length}
           aantalFotos={aantalFotos}
           voortgang={voortgang}
+          stand={klusstand(vandaag)}
           uren={werkdag.fase === 'voor_start' ? '—' : geefUren(werkdag.startTijd, werkdag.stopTijd)}
         />
 
@@ -167,6 +169,8 @@ export default function MijnWerkbonnen() {
         <Klusuitvoering
           werkbon={vandaag}
           kopje="Vandaag werk je aan"
+          // De ring bovenaan toont de voortgang al.
+          zonderVoortgang
           laden={bonLaadt}
           ophaalfout={bonFout}
           readOnly={!gestart}
@@ -251,18 +255,63 @@ function Werkdagbalk({ fase, bezig, onStart, onStop, onHervat }: {
   )
 }
 
-/** Dezelfde KpiCard als op het kantoordashboard — vandaar de herkenning. */
-function Tegels({ aantalKlaar, aantalTaken, aantalFotos, voortgang, uren }: {
-  aantalKlaar: number; aantalTaken: number; aantalFotos: number; voortgang: number; uren: string
+/**
+ * Hoe sta ik ervoor vandaag.
+ *
+ * Waren vier losse tegels: punten klaar, foto's, voortgang en gewerkte
+ * tijd, elk in een eigen vak met een eigen getal. Vier getallen naast
+ * elkaar is geen antwoord op één vraag, en "Punten klaar 1/3" en
+ * "Voortgang 33%" zeiden bovendien hetzelfde ding twee keer.
+ *
+ * Nu één kaart met de ring in het midden. Die lees je met een halve
+ * blik en een handschoen aan: de kleur zegt hoe het staat, het getal
+ * hoe ver. Wat er omheen staat is aanvullend en niet concurrerend.
+ */
+function Dagkaart({ aantalKlaar, aantalTaken, aantalFotos, voortgang, uren, stand }: {
+  aantalKlaar: number; aantalTaken: number; aantalFotos: number
+  voortgang: number; uren: string; stand: Klusstand
 }) {
+  const k = STANDEN[stand]
+
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      <KpiCard label="Punten klaar" value={`${aantalKlaar}/${aantalTaken}`}
-               icon={<IconListCheck />} variant={aantalKlaar === aantalTaken && aantalTaken > 0 ? 'green' : 'neutral'} />
-      <KpiCard label="Foto's" value={aantalFotos} icon={<IconPhoto />} variant="neutral" />
-      <KpiCard label="Voortgang" value={`${voortgang}%`} icon={<IconCircleCheck />}
-               variant={voortgang === 100 ? 'green' : 'yellow'} />
-      <KpiCard label="Gewerkt" value={uren} icon={<IconClock />} variant="neutral" />
+    <div className="bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-lg shadow-sm p-5">
+      <div className="flex items-center gap-5">
+        <Voortgangsring
+          waarde={voortgang}
+          onder={`${aantalKlaar}/${aantalTaken}`}
+          maat={104}
+          kleur={k.tekst}
+        />
+
+        <div className="min-w-0 flex-1 space-y-3">
+          <span className={cn('inline-flex items-center gap-1.5 text-sm font-bold', k.tekst)}>
+            <span className={cn('w-2 h-2 rounded-full flex-shrink-0', k.bol)} />
+            {k.label}
+          </span>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Cijfer icon={<IconClock className="w-4 h-4" />} waarde={uren} label="gewerkt" />
+            <Cijfer icon={<IconPhoto className="w-4 h-4" />} waarde={aantalFotos} label={aantalFotos === 1 ? 'foto' : "foto's"} />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** Eén getal met een pictogram ervoor. Klein, want de ring is de kop. */
+function Cijfer({ icon, waarde, label }: { icon: React.ReactNode; waarde: string | number; label: string }) {
+  return (
+    <div className="flex items-center gap-2 min-w-0">
+      <span className="w-8 h-8 rounded-lg bg-surface-2 dark:bg-white/5 flex items-center justify-center flex-shrink-0 text-gray-400 dark:text-white/40">
+        {icon}
+      </span>
+      <span className="min-w-0">
+        <span className="block text-base font-extrabold tabular-nums leading-none text-gray-900 dark:text-white">
+          {waarde}
+        </span>
+        <span className="block text-[11px] text-gray-400 dark:text-white/40 mt-0.5 truncate">{label}</span>
+      </span>
     </div>
   )
 }
@@ -277,15 +326,27 @@ function Prestaties() {
       {loading ? (
         <div className="flex justify-center py-4"><Spinner className="w-5 h-5" /></div>
       ) : (
+        /* Drie kale getallen naast elkaar met een streepje ertussen.
+           Nu elk in een eigen vakje met een pictogram: het leest als
+           drie dingen in plaats van als een rij cijfers, en op een
+           telefoon van 390 pixels valt het niet meer uit elkaar. */
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
           {[
-            { waarde: data.werkbonnenAfgerond, label: 'Werkbonnen afgerond' },
-            { waarde: data.werkdagenGewerkt, label: 'Werkdagen gewerkt' },
-            { waarde: data.fotosGemaakt, label: "Foto's gemaakt" },
-          ].map((c, i) => (
-            <div key={c.label} className={cn('min-w-0 text-center px-1', i === 1 && 'border-x border-gray-100 dark:border-white/10')}>
-              <p className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white tabular-nums">{c.waarde}</p>
-              <p className="text-[10px] sm:text-[11px] text-gray-400 dark:text-white/40 mt-0.5 leading-tight break-words">{c.label}</p>
+            { waarde: data.werkbonnenAfgerond, label: 'bonnen af', icon: <IconCircleCheck className="w-4 h-4" /> },
+            { waarde: data.werkdagenGewerkt, label: 'werkdagen', icon: <IconClock className="w-4 h-4" /> },
+            { waarde: data.fotosGemaakt, label: "foto's", icon: <IconPhoto className="w-4 h-4" /> },
+          ].map((c) => (
+            <div
+              key={c.label}
+              className="min-w-0 text-center rounded-lg bg-surface-2/60 dark:bg-white/5 px-2 py-3"
+            >
+              <span className="inline-flex text-brand-yellow-dark dark:text-brand-yellow">{c.icon}</span>
+              <p className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white tabular-nums mt-1 leading-none">
+                {c.waarde}
+              </p>
+              <p className="text-[10px] sm:text-[11px] text-gray-400 dark:text-white/40 mt-1 leading-tight break-words">
+                {c.label}
+              </p>
             </div>
           ))}
         </div>

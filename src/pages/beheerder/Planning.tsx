@@ -10,6 +10,7 @@ import { cn, formatDatumKort } from '@/lib/utils'
 import { isoDatum, weekDagen, maandagVerschoven } from '@/lib/planning'
 import { zoektMee } from '@/lib/zoeken'
 import { klusstand, STANDEN, STANDVOLGORDE, type Klusstand } from '@/lib/klusstand'
+import { Standbalk, type Standverdeling } from '@/components/dashboard/Standbalk'
 import type { PlanningItem } from '@/types'
 import { IconAlertTriangle, IconSearch, IconX } from '@tabler/icons-react'
 
@@ -56,6 +57,16 @@ function zwaarsteStand(items: PlanningItem[]): Klusstand | null {
   return items
     .map((p) => klusstand(feitenVan(p)))
     .reduce((zwaarste, s) => (STANDVOLGORDE[s] < STANDVOLGORDE[zwaarste] ? s : zwaarste))
+}
+
+/** Hoeveel klussen per stand staan er op deze dag. */
+function verdelingVan(items: PlanningItem[]): Standverdeling {
+  const uit: Standverdeling = {}
+  for (const p of items) {
+    const stand = klusstand(feitenVan(p))
+    uit[stand] = (uit[stand] ?? 0) + 1
+  }
+  return uit
 }
 
 function opStand(items: PlanningItem[]): PlanningItem[] {
@@ -279,6 +290,15 @@ export default function Planning() {
                     )
                   })()}
                 </div>
+
+                {/* De dag in één streep. De kaarten eronder vertellen
+                    wélke klus wat is; dit vertelt de vorm van de dag —
+                    of hij vooral uit wachtend werk bestaat of uit iets
+                    dat loopt, en hoe groot het rode stuk is. Dezelfde
+                    kleuren, geen nieuwe. */}
+                {dagItems.length > 0 && (
+                  <Standbalk verdeling={verdelingVan(dagItems)} legenda={false} className="mt-2" />
+                )}
               </div>
 
               {/* Items */}

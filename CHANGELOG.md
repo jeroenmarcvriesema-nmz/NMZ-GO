@@ -48,6 +48,17 @@
 - **[FEATURE]** 9 tests erbij (`opdracht`), **143 in totaal**.
 - Geen migratie nodig: bucket, kolommen en policies stonden er al.
 
+## Meer beeld, minder losse getallen
+
+- **[FEATURE]** Het dashboard heeft een **werkvoorraadbalk**: één gestapelde balk met daaronder per stand het aantal en het aandeel. Vijf getallen naast elkaar vertellen hoevéél er is maar niet hoe het staat — of de voorraad vooral uit wachtend werk bestaat of uit klussen die lopen, en hoe groot het rode stuk is.
+- **[FEATURE]** En een **weekdoorkijk**: de komende zes werkdagen als staafjes, opgebouwd uit dezelfde standkleuren. Of morgen vol staat of leeg was de vraag waarvoor je anders naar de planning ging om te tellen. Aantikken opent de planning.
+- **[FEATURE]** Op de planning krijgt elke dagkop een **werkvoorraadstreepje**: de vorm van die dag in één lijn, onder de telling. De kaarten eronder vertellen wélke klus wat is; de streep vertelt hoe de dag eruitziet.
+- **[FEATURE]** Het scherm van de zwamsaneerder opent nu met één **dagkaart met een voortgangsring** in plaats van vier losse tegels. De ring lees je met een halve blik en een handschoen aan; de kleur zegt hoe het staat, het getal hoe ver. "Punten klaar 1/3" en "Voortgang 33%" stonden er bovendien allebei — hetzelfde ding twee keer.
+- **[FIX]** Datzelfde percentage stond daarna nóg een keer in de kop van de werkbon eronder. Op Vandaag is dat blok nu weg; op `/werkbon/:id`, waar geen ring staat, blijft het.
+- **[FEATURE]** "Mijn cijfers" was drie kale getallen met een streepje ertussen. Nu drie vakjes met een pictogram, die op een telefoon van 390 pixels niet meer uit elkaar vallen.
+- **[FIX]** De kolom "Laatste update" in het projectoverzicht viel af op 1280 pixels, omdat de tabel daar maar tweederde van de breedte krijgt. Verschijnt nu pas vanaf een breder scherm.
+- **[FIX]** Op een telefoon liep "Alle projecten →" het scherm uit doordat er twee knoppen naast de kop stonden.
+
 ## Dashboard, projecten, planning en de storingen
 
 ### Storingen zijn van de eigenaar
