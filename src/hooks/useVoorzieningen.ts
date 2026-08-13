@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { leesVoorzieningen, type Voorziening } from '@/lib/voorzieningen'
 import { isoDatum } from '@/lib/planning'
@@ -7,31 +7,35 @@ import { isoDatum } from '@/lib/planning'
 // NMZ GO — welke containers en dixi's er besteld en afgemeld moeten
 // ============================================================
 // Beide worden bij een derde partij besteld, staan op een adres, en
-// moeten na afloop weer weg. Tot nu toe stond dat alleen in de
-// werkvoorbereiding van de opdracht — een lap tekst per klus, die je
-// per bon moest openslaan om te zien of er iets besteld moest worden.
+// moeten na afloop weer weg. Wát er nodig is staat in de
+// werkvoorbereiding van de opdracht; wat er al gedáán is staat in
+// `werkbon_voorzieningen` (migratie 033). Zonder dat tweede blijft het
+// een lijst die elke ochtend opnieuw doorgelopen moet worden, en dan
+// belt de een de verhuurder voor de tweede keer terwijl de ander denkt
+// dat het geregeld was.
 //
-// Twee momenten tellen, en het zijn er precies twee:
-//
-//   1. Vóór de startdatum: bestellen. Een container die op dag één niet
-//      staat, kost een dag.
-//   2. Op de opleverdatum: afmelden. Een container die blijft staan
-//      kost huur per dag, en een dixi net zo.
-//
-// Alles hier wordt uit de bestaande tekst gelezen; er is geen veld voor
-// en geen invoer bij. Dat is bewust: de werkvoorbereider vult het al in
-// ClickUp in, en hem het twee keer laten opschrijven is een garantie
-// dat het op een dag niet meer overeenkomt.
+// Eén regel per voorziening en niet per klus. Een container en een dixi
+// zijn twee bestellingen met elk hun eigen moment: de container kan
+// besteld zijn terwijl de dixi nog moet, en de dixi kan al afgemeld
+// zijn terwijl de container er nog staat. Per klus groeperen zou die
+// twee door elkaar halen.
 // ============================================================
 
+export type Soort = 'container' | 'dixi'
+
 export interface VoorzieningRegel {
-  id: string
+  /** Uniek per klus én soort, want een klus levert er twee. */
+  sleutel: string
+  werkbonId: string
+  soort: Soort
   adres: string
   bonnummer: string | null
   start: string
   eind: string
-  container: Voorziening
-  dixi: Voorziening
+  /** Wat de werkopdracht erover zegt. */
+  wat: Voorziening
+  besteldOp: string | null
+  afgemeldOp: string | null
   /** Dagen tot de startdatum. Negatief betekent: al begonnen. */
   dagenTotStart: number
   /** Dagen sinds de opleverdatum. Negatief betekent: nog niet zover. */
@@ -40,12 +44,16 @@ export interface VoorzieningRegel {
 }
 
 export interface Voorzieningenlijst {
-  /** Moet vandaag of eerder weg: de klus is op zijn opleverdatum. */
+  /** De opleverdatum is bereikt en er staat nog iets. Kost huur. */
   afmelden: VoorzieningRegel[]
-  /** Moet nog geleverd worden: de klus begint binnenkort of vandaag. */
+  /** Moet nog geleverd worden vóór de eerste werkdag. */
   bestellen: VoorzieningRegel[]
+  /** Besteld en nog niet afgemeld. Hier kun je vervroegd afmelden. */
+  staatEr: VoorzieningRegel[]
   loading: boolean
   error: string | null
+  /** Zet of haalt een stempel, en werkt de lijst meteen bij. */
+  stempel: (r: VoorzieningRegel, wat: 'besteld' | 'afgemeld', aan: boolean) => Promise<string | null>
 }
 
 /** Hoe ver vooruit we kijken voor "moet nog besteld worden". */
@@ -62,58 +70,112 @@ export function useVoorzieningen(): Voorzieningenlijst {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    let levend = true
+  const ophalen = useCallback(async () => {
+    const [bonnenRes, stempelsRes] = await Promise.all([
+      supabase.from('werkbonnen')
+        .select('id, adres, bonnummer, datum, geplande_start, geplande_eind, werkvoorbereiding, stilgelegd_op')
+        .is('opgeleverd_op', null),
+      supabase.from('werkbon_voorzieningen')
+        .select('werkbon_id, soort, besteld_op, afgemeld_op'),
+    ])
 
-    supabase
-      .from('werkbonnen')
-      .select('id, adres, bonnummer, datum, geplande_start, geplande_eind, werkvoorbereiding, stilgelegd_op')
-      .is('opgeleverd_op', null)
-      .then(({ data, error: fout }) => {
-        if (!levend) return
-        if (fout) { setError(fout.message); setLoading(false); return }
+    if (bonnenRes.error || stempelsRes.error) {
+      setError(bonnenRes.error?.message ?? stempelsRes.error?.message ?? 'Onbekende fout')
+      setLoading(false)
+      return
+    }
 
-        const vandaag = isoDatum()
+    const stempels = new Map<string, { besteld_op: string | null; afgemeld_op: string | null }>()
+    for (const s of (stempelsRes.data ?? []) as any[]) {
+      stempels.set(`${s.werkbon_id}:${s.soort}`, s)
+    }
 
-        setRegels(((data ?? []) as any[]).map((w) => {
-          const start = w.geplande_start ?? w.datum
-          const eind = w.geplande_eind ?? start
-          const { container, dixi } = leesVoorzieningen(w.werkvoorbereiding)
+    const vandaag = isoDatum()
+    const uit: VoorzieningRegel[] = []
 
-          return {
-            id: w.id,
-            adres: w.adres ?? '',
-            bonnummer: w.bonnummer ?? null,
-            start,
-            eind,
-            container,
-            dixi,
-            dagenTotStart: dagenTussen(vandaag, start),
-            dagenNaEind: dagenTussen(eind, vandaag),
-            stilgelegd: Boolean(w.stilgelegd_op),
-          }
-        }))
-        setError(null)
-        setLoading(false)
-      })
+    for (const w of (bonnenRes.data ?? []) as any[]) {
+      const start = w.geplande_start ?? w.datum
+      const eind = w.geplande_eind ?? start
+      const gelezen = leesVoorzieningen(w.werkvoorbereiding)
 
-    return () => { levend = false }
+      for (const soort of ['container', 'dixi'] as Soort[]) {
+        const wat = gelezen[soort]
+        // Alleen wat de opdracht echt vraagt. "Niet vermeld" hoort hier
+        // niet: dan zou de lijst zich vullen met klussen waarvan we het
+        // simpelweg niet weten, en is een volle lijst geen signaal meer.
+        if (wat.nodig !== 'ja') continue
+
+        const stempel = stempels.get(`${w.id}:${soort}`)
+        uit.push({
+          sleutel: `${w.id}:${soort}`,
+          werkbonId: w.id,
+          soort,
+          adres: w.adres ?? '',
+          bonnummer: w.bonnummer ?? null,
+          start,
+          eind,
+          wat,
+          besteldOp: stempel?.besteld_op ?? null,
+          afgemeldOp: stempel?.afgemeld_op ?? null,
+          dagenTotStart: dagenTussen(vandaag, start),
+          dagenNaEind: dagenTussen(eind, vandaag),
+          stilgelegd: Boolean(w.stilgelegd_op),
+        })
+      }
+    }
+
+    setError(null)
+    setRegels(uit)
+    setLoading(false)
   }, [])
 
-  // Alleen klussen waar iets te bestellen valt. "Niet vermeld" telt
-  // hier niet mee: dat zou de lijst vullen met klussen waarvan we het
-  // gewoon niet weten, en dan is een volle lijst geen signaal meer.
-  const heeftIets = (r: VoorzieningRegel) =>
-    r.container.nodig === 'ja' || r.dixi.nodig === 'ja'
+  useEffect(() => { ophalen() }, [ophalen])
 
-  const afmelden = regels
-    .filter((r) => heeftIets(r) && r.dagenNaEind >= 0)
+  const stempel = useCallback(async (
+    r: VoorzieningRegel,
+    wat: 'besteld' | 'afgemeld',
+    aan: boolean,
+  ): Promise<string | null> => {
+    // Meteen op het scherm, en pas daarna de bevestiging. Wie tien
+    // regels afvinkt hoort niet tussen elke tik op de database te
+    // wachten; gaat het mis, dan draait de ophaalronde hieronder het
+    // terug én zeggen we waarom.
+    setRegels((huidig) => huidig.map((x) => x.sleutel !== r.sleutel ? x : {
+      ...x,
+      besteldOp: wat === 'besteld' ? (aan ? new Date().toISOString() : null) : x.besteldOp,
+      afgemeldOp: wat === 'afgemeld' ? (aan ? new Date().toISOString() : null) : x.afgemeldOp,
+    }))
+
+    const { error: fout } = await supabase.rpc('voorziening_stempelen', {
+      p_werkbon: r.werkbonId,
+      p_soort: r.soort,
+      p_wat: wat,
+      p_aan: aan,
+    })
+
+    if (fout) {
+      await ophalen()
+      return fout.message || 'Dat kon niet worden opgeslagen.'
+    }
+    return null
+  }, [ophalen])
+
+  // Drie stapels, en ze sluiten elkaar uit. Een voorziening staat op
+  // precies één plek, zodat afvinken hem zichtbaar naar de volgende
+  // stapel verplaatst in plaats van hem twee keer te laten staan.
+  const open = regels.filter((r) => !r.afgemeldOp)
+
+  const afmelden = open
+    .filter((r) => r.dagenNaEind >= 0)
     .sort((a, b) => b.dagenNaEind - a.dagenNaEind)
 
-  // Wat al afgemeld moet worden hoeft niet ook nog besteld te worden.
-  const bestellen = regels
-    .filter((r) => heeftIets(r) && r.dagenNaEind < 0 && r.dagenTotStart <= DAGEN_VOORUIT)
+  const bestellen = open
+    .filter((r) => r.dagenNaEind < 0 && !r.besteldOp && r.dagenTotStart <= DAGEN_VOORUIT)
     .sort((a, b) => a.dagenTotStart - b.dagenTotStart)
 
-  return { afmelden, bestellen, loading, error }
+  const staatEr = open
+    .filter((r) => r.dagenNaEind < 0 && r.besteldOp)
+    .sort((a, b) => a.dagenNaEind - b.dagenNaEind)
+
+  return { afmelden, bestellen, staatEr, loading, error, stempel }
 }

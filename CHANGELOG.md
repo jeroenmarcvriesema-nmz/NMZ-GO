@@ -11,6 +11,13 @@
 - **[FEATURE]** Kantoor kan een punt **verwijderen** — beheerder, uitvoerder, werkvoorbereider, planner en eigenaar. Nodig als de parser een kopregel als punt heeft gelezen, of als meerwerk toch niet doorgaat; zo'n punt blijft anders eeuwig openstaan en houdt het afronden tegen. Twee tikken, want het is onomkeerbaar.
 - Drie sloten (migratie 032): niet op een opgeleverde bon, en niet als er foto's aan het punt hangen. Die foto's zijn het bewijs dat het werk gedaan is; die gooien we niet weg als bijvangst. Wie het punt écht kwijt wil haalt eerst de foto weg — dan is dat een aparte, zichtbare handeling. Wat eraf gaat komt met titel en al in de gebeurtenissen te staan.
 
+### Containers en dixi's afvinken
+- **[FEATURE]** Kantoor kan per container en per dixi aanvinken dat hij **besteld** is en dat hij **afgemeld** is (migratie 033). Zonder dat blijft het een lijst die elke ochtend opnieuw doorgelopen moet worden — en dan belt de een de verhuurder voor de tweede keer terwijl de ander denkt dat het geregeld was.
+- **Afmelden kan altijd, ook vóór de opleverdatum.** Een klus die op dag twee van de vijf al leeg is hoeft de container niet nog drie dagen te houden; dat is precies de huur die je bespaart. Daarvoor is er een derde stapel **Staat er**: besteld en nog niet afgemeld.
+- De drie stapels sluiten elkaar uit, dus afvinken verplaatst een regel zichtbaar naar de volgende in plaats van hem twee keer te laten staan. Een vinkje kan er ook weer áf: wie de verkeerde regel aantikt hoort daar niet aan vast te zitten.
+- Eén regel per voorziening in plaats van per klus. Een container en een dixi zijn twee bestellingen met elk hun eigen moment — de container kan besteld zijn terwijl de dixi nog moet.
+- Alleen voor kantoor: de tabel laat via RLS niemand anders binnen, en het vinkje gaat door dezelfde rolcheck als de rest.
+
 ### Containers en dixi's
 - **[FEATURE]** Nieuwe kaart op het dashboard: **Containers & dixi's**, per adres, met twee blokken. **Afmelden** staat bovenaan — de opleverdatum is bereikt en de huur loopt door — en **Bestellen** eronder, voor wat er de komende tien dagen moet staan. Op de opleverdatum zelf staat er "vandaag afmelden"; daarna telt hij de dagen die eroverheen zijn.
 - Het wordt gelezen uit de werkvoorbereiding die er al staat. Geen nieuw veld en geen extra invoer: de werkvoorbereider vult het al in ClickUp in, en het twee keer laten opschrijven is een garantie dat het ooit niet meer overeenkomt.
