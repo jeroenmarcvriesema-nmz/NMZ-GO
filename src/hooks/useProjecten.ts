@@ -39,7 +39,7 @@ export function usePlanning() {
         .from('werkbonnen')
         .select(`
           id, datum, adres, plaats, bonnummer, status, kluiscode,
-          geplande_start, geplande_eind, stilgelegd_op, opgeleverd_op,
+          geplande_start, geplande_eind, stilgelegd_op, opgeleverd_op, stilleg_reden,
           taken ( id, voltooid ),
           werkbon_medewerkers ( persoon:personen(naam) )
         `)
@@ -58,6 +58,9 @@ export function usePlanning() {
             plaats: w.plaats ?? null,
             bonnummer: w.bonnummer ?? null,
             kluiscode: w.kluiscode ?? null,
+            // Nodig om asbest van de rest te onderscheiden: dat krijgt
+            // een eigen kleur, want er hangt een andere procedure aan.
+            stillegReden: w.stilleg_reden ?? null,
             punten: (w.taken ?? []).length,
             puntenKlaar: (w.taken ?? []).filter((t: any) => t.voltooid).length,
             medewerkers: (w.werkbon_medewerkers || [])

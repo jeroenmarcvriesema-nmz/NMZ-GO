@@ -1,5 +1,13 @@
 # NMZ GO — Changelog
 
+## Asbest in het oranje, en twee knoppen erbij
+
+- **[FEATURE]** Een klus die op **asbest** stilligt is nu fel oranje: rand, vlak en badge op de planning en in de bonnenlijst, met het woord "asbest" erbij. Rood was al bezet door stilgelegd — en asbest ís stilgelegd, dus dat maakte geen onderscheid. Dit is dezelfde kleur die ClickUp aan "onhold door asbest" geeft: wie de twee borden naast elkaar heeft, ziet hetzelfde. Asbest gaat vóór uitloop: een asbestklus die ook over zijn datum heen is, blijft in de eerste plaats een asbestklus.
+- **[FEATURE]** Vier knoppen in plaats van twee: **stilleggen, asbest, opnieuw inplannen en nog spuiten/isoleren**. Ze zetten alle vier hetzelfde in gang; het verschil is het woord dat vóór je reden komt, en dus welke status de taak in ClickUp krijgt. Asbest heeft er een gekregen omdat het de zwaarste is — dat je dat woord precies moest intypen om die status te raken was een onnodig risico op de verkeerde plek.
+- **[FEATURE]** "Nog spuiten/isoleren" bestond al als status in ClickUp maar niet in NMZ GO; zulke klussen vielen terug op het algemene "on hold". Juist die status zegt wélk werk er nog ligt en dus wie er ingepland moet worden. Migratie 031 zet hem erbij.
+- **[FIX]** De herkenning kijkt nu door de Nederlandse vervoeging heen: "geïsoleerd" (met trema) en "gespoten" werden allebei gemist. Iemand die met natte handschoenen op een telefoon typt hoort daar niet op af te ketsen.
+- **[FEATURE]** Filteren op **asbest** op de weekplanning en in de bonnenlijst, naast het uitloopfilter.
+
 ## Een zesde kleur: klussen die uitlopen
 
 - **[FEATURE]** Een klus die over zijn opleverdatum heen is krijgt nu **amber**: een rand links op de planningkaart en de werkbonkaart, met het woord "loopt uit" erbij. De berekening (`dagenUitloop`) bestond al, maar werd op precies één scherm gebruikt — de Uitloop-pagina van kantoor. Overal anders was een klus die drie dagen te laat is niet te onderscheiden van een klus die keurig op schema loopt: allebei blauw, allebei "Bezig". Dat is informatie die er lag en die niemand zag.

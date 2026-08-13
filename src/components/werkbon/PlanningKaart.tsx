@@ -1,10 +1,10 @@
 import { cn } from '@/lib/utils'
-import { klusstand, looptUit, STANDEN, KLEURWAS, UITLOOP } from '@/lib/klusstand'
+import { klusstand, looptUit, isAsbest, STANDEN, KLEURWAS, UITLOOP, ASBEST } from '@/lib/klusstand'
 import type { PlanningItem } from '@/types'
 import {
   IconUsers, IconListCheck, IconKey, IconPlayerPause,
   IconCircleCheck, IconArrowNarrowRight, IconArrowNarrowLeft,
-  IconClockExclamation,
+  IconClockExclamation, IconBiohazard,
 } from '@tabler/icons-react'
 
 /**
@@ -65,6 +65,12 @@ export function PlanningKaart({ item, onOpen, loopIn, loopUit, ruim }: PlanningK
   // blijft de stand tonen, anders raak je die kwijt.
   const laat = looptUit({ ...feitenVan(item), geplande_eind: item.eind, datum: item.datum })
 
+  // Asbest gaat vóór uitloop: een asbestklus die ook over zijn datum
+  // heen is, blijft in de eerste plaats een asbestklus. Daar hangt een
+  // inventarisatie aan; de dagen tellen pas daarna.
+  const asbest = isAsbest(item.stillegReden)
+  const accent = asbest ? ASBEST : laat ? UITLOOP : null
+
   return (
     <button
       onClick={onOpen}
@@ -77,9 +83,9 @@ export function PlanningKaart({ item, onOpen, loopIn, loopUit, ruim }: PlanningK
         // meter afstand welke kolom loopt en welke stilligt, zonder één
         // woord te lezen. Zacht genoeg om de tekst leesbaar te houden —
         // de kleur is de achtergrond, niet de boodschap.
-        KLEURWAS ? k.vlak : 'bg-white dark:bg-surface-dark-2',
-        KLEURWAS ? k.omlijsting : 'border-gray-100 dark:border-white/10',
-        laat ? UITLOOP.rand : k.rand,
+        KLEURWAS ? (asbest ? ASBEST.vlak : k.vlak) : 'bg-white dark:bg-surface-dark-2',
+        KLEURWAS ? (asbest ? ASBEST.omlijsting : k.omlijsting) : 'border-gray-100 dark:border-white/10',
+        accent ? accent.rand : k.rand,
         ruim ? 'p-3.5' : 'p-2.5',
       )}
     >
@@ -125,9 +131,17 @@ export function PlanningKaart({ item, onOpen, loopIn, loopUit, ruim }: PlanningK
           </span>
         )}
 
-        {/* Het woord erbij, net als bij de standen. Een amberkleurige
-            rand alleen is niet genoeg voor wie in de zon op een dak
-            staat — en niet iedereen ziet kleurverschil. */}
+        {/* Het woord erbij, net als bij de standen. Een gekleurde rand
+            alleen is niet genoeg voor wie in de zon op een dak staat —
+            en niet iedereen ziet kleurverschil. Bij asbest weegt dat
+            het zwaarst: dat is het ene bericht dat niet mag afhangen
+            van of iemand oranje van amber onderscheidt. */}
+        {asbest && (
+          <span className={cn('flex items-center gap-1 text-[11px] font-bold', ASBEST.tekst)}>
+            <IconBiohazard className="w-3 h-3 flex-shrink-0" /> asbest
+          </span>
+        )}
+
         {laat && (
           <span className={cn('flex items-center gap-1 text-[11px] font-bold', UITLOOP.tekst)}>
             <IconClockExclamation className="w-3 h-3 flex-shrink-0" /> loopt uit

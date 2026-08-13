@@ -9,7 +9,7 @@ import { Weekkiezer } from '@/components/layout/Weekkiezer'
 import { cn, formatDatumKort } from '@/lib/utils'
 import { isoDatum, weekDagen, maandagVerschoven } from '@/lib/planning'
 import { zoektMee } from '@/lib/zoeken'
-import { klusstand, looptUit, STANDEN, STANDVOLGORDE, type Klusstand } from '@/lib/klusstand'
+import { klusstand, looptUit, isAsbest, STANDEN, STANDVOLGORDE, type Klusstand } from '@/lib/klusstand'
 import { Standbalk, type Standverdeling } from '@/components/dashboard/Standbalk'
 import type { PlanningItem } from '@/types'
 import { IconAlertTriangle, IconSearch, IconX } from '@tabler/icons-react'
@@ -113,7 +113,7 @@ export default function Planning() {
   // stelt: "wat vraagt vandaag iets van mij". Filteren op stand maakt
   // van een volle week een lijstje van vier klussen die stilliggen of
   // over hun opleverdatum heen zijn.
-  const [stand, setStand] = useState<'alle' | 'uitloop' | Klusstand>('alle')
+  const [stand, setStand] = useState<'alle' | 'uitloop' | 'asbest' | Klusstand>('alle')
   const dagen = weekDagen(maandagVerschoven(week))
   const vandaag = new Date()
   vandaag.setHours(0, 0, 0, 0)
@@ -132,7 +132,9 @@ export default function Planning() {
 
   const standPast = (p: PlanningItem) =>
     stand === 'alle' ||
-    (stand === 'uitloop' ? looptUit(feiten(p)) : klusstand(feiten(p)) === stand)
+    (stand === 'uitloop' ? looptUit(feiten(p))
+      : stand === 'asbest' ? isAsbest(p.stillegReden)
+      : klusstand(feiten(p)) === stand)
 
   const past = (p: PlanningItem) =>
     (ploeg === 'alle' || p.medewerkers.includes(ploeg)) &&
@@ -240,6 +242,7 @@ export default function Planning() {
             opties={[
               { waarde: 'alle', label: 'Elke stand' },
               { waarde: 'uitloop', label: 'Loopt uit' },
+              { waarde: 'asbest', label: 'Asbest' },
               { waarde: 'stilgelegd', label: STANDEN.stilgelegd.label },
               { waarde: 'af_te_ronden', label: STANDEN.af_te_ronden.label },
               { waarde: 'bezig', label: STANDEN.bezig.label },
@@ -267,7 +270,9 @@ export default function Planning() {
           Je ziet {dezeWeek.length} van de {planning.filter((p) => p.datum <= totWeek && (p.eind ?? p.datum) >= vanWeek).length} klussen in deze week.
           {ploeg !== 'alle' && ` Alleen waar ${ploeg} op staat.`}
           {stand === 'uitloop' && ' Alleen wat over de opleverdatum heen is.'}
-          {stand !== 'alle' && stand !== 'uitloop' && ` Alleen "${STANDEN[stand].label}".`}
+          {stand === 'asbest' && ' Alleen wat op asbest stilligt.'}
+          {stand !== 'alle' && stand !== 'uitloop' && stand !== 'asbest' &&
+            ` Alleen "${STANDEN[stand].label}".`}
         </p>
       )}
 

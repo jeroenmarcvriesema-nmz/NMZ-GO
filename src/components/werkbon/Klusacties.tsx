@@ -6,9 +6,11 @@ import { supabase } from '@/lib/supabase'
 import { toast } from '@/store/toastStore'
 import { useAuth } from '@/hooks/useAuth'
 import type { Werkbon } from '@/types'
+import { cn } from '@/lib/utils'
 import {
   IconPlayerPause, IconPlayerPlay, IconCircleCheck,
   IconAlertTriangle, IconInfoCircle, IconCalendarRepeat,
+  IconBiohazard, IconSpray,
 } from '@tabler/icons-react'
 
 interface Props {
@@ -39,9 +41,66 @@ interface Props {
  */
 const OPNIEUW = 'Opnieuw inplannen'
 
+/**
+ * De redenen die een eigen knop hebben.
+ *
+ * De reden blijft vrije tekst — wie een klus stillegt heeft haast — maar
+ * deze drie komen zo vaak voor dat ze niet van een goed getypt woord
+ * mogen afhangen. De knop zet het woord ervóór; `statusUitReden` in de
+ * verwerker leest het en kiest de ClickUp-status.
+ *
+ * Asbest heeft er een gekregen omdat het de zwaarste is: daar hangt een
+ * inventarisatie aan en mogelijk een gecertificeerde saneerder. Dat je
+ * dat woord precies moet intypen om die status te raken, was een
+ * onnodig risico op de verkeerde plek.
+ */
+const SOORTEN = {
+  stilleggen: {
+    prefix: null as string | null,
+    knop: 'Klus stilleggen',
+    titel: 'Klus stilleggen',
+    vraag: 'Waarom ligt de klus stil?',
+    voorbeeld: 'Bijvoorbeeld: ziekte, geen compleet koppel',
+    melding: 'Klus stilgelegd, ClickUp wordt bijgewerkt',
+  },
+  asbest: {
+    prefix: 'Asbest',
+    knop: 'Asbest',
+    titel: 'Asbest gevonden',
+    vraag: 'Wat is er aangetroffen, en waar?',
+    voorbeeld: 'Bijvoorbeeld: plaatmateriaal onder de vloer bij de meterkast',
+    melding: 'Klus op asbest gezet, ClickUp wordt bijgewerkt',
+  },
+  opnieuw: {
+    prefix: OPNIEUW,
+    knop: 'Opnieuw inplannen',
+    titel: 'Klus opnieuw inplannen',
+    vraag: 'Waarom moet hij opnieuw ingepland worden?',
+    voorbeeld: 'Bijvoorbeeld: bewoner niet thuis, vloer nog niet vrij',
+    melding: 'Klus staat op opnieuw inplannen, ClickUp wordt bijgewerkt',
+  },
+  spuiten: {
+    prefix: 'Nog spuiten/isoleren',
+    knop: 'Nog spuiten/isoleren',
+    titel: 'Nog spuiten of isoleren',
+    vraag: 'Wat moet er nog gebeuren?',
+    voorbeeld: 'Bijvoorbeeld: bodem is klaar, isolatie volgt volgende week',
+    melding: 'Klus staat op nog spuiten/isoleren, ClickUp wordt bijgewerkt',
+  },
+} as const
+
+type Soort = keyof typeof SOORTEN
+
+const PICTOGRAM: Record<Soort, typeof IconPlayerPause> = {
+  stilleggen: IconPlayerPause,
+  asbest: IconBiohazard,
+  opnieuw: IconCalendarRepeat,
+  spuiten: IconSpray,
+}
+
 export function Klusacties({ werkbon, onKlaar }: Props) {
   const { magWerkBeheren } = useAuth()
-  const [modal, setModal] = useState<null | 'stilleggen' | 'opnieuw'>(null)
+  const [modal, setModal] = useState<null | Soort>(null)
   const [reden, setReden] = useState('')
   const [bezig, setBezig] = useState(false)
   const [overlap, setOverlap] = useState<any[]>([])
@@ -56,7 +115,8 @@ export function Klusacties({ werkbon, onKlaar }: Props) {
 
   const stilleggen = async () => {
     if (reden.trim().length < 3) return
-    const volledig = modal === 'opnieuw' ? `${OPNIEUW}: ${reden.trim()}` : reden.trim()
+    const soort = SOORTEN[modal!]
+    const volledig = soort.prefix ? `${soort.prefix}: ${reden.trim()}` : reden.trim()
 
     setBezig(true)
     const { data, error } = await supabase.rpc('werkbon_stilleggen', {
@@ -70,17 +130,16 @@ export function Klusacties({ werkbon, onKlaar }: Props) {
       return
     }
 
-    const opnieuw = modal === 'opnieuw'
     setModal(null)
     setReden('')
     const gevonden = (data as any)?.overlap ?? []
     setOverlap(gevonden)
 
+    // De overlapmelding gaat vóór de bevestiging: dat er iemand in de
+    // knel komt is het nieuws, niet dat de knop het deed.
     toast.goed(gevonden.length > 0
-      ? `${opnieuw ? 'Klus gaat opnieuw ingepland worden' : 'Klus stilgelegd'} — let op ${gevonden.length} mogelijke overlap`
-      : opnieuw
-        ? 'Klus staat op opnieuw inplannen, ClickUp wordt bijgewerkt'
-        : 'Klus stilgelegd, ClickUp wordt bijgewerkt')
+      ? `${soort.titel} — let op ${gevonden.length} mogelijke overlap`
+      : soort.melding)
     onKlaar()
   }
 
@@ -141,30 +200,40 @@ export function Klusacties({ werkbon, onKlaar }: Props) {
               <IconPlayerPlay className="w-4 h-4" /> Klus hervatten
             </Button>
           ) : (
-            <>
-              <Button
-                variant="secondary"
-                className="min-h-[44px]"
-                disabled={opgeleverd}
-                onClick={() => setModal('stilleggen')}
-              >
-                <IconPlayerPause className="w-4 h-4" /> Klus stilleggen
-              </Button>
-
-              {/* Eigen knop, want dit is een andere beslissing dan
-                  stilleggen: de klus gaat niet verder vandaag én moet
-                  een nieuwe plek in de planning krijgen. Tot nu toe
-                  kwam je er alleen door precies "opnieuw inplannen" in
-                  de reden te typen. */}
-              <Button
-                variant="secondary"
-                className="min-h-[44px]"
-                disabled={opgeleverd}
-                onClick={() => setModal('opnieuw')}
-              >
-                <IconCalendarRepeat className="w-4 h-4" /> Opnieuw inplannen
-              </Button>
-            </>
+            // Vier redenen, vier knoppen. Ze zetten alle vier dezelfde
+            // aanroep in gang; het verschil is het woord dat vóór de
+            // reden komt en dus welke status de taak in ClickUp krijgt.
+            // Tot nu toe moest je dat woord precies intypen — bij asbest
+            // was dat een onnodig risico op de verkeerde plek.
+            //
+            // flex-wrap en niet vier op een rij: op een telefoon van 390
+            // pixels passen er twee naast elkaar, en dan liever twee
+            // hele knoppen dan vier afgeknepen.
+            <div className="flex flex-wrap gap-2">
+              {(['stilleggen', 'asbest', 'opnieuw', 'spuiten'] as Soort[]).map((soort) => {
+                const Pictogram = PICTOGRAM[soort]
+                return (
+                  <Button
+                    key={soort}
+                    variant="secondary"
+                    className={cn(
+                      'min-h-[44px] flex-1 sm:flex-none',
+                      // Asbest krijgt de kleur die het verdient. Niet
+                      // rood — dat is stilgelegd, en asbest ís een vorm
+                      // van stilleggen — maar fel oranje, zodat je hem
+                      // niet per ongeluk aanraakt en wel meteen vindt.
+                      soort === 'asbest' &&
+                        'border-orange-400 text-orange-700 hover:bg-orange-50 ' +
+                        'dark:border-orange-500/50 dark:text-orange-400 dark:hover:bg-orange-500/10',
+                    )}
+                    disabled={opgeleverd}
+                    onClick={() => setModal(soort)}
+                  >
+                    <Pictogram className="w-4 h-4" /> {SOORTEN[soort].knop}
+                  </Button>
+                )
+              })}
+            </div>
           )}
 
           {!opgeleverd && (
@@ -210,7 +279,7 @@ export function Klusacties({ werkbon, onKlaar }: Props) {
       <Modal
         open={modal !== null}
         onClose={() => { setModal(null); setReden('') }}
-        title={modal === 'opnieuw' ? 'Klus opnieuw inplannen' : 'Klus stilleggen'}
+        title={modal ? SOORTEN[modal].titel : ''}
       >
         <div className="space-y-4">
           {/* Er stond dat de opleverdatum één dag opschoof. Dat deed de
@@ -227,6 +296,20 @@ export function Klusacties({ werkbon, onKlaar }: Props) {
                 een nieuwe datum van de planner. Zet die datum daarna hieronder
                 bij <strong>Planning</strong> en hervat de klus.
               </>
+            ) : modal === 'asbest' ? (
+              <>
+                {werkbon.adres} gaat naar <em>onhold door asbest</em> in ClickUp.
+                Laat de ploeg stoppen en niets meer verstoren. Hoelang dit duurt is
+                nu niet te zeggen — er komt een inventarisatie achteraan en mogelijk
+                een gecertificeerde saneerder. De planning verschuift dus niet.
+              </>
+            ) : modal === 'spuiten' ? (
+              <>
+                {werkbon.adres} gaat naar <em>nog spuiten/isoleren</em> in ClickUp.
+                Het grondwerk is klaar, er moet alleen nog gespoten of geïsoleerd
+                worden — zo ziet de planner meteen wélk werk er nog ligt en wie
+                daarvoor nodig is.
+              </>
             ) : (
               <>
                 {werkbon.adres} gaat op stil. De taak in ClickUp krijgt een passende
@@ -238,25 +321,26 @@ export function Klusacties({ werkbon, onKlaar }: Props) {
 
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-white/70 mb-1.5">
-              {modal === 'opnieuw' ? 'Waarom moet hij opnieuw ingepland worden?' : 'Waarom ligt de klus stil?'}
+              {modal ? SOORTEN[modal].vraag : ''}
             </label>
             <textarea
               value={reden}
               onChange={(e) => setReden(e.target.value)}
               rows={3}
               autoFocus
-              placeholder={modal === 'opnieuw'
-                ? 'Bijvoorbeeld: bewoner niet thuis, vloer nog niet vrij'
-                : 'Bijvoorbeeld: ziekte, geen compleet koppel'}
+              placeholder={modal ? SOORTEN[modal].voorbeeld : ''}
               className="w-full rounded-sm border border-gray-200 dark:border-white/10 bg-white dark:bg-surface-dark-2 px-3 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:border-brand-yellow transition-all"
             />
             {/* Geen keuzelijst: wie een klus stillegt heeft haast. Wel
                 deze hint, want één woord stuurt de ClickUp-status. */}
+            {/* Alleen bij de vrije variant. Bij de andere drie staat het
+                woord al vast en is deze uitleg ruis. */}
             {modal === 'stilleggen' && (
               <p className="text-xs text-gray-400 dark:text-white/40 mt-1.5">
-                Staat er <strong>asbest</strong> in, dan gaat de taak naar de
-                asbeststatus. Verder wordt het "on hold". Moet de klus een nieuwe
-                datum krijgen, gebruik dan de knop <strong>Opnieuw inplannen</strong>.
+                Je reden stuurt de ClickUp-status: <strong>asbest</strong>,
+                <strong> spuiten</strong> of <strong>isoleren</strong> hebben een
+                eigen status, de rest wordt "on hold". Voor die gevallen zijn er
+                ook knoppen — dan hoef je het niet precies zo te tikken.
               </p>
             )}
           </div>
@@ -271,9 +355,10 @@ export function Klusacties({ werkbon, onKlaar }: Props) {
               disabled={reden.trim().length < 3}
               onClick={stilleggen}
             >
-              {modal === 'opnieuw'
-                ? <><IconCalendarRepeat className="w-4 h-4" /> Opnieuw inplannen</>
-                : <><IconPlayerPause className="w-4 h-4" /> Stilleggen</>}
+              {modal && (() => {
+                const Pictogram = PICTOGRAM[modal]
+                return <><Pictogram className="w-4 h-4" /> {SOORTEN[modal].knop}</>
+              })()}
             </Button>
           </div>
         </div>

@@ -162,4 +162,6 @@ export interface PlanningItem {
   puntenKlaar: number
   medewerkers: string[]
   status: ProjectStatus
+  /** De reden waarom hij stilligt. Alleen gevuld als dat zo is. */
+  stillegReden: string | null
 }

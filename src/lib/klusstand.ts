@@ -245,6 +245,45 @@ export const UITLOOP = {
   badge: 'orange' as const,
 }
 
+// ============================================================
+// Asbest — de zwaarste reden, en de enige met een eigen procedure
+// ============================================================
+// Asbest is een vorm van stilleggen, maar niet zomaar één. Bij de rest
+// wacht je op een monteur, een preparaat of een bewoner; hier wacht je
+// op een inventarisatie en mogelijk een gecertificeerde saneerder, en
+// mag er tot die tijd niemand meer iets verstoren.
+//
+// Rood was al bezet door stilgelegd, en asbest ís stilgelegd — dus dat
+// zou geen onderscheid maken. Fel oranje wel, en het is dezelfde kleur
+// die ClickUp aan de status "onhold door asbest" geeft. Wie de twee
+// borden naast elkaar heeft, ziet hetzelfde.
+//
+// Gaat vóór uitloop: een asbestklus die ook over zijn datum heen is,
+// blijft in de eerste plaats een asbestklus.
+
+/** Fel oranje, voor een klus die op asbest stilligt. */
+export const ASBEST = {
+  rand: 'border-l-orange-500',
+  bol: 'bg-orange-500',
+  vlak: 'bg-orange-50 dark:bg-orange-500/10',
+  omlijsting: 'border-orange-300 dark:border-orange-500/30',
+  tekst: 'text-orange-700 dark:text-orange-400',
+  badge: 'orange' as const,
+}
+
+/**
+ * Ligt deze klus stil op asbest?
+ *
+ * Leest hetzelfde woord uit de reden als `statusUitReden` in de
+ * verwerker, die daarmee de ClickUp-status kiest. Eén woord op twee
+ * plekken: staat het hier anders dan daar, dan is de kleur in de app
+ * iets anders dan de status op het planbord — en dan klopt er ergens
+ * iets niet zonder dat iemand kan zien wat.
+ */
+export function isAsbest(reden?: string | null): boolean {
+  return String(reden ?? '').toLowerCase().includes('asbest')
+}
+
 /**
  * Loopt deze klus over zijn planning heen?
  *
