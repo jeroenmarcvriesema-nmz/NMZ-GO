@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { klusstand, standkleur, STANDEN } from '../src/lib/klusstand'
+import { klusstand, looptUit, standkleur, STANDEN } from '../src/lib/klusstand'
 
 // De fout waar deze tests bij horen: alle dertig werkbonnen stonden op
 // `status = 'open'`, ook Gaaspstraat 46 met zeven afgevinkte punten en
@@ -92,5 +92,51 @@ describe('standkleur', () => {
       const alles = [stand.rand, stand.bol, stand.vlak, stand.omlijsting, stand.balkbed, stand.tekst].join(' ')
       expect(alles).not.toMatch(/yellow|amber/)
     }
+  })
+})
+
+// ── Uitloop ──────────────────────────────────────────────────
+//
+// De test hierboven bewaakt dat géén enkele stand geel of amber is:
+// geel is merkkleur en amber was gereserveerd. Dat is precies waarom
+// uitloop buiten `STANDEN` staat — het is geen stand maar een laag
+// eroverheen, en het is de enige plek waar amber betekenis heeft.
+//
+// De fout waar deze tests bij horen: `dagenUitloop` bestond al, maar
+// werd op precies één scherm gebruikt. Een klus die drie dagen over
+// zijn opleverdatum heen was, was op de planning en in de bonnenlijst
+// niet te onderscheiden van een klus die keurig op schema liep.
+
+describe('looptUit', () => {
+  const nu = '2026-08-13'
+
+  it('ziet een klus die over zijn opleverdatum heen is', () => {
+    expect(looptUit({ status: 'open', geplande_eind: '2026-08-10', taken: punten(3, 10) }, nu))
+      .toBe(true)
+  })
+
+  it('laat een klus die vandaag af moet met rust', () => {
+    expect(looptUit({ status: 'open', geplande_eind: nu, taken: punten(3, 10) }, nu)).toBe(false)
+  })
+
+  it('rekent een afgeronde klus nooit als uitloop, hoe laat ook', () => {
+    expect(looptUit({ status: 'voltooid', geplande_eind: '2026-07-01' }, nu)).toBe(false)
+    expect(looptUit({ opgeleverd_op: '2026-08-01', geplande_eind: '2026-07-01' }, nu)).toBe(false)
+  })
+
+  // Stilgelegd én te laat is de combinatie waar kantoor naar zoekt: de
+  // klus ligt stil en de datum is intussen verstreken. Dat tweede
+  // verdwijnt niet omdat het eerste waar is.
+  it('telt een stilgelegde klus wél mee als de datum verstreken is', () => {
+    expect(looptUit({ stilgelegd_op: 'ja', geplande_eind: '2026-08-01' }, nu)).toBe(true)
+  })
+
+  it('valt terug op de startdatum als er geen opleverdatum staat', () => {
+    expect(looptUit({ status: 'open', datum: '2026-08-05' }, nu)).toBe(true)
+    expect(looptUit({ status: 'open', datum: '2026-08-20' }, nu)).toBe(false)
+  })
+
+  it('noemt een klus zonder enige datum niet te laat', () => {
+    expect(looptUit({ status: 'open' }, nu)).toBe(false)
   })
 })

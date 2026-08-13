@@ -1,9 +1,10 @@
 import { cn } from '@/lib/utils'
-import { klusstand, STANDEN, KLEURWAS } from '@/lib/klusstand'
+import { klusstand, looptUit, STANDEN, KLEURWAS, UITLOOP } from '@/lib/klusstand'
 import type { PlanningItem } from '@/types'
 import {
   IconUsers, IconListCheck, IconKey, IconPlayerPause,
   IconCircleCheck, IconArrowNarrowRight, IconArrowNarrowLeft,
+  IconClockExclamation,
 } from '@tabler/icons-react'
 
 /**
@@ -58,6 +59,12 @@ export function PlanningKaart({ item, onOpen, loopIn, loopUit, ruim }: PlanningK
   const k = STANDEN[stand]
   const voortgang = item.punten > 0 ? Math.round((item.puntenKlaar / item.punten) * 100) : 0
 
+  // Uitloop ligt over de stand heen: de klus is nog steeds bezig of
+  // ligt stil, maar de opleverdatum is voorbij. De rand links draagt
+  // dat, want dat is wat je van een meter afstand leest — het vlak
+  // blijft de stand tonen, anders raak je die kwijt.
+  const laat = looptUit({ ...feitenVan(item), geplande_eind: item.eind, datum: item.datum })
+
   return (
     <button
       onClick={onOpen}
@@ -72,7 +79,7 @@ export function PlanningKaart({ item, onOpen, loopIn, loopUit, ruim }: PlanningK
         // de kleur is de achtergrond, niet de boodschap.
         KLEURWAS ? k.vlak : 'bg-white dark:bg-surface-dark-2',
         KLEURWAS ? k.omlijsting : 'border-gray-100 dark:border-white/10',
-        k.rand,
+        laat ? UITLOOP.rand : k.rand,
         ruim ? 'p-3.5' : 'p-2.5',
       )}
     >
@@ -115,6 +122,15 @@ export function PlanningKaart({ item, onOpen, loopIn, loopUit, ruim }: PlanningK
         {item.kluiscode && (
           <span className="flex items-center gap-1 text-[11px] font-semibold text-gray-500 dark:text-white/50">
             <IconKey className="w-3 h-3 flex-shrink-0" />{item.kluiscode}
+          </span>
+        )}
+
+        {/* Het woord erbij, net als bij de standen. Een amberkleurige
+            rand alleen is niet genoeg voor wie in de zon op een dak
+            staat — en niet iedereen ziet kleurverschil. */}
+        {laat && (
+          <span className={cn('flex items-center gap-1 text-[11px] font-bold', UITLOOP.tekst)}>
+            <IconClockExclamation className="w-3 h-3 flex-shrink-0" /> loopt uit
           </span>
         )}
       </div>

@@ -214,6 +214,58 @@ export function standkleur(k: Klusfeiten): Standkleur {
   return STANDEN[klusstand(k)]
 }
 
+// ============================================================
+// Uitloop — de zesde kleur, en de enige die over een stand heen ligt
+// ============================================================
+// `dagenUitloop` in lib/planning.ts bestond al, maar werd op precies
+// één scherm gebruikt: de Uitloop-pagina van kantoor. Overal anders was
+// een klus die drie dagen over zijn opleverdatum heen is niet te
+// onderscheiden van een klus die keurig op schema loopt. Allebei blauw,
+// allebei "Bezig".
+//
+// Dat is informatie die er ligt en die niemand ziet, en het is precies
+// het soort ding waar een opdrachtgever over belt.
+//
+// Uitloop is bewust géén nieuwe stand maar een laag eróverheen. Een
+// klus die uitloopt is nog steeds bezig of ligt nog steeds stil; dat
+// blijft de eerste vraag. "Loopt uit" is de tweede.
+//
+// Amber en niet rood: rood is gereserveerd voor stilgelegd, het enige
+// dat een telefoontje vraagt. Een klus die uitloopt loopt nog — hij
+// vraagt aandacht, geen ingreep. En amber is niet het merkgeel: dat is
+// `brand-yellow` en zit in knoppen en de kickerbalk.
+
+/** Amberkleuren voor een klus die over zijn opleverdatum heen is. */
+export const UITLOOP = {
+  rand: 'border-l-amber-500',
+  bol: 'bg-amber-500',
+  vlak: 'bg-amber-50/70 dark:bg-amber-500/10',
+  omlijsting: 'border-amber-200 dark:border-amber-500/25',
+  tekst: 'text-amber-700 dark:text-amber-400',
+  badge: 'orange' as const,
+}
+
+/**
+ * Loopt deze klus over zijn planning heen?
+ *
+ * Dezelfde regel als `dagenUitloop`, maar met alleen de velden die elk
+ * scherm toch al heeft. Een opgeleverde of afgeronde klus loopt niet
+ * uit — die is klaar, hoe laat ook.
+ *
+ * Een stilgelegde klus telt hier bewust wél mee. Hij ligt stil én de
+ * datum is verstreken; dat tweede verdwijnt niet omdat het eerste waar
+ * is. Wie kijkt of er gebeld moet worden wil juist die combinatie zien.
+ */
+export function looptUit(
+  k: Klusfeiten & { geplande_eind?: string | null; datum?: string | null },
+  vandaag: string = new Date().toISOString().split('T')[0],
+): boolean {
+  const stand = klusstand(k)
+  if (stand === 'afgerond' || stand === 'opgeleverd') return false
+  const eind = k.geplande_eind ?? k.datum
+  return Boolean(eind) && String(eind) < vandaag
+}
+
 /**
  * De volgorde waarin je klussen wilt zien.
  *

@@ -1,5 +1,14 @@
 # NMZ GO — Changelog
 
+## Een zesde kleur: klussen die uitlopen
+
+- **[FEATURE]** Een klus die over zijn opleverdatum heen is krijgt nu **amber**: een rand links op de planningkaart en de werkbonkaart, met het woord "loopt uit" erbij. De berekening (`dagenUitloop`) bestond al, maar werd op precies één scherm gebruikt — de Uitloop-pagina van kantoor. Overal anders was een klus die drie dagen te laat is niet te onderscheiden van een klus die keurig op schema loopt: allebei blauw, allebei "Bezig". Dat is informatie die er lag en die niemand zag.
+- Uitloop is bewust **geen nieuwe stand maar een laag eroverheen**. Een klus die uitloopt is nog steeds bezig of ligt nog steeds stil; dat blijft de eerste vraag. De badge houdt daarom de stand, de rand draagt de uitloop.
+- Amber en niet rood: rood is gereserveerd voor stilgelegd, het enige dat een telefoontje vraagt. Een klus die uitloopt lóópt nog — die vraagt aandacht, geen ingreep. En amber is niet het merkgeel uit de knoppen.
+- **[FEATURE]** Een **stilgelegde klus die óók over zijn datum heen is** telt mee als uitloop. Dat tweede verdwijnt niet omdat het eerste waar is, en het is precies de combinatie waar kantoor naar zoekt.
+- **[FEATURE]** Filteren op stand in de **weekplanning** — die had alleen een filter op ploeg en een zoekveld. Van een volle week maak je nu een lijstje van de vier klussen die stilliggen of te laat zijn. Op de werkbonnenlijst is "Loopt uit" als filter bijgekomen.
+- Zes tests bij `looptUit`, waaronder het randgeval dat een afgeronde klus nooit uitloopt hoe laat hij ook was.
+
 ## Wijzigen terwijl de klus loopt
 
 - **[FEATURE]** Kantoor kan nu **de ploeg van een lopende klus wijzigen** — beheerder, uitvoerder, werkvoorbereider en planner. Dat kon nergens: wie erop stond kwam uit ClickUp en was in NMZ GO niet aan te raken. Viel er iemand uit, dan moest het in ClickUp en maar hopen dat de ronde het ophaalde.

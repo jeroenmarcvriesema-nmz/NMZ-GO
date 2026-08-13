@@ -9,7 +9,7 @@ import { Weekkiezer } from '@/components/layout/Weekkiezer'
 import { cn, formatDatumKort } from '@/lib/utils'
 import { isoDatum, weekDagen, maandagVerschoven } from '@/lib/planning'
 import { zoektMee } from '@/lib/zoeken'
-import { klusstand, STANDEN, STANDVOLGORDE, type Klusstand } from '@/lib/klusstand'
+import { klusstand, looptUit, STANDEN, STANDVOLGORDE, type Klusstand } from '@/lib/klusstand'
 import { Standbalk, type Standverdeling } from '@/components/dashboard/Standbalk'
 import type { PlanningItem } from '@/types'
 import { IconAlertTriangle, IconSearch, IconX } from '@tabler/icons-react'
@@ -109,6 +109,11 @@ export default function Planning() {
   // ze allebei zonder de weekindeling los te laten.
   const [ploeg, setPloeg] = useState('alle')
   const [zoek, setZoek] = useState('')
+  // De derde vraag, en de enige die de planner 's ochtends als eerste
+  // stelt: "wat vraagt vandaag iets van mij". Filteren op stand maakt
+  // van een volle week een lijstje van vier klussen die stilliggen of
+  // over hun opleverdatum heen zijn.
+  const [stand, setStand] = useState<'alle' | 'uitloop' | Klusstand>('alle')
   const dagen = weekDagen(maandagVerschoven(week))
   const vandaag = new Date()
   vandaag.setHours(0, 0, 0, 0)
@@ -116,8 +121,22 @@ export default function Planning() {
   // Iedereen die deze maand ergens op staat, één keer, op alfabet.
   const ploegen = [...new Set(planning.flatMap((p) => p.medewerkers))].sort((a, b) => a.localeCompare(b))
 
+  const feiten = (p: PlanningItem) => ({
+    status: p.status === 'afgerond' ? 'voltooid' : 'open',
+    stilgelegd_op: p.status === 'stilgelegd' ? 'ja' : null,
+    puntenKlaar: p.puntenKlaar,
+    punten: p.punten,
+    geplande_eind: p.eind,
+    datum: p.datum,
+  })
+
+  const standPast = (p: PlanningItem) =>
+    stand === 'alle' ||
+    (stand === 'uitloop' ? looptUit(feiten(p)) : klusstand(feiten(p)) === stand)
+
   const past = (p: PlanningItem) =>
     (ploeg === 'alle' || p.medewerkers.includes(ploeg)) &&
+    standPast(p) &&
     zoektMee(
       {
         adres: p.adres,
@@ -130,7 +149,7 @@ export default function Planning() {
     )
 
   const zichtbaar = planning.filter(past)
-  const filtersAan = ploeg !== 'alle' || zoek.trim() !== ''
+  const filtersAan = ploeg !== 'alle' || zoek.trim() !== '' || stand !== 'alle'
 
   // Wat staat er in déze week. Hier stond het totaal over alle weken —
   // dat getal veranderde dus niet als je bladerde, en dat is precies het
@@ -207,9 +226,33 @@ export default function Planning() {
           </div>
         )}
 
+        {/* De standen in de volgorde waarin ze om aandacht vragen —
+            dezelfde volgorde als STANDVOLGORDE, want dat is de volgorde
+            waarin de lijst zelf ook staat. "Loopt uit" staat er los
+            boven: dat is geen stand maar een laag eroverheen, en het is
+            de vraag waar kantoor mee begint. */}
+        <div className="sm:w-52">
+          <Select
+            name="stand"
+            value={stand}
+            onChange={(e) => setStand(e.target.value as typeof stand)}
+            className="min-h-[44px]"
+            opties={[
+              { waarde: 'alle', label: 'Elke stand' },
+              { waarde: 'uitloop', label: 'Loopt uit' },
+              { waarde: 'stilgelegd', label: STANDEN.stilgelegd.label },
+              { waarde: 'af_te_ronden', label: STANDEN.af_te_ronden.label },
+              { waarde: 'bezig', label: STANDEN.bezig.label },
+              { waarde: 'niet_gestart', label: STANDEN.niet_gestart.label },
+              { waarde: 'afgerond', label: STANDEN.afgerond.label },
+              { waarde: 'opgeleverd', label: STANDEN.opgeleverd.label },
+            ]}
+          />
+        </div>
+
         {filtersAan && (
           <button
-            onClick={() => { setPloeg('alle'); setZoek('') }}
+            onClick={() => { setPloeg('alle'); setZoek(''); setStand('alle') }}
             className="flex items-center justify-center gap-1.5 min-h-[44px] px-3 rounded-sm text-sm font-semibold text-gray-500 dark:text-white/50 hover:text-gray-900 dark:hover:text-white hover:bg-surface-2 dark:hover:bg-white/5 transition-colors"
           >
             <IconX className="w-4 h-4" /> Filter wissen
@@ -223,6 +266,8 @@ export default function Planning() {
         <p className="text-xs text-gray-400 dark:text-white/40 -mt-2 mb-4">
           Je ziet {dezeWeek.length} van de {planning.filter((p) => p.datum <= totWeek && (p.eind ?? p.datum) >= vanWeek).length} klussen in deze week.
           {ploeg !== 'alle' && ` Alleen waar ${ploeg} op staat.`}
+          {stand === 'uitloop' && ' Alleen wat over de opleverdatum heen is.'}
+          {stand !== 'alle' && stand !== 'uitloop' && ` Alleen "${STANDEN[stand].label}".`}
         </p>
       )}
 

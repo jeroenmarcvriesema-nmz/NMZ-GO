@@ -14,7 +14,7 @@ import { zoektMee } from '@/lib/zoeken'
 import { Weekkop } from '@/components/layout/Weekkop'
 import { cn } from '@/lib/utils'
 import { IconPlus, IconSearch, IconClipboardList, IconCalendarWeek, IconList } from '@tabler/icons-react'
-import { klusstand, STANDEN, type Klusstand } from '@/lib/klusstand'
+import { klusstand, looptUit, STANDEN, type Klusstand } from '@/lib/klusstand'
 
 /**
  * Filteren op de stand van de klus, niet op de kolom `status`.
@@ -27,8 +27,14 @@ import { klusstand, STANDEN, type Klusstand } from '@/lib/klusstand'
  * eronder, en ze werken alle vijf. "Afgerond" vangt ook het opgeleverde
  * werk: dat is voor wie hier filtert dezelfde vraag.
  */
-const STANDFILTERS: { label: string; value: Klusstand | 'alle' }[] = [
+// "Loopt uit" staat bewust náást de standen en niet ertussen: het is
+// geen stand maar een laag eroverheen. Een klus die uitloopt is nog
+// steeds bezig of ligt nog steeds stil — dit filter beantwoordt de
+// andere vraag, namelijk of de opleverdatum voorbij is. Daarom staat
+// hij ook direct achter "Alle": dat is waar kantoor mee begint.
+const STANDFILTERS: { label: string; value: Klusstand | 'alle' | 'uitloop' }[] = [
   { label: 'Alle',         value: 'alle' },
+  { label: 'Loopt uit',    value: 'uitloop' },
   { label: 'Niet gestart', value: 'niet_gestart' },
   { label: STANDEN.bezig.label,        value: 'bezig' },
   { label: STANDEN.af_te_ronden.kort,  value: 'af_te_ronden' },
@@ -39,7 +45,7 @@ const STANDFILTERS: { label: string; value: Klusstand | 'alle' }[] = [
 export default function Werkbonnen() {
   const navigate = useNavigate()
   const { werkbonnen, loading, error, refetch } = useWerkbonnen()
-  const [standFilter, setStandFilter] = useState<Klusstand | 'alle'>('alle')
+  const [standFilter, setStandFilter] = useState<Klusstand | 'alle' | 'uitloop'>('alle')
   const [zoek, setZoek] = useState('')
 
   // Per week kijken, of alles op een rij.
@@ -66,7 +72,7 @@ export default function Werkbonnen() {
     // zoekt werk dat klaar is, en of kantoor het al heeft opgeleverd is
     // een andere vraag.
     const sOk = standFilter === 'alle'
-      || stand === standFilter
+      || (standFilter === 'uitloop' ? looptUit(w) : stand === standFilter)
       || (standFilter === 'afgerond' && stand === 'opgeleverd')
     const wOk = !inHuidigeWeek || inWeek(w, maandag)
     return sOk && wOk

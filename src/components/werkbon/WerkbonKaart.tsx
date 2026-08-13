@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { berekenVoortgang, formatDatumKort, cn } from '@/lib/utils'
-import { standkleur, KLEURWAS } from '@/lib/klusstand'
+import { standkleur, looptUit, KLEURWAS, UITLOOP } from '@/lib/klusstand'
 import { weeknummer } from '@/lib/planning'
 import type { Werkbon } from '@/types'
 import {
@@ -48,10 +48,16 @@ export function WerkbonKaart({ werkbon, linkPrefix = '/werkbonnen', looptDoor }:
   // dezelfde kleuren als de weekplanning.
   const k = standkleur(werkbon)
 
+  // Over de opleverdatum heen. Dat stond alleen op de Uitloop-pagina van
+  // kantoor, terwijl het hier — in de lijst waar iedereen elke dag in
+  // kijkt — net zo goed te zien hoort te zijn. De rand draagt het; de
+  // badge houdt de stand, want "Bezig" blijft waar.
+  const laat = looptUit(werkbon)
+
   return (
     <Card
       vlak={KLEURWAS ? cn(k.vlak, k.omlijsting) : undefined}
-      className={cn('border-l-4', k.rand)}
+      className={cn('border-l-4', laat ? UITLOOP.rand : k.rand)}
       onClick={() => navigate(`${linkPrefix}/${werkbon.id}`)}
     >
       <div className="flex items-start justify-between gap-3 mb-2">
@@ -68,6 +74,7 @@ export function WerkbonKaart({ werkbon, linkPrefix = '/werkbonnen', looptDoor }:
         </div>
         <div className="flex flex-col items-end gap-1 flex-shrink-0">
           <Badge variant={k.badge}>{k.label}</Badge>
+          {laat && <Badge variant={UITLOOP.badge}>Loopt uit</Badge>}
         </div>
       </div>
 
