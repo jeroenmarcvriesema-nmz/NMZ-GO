@@ -1,5 +1,13 @@
 # NMZ GO — Changelog
 
+## Klussen die er niet in stonden
+
+- **[FIX]** Dahliastraat 6 te Rijnsburg stond op "deze week", had een werkopdracht en kwam toch niet in de app. De reden: de PDF hing als losse bijlage aan de ClickUp-taak in plaats van in het veld "Werkopdracht (PDF)". De synchronisatie keek alleen naar dat veld, zag niets en sloeg de taak over. Voor de werkvoorbereider is een PDF in de taak slepen één handeling in plaats van drie, en aan de ClickUp-kant ziet het er hetzelfde uit — dus dat gaat gebeuren. De synchronisatie kijkt nu op allebei de plekken. De bon staat er inmiddels: 18 punten, kluiscode 1975, Rene en Justin erop.
+- Er wordt niet geraden. Alleen een PDF met "opdracht" in de naam telt mee en een tekening wordt uitgesloten; is er niets dat past, dan blijft het een overslag mét reden. Een willekeurige bijlage als werkopdracht ontleden is erger dan een ontbrekende bon.
+- **[FIX]** De synchronisatie las maar één pagina van ClickUp. Die geeft er honderd per keer terug en zegt in `last_page` of er meer zijn — dat werd niet gelezen. Nu staan er 26 taken op de triggerstatussen, dus het viel niet op; op de dag dat het er meer worden zou de rest zonder melding verdwijnen. Wordt nu doorgebladerd.
+- **[FIX]** "Geen werkopdracht-PDF op de taak" zei niet wat er moest gebeuren. De melding noemt nu allebei de plekken waar gekeken is.
+- Twee klussen blijven bewust buiten de app staan, met reden in het resultaat: bij Amsteldijk 157 HS staat de werkopdracht in de ClickUp-omschrijving in plaats van in een PDF, en Project Utrecht heeft geen enkele bijlage.
+
 ## Het scherm van de man in het veld
 
 - **[FIX]** In de hele werkdagflow was elke foto onzichtbaar. Op Vandaag stond bij een afvinkpunt een leeg cameravakje, terwijl datzelfde punt via "Werkbon openen" gewoon twee foto's liet zien. De oorzaak zat één regel diep: `useWerkbonnen()` haalde `taken(*)` op en `useWerkbon(id)` haalde `taken(*, fotos(*))` op. `TaakItem` doet `taak.fotos ?? []` en tekende zonder die relatie een leeg uploadvak — in alle drie de fasen van de werkdag: vóór het starten, tijdens het werk en na het stoppen.

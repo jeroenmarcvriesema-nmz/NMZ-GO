@@ -71,6 +71,41 @@ async function haal(pad: string, token: string): Promise<any> {
   return res.json()
 }
 
+/**
+ * Alle taken van één lijst, over alle pagina's heen.
+ *
+ * ClickUp geeft er honderd per keer terug en zet `last_page` op false
+ * zolang er meer zijn. Dat werd niet gelezen: de synchronisatie haalde
+ * pagina 0 op en stopte. Zolang er minder dan honderd taken op de
+ * triggerstatussen staan valt dat niet op — en op de dag dat het er
+ * meer worden, verdwijnt de rest zonder melding. Niet overgeslagen mét
+ * reden, maar nooit gezien.
+ *
+ * De bovengrens is een noodrem tegen een eindeloze lus als ClickUp
+ * `last_page` niet meestuurt. Wordt hij geraakt, dan zeggen we dat —
+ * stil afkappen is precies de fout die dit repareert.
+ */
+async function haalTaken(
+  lijst: string,
+  vraag: string,
+  token: string,
+): Promise<{ taken: any[]; afgekapt: boolean }> {
+  const MAX_PAGINAS = 50
+  const taken: any[] = []
+
+  for (let pagina = 0; pagina < MAX_PAGINAS; pagina++) {
+    const res = await haal(
+      `/list/${lijst}/task?${vraag}&subtasks=false&include_closed=false&page=${pagina}`,
+      token,
+    )
+    const brok = res.tasks ?? []
+    taken.push(...brok)
+    if (res.last_page === true || brok.length === 0) return { taken, afgekapt: false }
+  }
+
+  return { taken, afgekapt: true }
+}
+
 /** Waarde van een custom field, of null als hij leeg is. */
 function veld(taak: any, id: string | null): any {
   if (!id) return null
@@ -127,6 +162,55 @@ function bijlage(taak: any, id: string | null, patroon: RegExp): { url: string; 
 
 const OPDRACHT_VELD = /werkopdracht/i
 const TEKENING_VELD = /tekening/i
+
+// Hoe een werkopdracht heet als hij los aan de taak hangt. De
+// inspecteur exporteert hem als "Opdracht_5146.pdf"; komt er een
+// herziene versie, dan zet de browser er "(1)" achter.
+const OPDRACHT_BESTAND = /opdracht/i
+
+/**
+ * De werkopdracht als losse bijlage aan de ClickUp-taak.
+ *
+ * Bedoeld is dat de PDF in het veld "Werkopdracht (PDF)" staat. In de
+ * praktijk sleept de werkvoorbereider hem net zo vaak in de taak zelf —
+ * dat is één handeling in plaats van drie, en aan de ClickUp-kant ziet
+ * het er hetzelfde uit. Dahliastraat 6 te Rijnsburg stond zo: veld
+ * leeg, PDF present, en de bon kwam er niet. "Geen werkopdracht-PDF op
+ * de taak" was letterlijk waar en toch het verkeerde antwoord.
+ *
+ * We raden niet. Alleen een PDF waarvan de naam op een opdracht wijst
+ * telt mee, en een tekening wordt uitgesloten. Is er niets dat past,
+ * dan blijft het een overslag met reden — dat is beter dan een
+ * willekeurige bijlage als werkopdracht ontleden.
+ *
+ * De lijst-ingang van ClickUp geeft geen bijlagen mee, dus voor een
+ * taak die anders zou afvallen halen we hem los op. Dat kost één
+ * aanroep voor precies de taken die nu stilvallen.
+ */
+async function opdrachtUitBijlagen(
+  taak: any,
+  token: string,
+): Promise<{ url: string; naam: string } | null> {
+  let bijlagen = taak.attachments
+  if (!Array.isArray(bijlagen)) {
+    const volledig = await haal(`/task/${encodeURIComponent(taak.id)}`, token)
+    bijlagen = volledig?.attachments ?? []
+  }
+
+  const passend = (bijlagen as any[])
+    .filter((b) => {
+      const naam = String(b?.title ?? '')
+      const isPdf = String(b?.extension ?? '').toLowerCase() === 'pdf' ||
+                    String(b?.mimetype ?? '').toLowerCase() === 'application/pdf'
+      return b?.url && isPdf && OPDRACHT_BESTAND.test(naam) && !TEKENING_VELD.test(naam)
+    })
+    // De nieuwste wint: een tweede upload is een herziening, geen kopie
+    // die genegeerd mag worden.
+    .sort((a, b) => Number(b.date ?? 0) - Number(a.date ?? 0))
+
+  const gekozen = passend[0]
+  return gekozen ? { url: gekozen.url, naam: gekozen.title ?? 'werkopdracht.pdf' } : null
+}
 
 /**
  * Zet de ploeg op een werkbon zoals ClickUp hem kent.
@@ -234,9 +318,16 @@ async function verwerkTaak(
     }
   }
 
-  const opdracht = bijlage(taak, i.veld_werkopdracht, OPDRACHT_VELD)
+  // Eerst het veld, dan de losse bijlagen van de taak. Zie
+  // `opdrachtUitBijlagen`: allebei komen in de praktijk voor.
+  const opdracht = bijlage(taak, i.veld_werkopdracht, OPDRACHT_VELD) ??
+                   await opdrachtUitBijlagen(taak, ctx.token)
   if (!opdracht) {
-    return { soort: 'overgeslagen', reden: 'geen werkopdracht-PDF op de taak' }
+    return {
+      soort: 'overgeslagen',
+      reden: 'geen werkopdracht-PDF: het veld "Werkopdracht (PDF)" is leeg en er hangt ' +
+             'geen PDF met "opdracht" in de naam aan de taak',
+    }
   }
 
   const pdfRes = await fetch(opdracht.url)
@@ -487,12 +578,16 @@ export async function synchroniseer(
     const vraag = statussen
       .map((st) => `statuses[]=${encodeURIComponent(st)}`)
       .join('&')
-    const resultaat = await haal(
-      `/list/${lijst}/task?${vraag}&subtasks=false&include_closed=false`,
-      token,
-    )
+    const { taken, afgekapt } = await haalTaken(lijst, vraag, token)
+    if (afgekapt) {
+      overgeslagen.push({
+        taak: lijst,
+        adres: `(lijst ${lijst})`,
+        reden: 'Meer dan 5000 taken opgehaald zonder einde; de rest van deze lijst is niet bekeken.',
+      })
+    }
 
-    for (const taak of resultaat.tasks ?? []) {
+    for (const taak of taken) {
       gezien++
       const adres = taak.name ?? '(zonder naam)'
 
@@ -554,7 +649,8 @@ export async function tekstproef(
   const token = await geefToken(db)
 
   const taak = await haal(`/task/${clickupTaakId}`, token)
-  const opdracht = bijlage(taak, i.veld_werkopdracht, OPDRACHT_VELD)
+  const opdracht = bijlage(taak, i.veld_werkopdracht, OPDRACHT_VELD) ??
+                   await opdrachtUitBijlagen(taak, token)
   if (!opdracht) return { adres: taak.name, bevinding: 'geen werkopdracht-PDF op de taak' }
 
   const res = await fetch(opdracht.url)

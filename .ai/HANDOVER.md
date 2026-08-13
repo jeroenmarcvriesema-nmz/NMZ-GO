@@ -66,13 +66,19 @@ Afspraken die daarbij horen:
   de fotoketen, 029 = stilleggen schuift niet meer op). Pak 030 en
   hoger — nooit een nummer hergebruiken. Dit ging al een keer mis:
   twee sessies maakten allebei een 027 en dat is achteraf rechtgezet.
-- **`clickup.ts` is gewijzigd zonder uitrol.** De opmerking bij
-  `stilgelegd` noemde een "Nieuwe opleverdatum". Die bestaat niet meer
-  (zie migratie 029) en de regel is aangepast in de broncode, maar is
-  **niet door mij uitgerold** — de fotoketen-sessie rolt die functie
-  uit, en een halve uitrol heeft de verwerker eerder plat gelegd. Neem
-  deze regel mee in de eerstvolgende `deploy_edge_function`, met alle
-  bestanden tegelijk.
+- **De verwerker staat op versie 15** (uitgerold op verzoek van de
+  eigenaar, alle bestanden tegelijk). Daarin zitten: de gewijzigde
+  stilleg-opmerking (geen "Nieuwe opleverdatum" meer), het doorbladeren
+  van ClickUp-pagina's, en de werkopdracht die ook als losse bijlage
+  aan de taak gevonden wordt. Rol je opnieuw uit, neem dan altijd alle
+  zes de bestanden mee — een halve uitrol heeft de verwerker eerder
+  plat gelegd.
+- **Twee klussen komen structureel niet binnen** en dat is geen bug:
+  bij Amsteldijk 157 HS staat de werkopdracht in de ClickUp-omschrijving
+  in plaats van in een PDF, en Project Utrecht heeft helemaal niets.
+  Ze staan met reden in `overgeslagen`. Wil je die soort ook
+  binnenhalen, dan is dat een parser voor de taakomschrijving — een
+  eigen klus, geen randgeval.
 
 ### Voor de schermen-sessie — twee bevindingen van de eigenaar
 
