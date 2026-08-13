@@ -1,5 +1,23 @@
 # NMZ GO — Changelog
 
+## Lopend, punten weghalen, en de containers
+
+### Eén scherm voor wat er vandaag loopt
+- **[FEATURE]** Nieuw scherm **Lopend**: alle klussen die vandaag lopen, onder elkaar, mét hun activiteiten. Per klus de ploeg, de werktijden van vandaag, de voortgang, en de punten met hun titel — welke af zijn en welke nog een foto missen. Het dashboard zei hoevéél er liep en de bonnenlijst wélke klussen er waren; voor "wat gebeurt er nu op de vloer" moest je elke bon los openslaan. Bij acht klussen is dat acht keer klikken en terug.
+- De punten staan ingeklapt. Acht klussen van twintig punten is honderdzestig regels, en dan ben je het overzicht juist kwijt.
+- Er staat een teller bij hoeveel punten fotoplicht hebben maar nog geen foto. Dat is wat het afronden vanavond tegenhoudt, en dat wil je nú weten en niet als de ploeg al thuis is.
+
+### Een punt van een werkbon halen
+- **[FEATURE]** Kantoor kan een punt **verwijderen** — beheerder, uitvoerder, werkvoorbereider, planner en eigenaar. Nodig als de parser een kopregel als punt heeft gelezen, of als meerwerk toch niet doorgaat; zo'n punt blijft anders eeuwig openstaan en houdt het afronden tegen. Twee tikken, want het is onomkeerbaar.
+- Drie sloten (migratie 032): niet op een opgeleverde bon, en niet als er foto's aan het punt hangen. Die foto's zijn het bewijs dat het werk gedaan is; die gooien we niet weg als bijvangst. Wie het punt écht kwijt wil haalt eerst de foto weg — dan is dat een aparte, zichtbare handeling. Wat eraf gaat komt met titel en al in de gebeurtenissen te staan.
+
+### Containers en dixi's
+- **[FEATURE]** Nieuwe kaart op het dashboard: **Containers & dixi's**, per adres, met twee blokken. **Afmelden** staat bovenaan — de opleverdatum is bereikt en de huur loopt door — en **Bestellen** eronder, voor wat er de komende tien dagen moet staan. Op de opleverdatum zelf staat er "vandaag afmelden"; daarna telt hij de dagen die eroverheen zijn.
+- Het wordt gelezen uit de werkvoorbereiding die er al staat. Geen nieuw veld en geen extra invoer: de werkvoorbereider vult het al in ClickUp in, en het twee keer laten opschrijven is een garantie dat het ooit niet meer overeenkomt.
+- De tekst is grillig en dat is de hele klus. Met en zonder vraagteken, "Ja 6 m3" naast "6m3", aan elkaar geplakt ("Neebewoners tel.nr."), en geregeld staat de sjabloonvraag ("Ja of Nee incl. aantal m3.") vóór het echte antwoord — zonder die weg te strepen leest élke opdracht als "ja". Ook "2x 10m3" wordt gelezen, want één container bestellen waar er twee moeten staan is een halve klus. Veertien tests, allemaal op teksten die letterlijk in de database staan.
+- Wat er niet staat wordt niet geraden: dat heet "niet vermeld" en niet "nee". Het verschil is precies het verschil tussen wél en niet bellen. Zulke klussen komen daarom ook niet in de lijst — anders vult die zich met klussen waarvan we het gewoon niet weten, en dan is een volle lijst geen signaal meer.
+- Een stilgelegde klus blijft in de lijst staan. Juist dán blijft er een container voor de deur staan waar niemand meer aan denkt.
+
 ## Doorklikken vanaf het dashboard, en de uren terug in beeld
 
 - **[FEATURE]** De vier tegels bovenaan het dashboard zijn nu **aantikbaar**. Klik op "Bezig" en je komt in de werkbonnenlijst met dat filter al aan — hetzelfde voor stilgelegd, af te ronden en niet gestart. Alleen "Uitgelopen" houdt zijn eigen scherm: daar staat de reden en de historie bij, en dat is een andere vraag dan "welke klussen zijn dit". Een tegel op nul gaat nergens heen; doorklikken naar een lege lijst is een belofte die niet wordt waargemaakt.

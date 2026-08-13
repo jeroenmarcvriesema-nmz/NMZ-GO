@@ -3,10 +3,11 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
 import { Fotoviewer } from '@/components/taak/Fotoviewer'
 import { useTaken } from '@/hooks/useTaken'
+import { supabase } from '@/lib/supabase'
 import { useFotos } from '@/hooks/useFotos'
 import { useAuth } from '@/hooks/useAuth'
 import type { Taak } from '@/types'
-import { IconCamera, IconCameraOff, IconCheck, IconSquare, IconPhoto, IconAlertCircle, IconArchive, IconRefresh } from '@tabler/icons-react'
+import { IconCamera, IconCameraOff, IconCheck, IconSquare, IconPhoto, IconAlertCircle, IconArchive, IconRefresh, IconTrash } from '@tabler/icons-react'
 
 interface TaakItemProps {
   taak: Taak
@@ -26,6 +27,11 @@ export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps
   // om hem nog eens te versturen — hij is niet kwijt.
   const [wachtendeFoto, setWachtendeFoto] = useState<File | null>(null)
   const [fotoplichtBezig, setFotoplichtBezig] = useState(false)
+  // Twee stappen, want dit is onomkeerbaar. Eén tik op een prullenbak
+  // naast een afvinkvakje, op een telefoon met handschoenen aan, is te
+  // makkelijk gebeurd.
+  const [verwijderBezig, setVerwijderBezig] = useState(false)
+  const [bevestigWeg, setBevestigWeg] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const fotos = taak.fotos ?? []
   const heeftFoto = fotos.length > 0
@@ -121,6 +127,24 @@ export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps
     const { error } = await zetFotoVereist(taak.id, !taak.foto_vereist)
     setFotoplichtBezig(false)
     if (error) { setFout('De fotoplicht kon niet worden gewijzigd.'); return }
+    await onRefresh()
+  }
+
+  const verwijderPunt = async () => {
+    if (verwijderBezig) return
+    setFout(null)
+    setVerwijderBezig(true)
+    const { error } = await supabase.rpc('werkbon_punt_verwijderen', { p_taak: taak.id })
+    setVerwijderBezig(false)
+
+    if (error) {
+      // De database weigert bij foto's en bij een opgeleverde bon, met
+      // een reden die uitlegt wát er in de weg staat. Die tonen we
+      // letterlijk — een eigen tekst zou minder zeggen.
+      setFout(error.message || 'Het punt kon niet worden verwijderd.')
+      setBevestigWeg(false)
+      return
+    }
     await onRefresh()
   }
 
@@ -267,6 +291,40 @@ export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps
               <IconAlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
               De foto&apos;s konden niet worden geladen — ze zijn wél opgeslagen.
             </span>
+          )}
+
+          {/* Alleen voor kantoor, en niet meer als de bon is afgerond:
+              dan is de lijst waar de zwamsaneerder voor getekend heeft
+              gesloten. De database weigert het ook, maar een knop die
+              gegarandeerd een foutmelding oplevert hoort er niet te
+              staan. */}
+          {magWerkBeheren && !readOnly && (
+            bevestigWeg ? (
+              <span className="flex items-center gap-1.5">
+                <button
+                  onClick={verwijderPunt}
+                  disabled={verwijderBezig}
+                  className="text-xs font-bold flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-brand-red bg-brand-red text-white transition-all duration-150 ease-brand disabled:opacity-50"
+                >
+                  <IconTrash className="w-3.5 h-3.5" />
+                  {verwijderBezig ? 'Bezig…' : 'Definitief weg'}
+                </button>
+                <button
+                  onClick={() => setBevestigWeg(false)}
+                  className="text-xs font-semibold px-2.5 py-1.5 rounded-sm border border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50"
+                >
+                  Annuleren
+                </button>
+              </span>
+            ) : (
+              <button
+                onClick={() => setBevestigWeg(true)}
+                title="Dit punt van de werkbon halen"
+                className="text-xs font-semibold flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-gray-200 dark:border-white/10 text-gray-400 dark:text-white/40 hover:border-brand-red hover:text-brand-red transition-all duration-150 ease-brand"
+              >
+                <IconTrash className="w-3.5 h-3.5" /> Punt weg
+              </button>
+            )
           )}
 
           {magWerkBeheren && (

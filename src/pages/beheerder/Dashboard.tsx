@@ -6,6 +6,7 @@ import { MeldingItem } from '@/components/dashboard/MeldingItem'
 import { ProjectTabel } from '@/components/dashboard/ProjectTabel'
 import { ActivityFeed } from '@/components/dashboard/ActivityFeed'
 import { Standbalk } from '@/components/dashboard/Standbalk'
+import { Voorzieningenkaart } from '@/components/dashboard/Voorzieningenkaart'
 import { Weekdoorkijk } from '@/components/dashboard/Weekdoorkijk'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
@@ -199,6 +200,14 @@ export default function Dashboard() {
           />
           <Weekdoorkijk dagen={data.doorkijk} onDag={() => navigate('/planning')} />
         </div>
+      </div>
+
+      {/* Wat er bij een derde partij besteld en afgemeld moet worden.
+          Staat bewust boven het projectoverzicht: dit is het enige blok
+          op dit scherm waar een dag uitstel direct geld kost — huur die
+          doorloopt, of een ploeg die op dag één zonder container staat. */}
+      <div className="mb-6 xl:mb-8">
+        <Voorzieningenkaart />
       </div>
 
       {/* Projectoverzicht + Activiteit */}

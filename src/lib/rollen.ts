@@ -68,6 +68,7 @@ export const ROUTE_SLOT: Record<string, Slot> = {
   '/rapporten':        'kantoor',
   '/archief':          'kantoor',
   '/uitloop':          'kantoor',
+  '/lopend':           'kantoor',
   '/medewerkers':      'gebruikersbeheer',
   '/medewerkers/:id':  'gebruikersbeheer',
 

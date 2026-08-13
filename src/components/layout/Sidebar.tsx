@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useThemeStore } from '@/store/themeStore'
 import { rolLabel } from '@/lib/utils'
 import {
+  IconActivity,
   IconLayoutDashboard,
   IconFolderOpen,
   IconCalendarWeek,
@@ -80,6 +81,7 @@ export function Sidebar() {
             <NavItem to="/projecten" icon={<IconFolderOpen />}      label="Projecten" />
             <NavItem to="/planning"  icon={<IconCalendarWeek />}    label="Planning" />
 
+            <NavItem to="/lopend"    icon={<IconActivity />} label="Lopend" />
             <NavItem to="/uitloop"   icon={<IconClockExclamation />} label="Uitloop" />
 
             <NavSection label="Werkbonnen" />
