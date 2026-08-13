@@ -33,18 +33,30 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
         className={cn('bg-white dark:bg-surface-dark-2 rounded-lg shadow-lg w-full overflow-hidden animate-page-in', sizes[size])}
       >
         {/* Theme-reactief, net als de rest van de schil sinds 3.1b —
-            de gele bovenrand is het merkaccent, niet een donkere balk. */}
-        <div className="border-t-2 border-brand-yellow bg-white dark:bg-surface-dark-2 border-b border-gray-100 dark:border-white/10 px-6 py-4 flex items-center justify-between gap-4">
-          <h3 className="text-base font-bold text-gray-900 dark:text-white">{title}</h3>
+            de gele bovenrand is het merkaccent, niet een donkere balk.
+
+            min-w-0 en break-words op de kop: een titel als "Karolingen-
+            straat 29 te Zaandam stilleggen" duwde de sluitknop anders
+            het venster uit. De knop krimpt niet mee (flex-shrink-0),
+            dus de kop is de enige die kán wijken. */}
+        <div className="border-t-2 border-brand-yellow bg-white dark:bg-surface-dark-2 border-b border-gray-100 dark:border-white/10 px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
+          <h3 className="min-w-0 flex-1 text-base font-bold text-gray-900 dark:text-white break-words">
+            {title}
+          </h3>
           <button
             onClick={onClose}
             aria-label="Sluiten"
-            className="text-gray-400 dark:text-white/40 hover:text-gray-900 dark:hover:text-white transition-colors"
+            className="flex-shrink-0 text-gray-400 dark:text-white/40 hover:text-gray-900 dark:hover:text-white transition-colors"
           >
             <IconX className="w-5 h-5" />
           </button>
         </div>
-        <div className="p-7">{children}</div>
+        {/* Was p-7 (28 pixels) op elk formaat. Op een telefoon van 390
+            blijft er dan 302 over voor de inhoud, terwijl de kop erboven
+            op 24 stond — de twee liepen zichtbaar niet gelijk. Nu
+            hetzelfde ritme als de rest van de app: krap op mobiel,
+            ruim vanaf tablet. */}
+        <div className="p-4 sm:p-7 min-w-0">{children}</div>
       </div>
     </div>
   )

@@ -38,20 +38,24 @@ export function Klusplanning({ werkbon, onKlaar }: { werkbon: Werkbon; onKlaar: 
     if (eind && eind < start) { toast.fout('De opleverdatum ligt vóór de startdatum.'); return }
 
     setBezig(true)
-    // `datum` schuift mee met de start, net als bij een klus uit
-    // ClickUp: daar is `datum` ook de dag waarop begonnen wordt.
-    const { data, error } = await supabase
-      .from('werkbonnen')
-      .update({ datum: start, geplande_start: start, geplande_eind: eind || null })
-      .eq('id', werkbon.id)
-      .select('id')
+    // Via de RPC en niet rechtstreeks op de tabel: daar zit de rolcheck,
+    // het meeschuiven van `datum` en de wachtrijtaak die ClickUp
+    // bijwerkt. Een update op de tabel zou dat laatste overslaan en de
+    // twee systemen stilletjes uit elkaar laten lopen.
+    const { error } = await supabase.rpc('werkbon_planning_zetten', {
+      p_werkbon: werkbon.id,
+      p_start: start,
+      p_eind: eind || null,
+    })
     setBezig(false)
 
-    if (error || !data || data.length === 0) {
-      toast.fout('De planning kon niet worden opgeslagen.')
+    if (error) {
+      toast.fout(error.message || 'De planning kon niet worden opgeslagen.')
       return
     }
-    toast.goed('Planning bijgewerkt')
+    toast.goed(werkbon.clickup_taak_id
+      ? 'Planning bijgewerkt, ClickUp wordt bijgewerkt'
+      : 'Planning bijgewerkt')
     onKlaar()
   }
 
@@ -71,11 +75,18 @@ export function Klusplanning({ werkbon, onKlaar }: { werkbon: Werkbon; onKlaar: 
           <IconCalendar className="w-4 h-4" /> Planning opslaan
         </Button>
 
+        {/* Hier stond dat ClickUp zou winnen en dat de eerstvolgende
+            ronde de datums zou terugzetten. Dat gebeurde niet — een bon
+            die zijn PDF heeft wordt door de ronde overgeslagen, op de
+            status na — en nu de wijziging ook naar ClickUp gaat, klopt
+            het helemaal niet meer. Een waarschuwing die niet waar is
+            houdt mensen van de knop af. */}
         {werkbon.clickup_taak_id && (
-          <p className="flex items-start gap-1.5 text-xs text-gray-400 dark:text-white/40">
+          <p className="flex items-start gap-1.5 text-xs text-gray-400 dark:text-white/40 min-w-0">
             <IconInfoCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-            Deze klus komt uit ClickUp; daar staan de datums ook. Wijzig je ze
-            hier, dan zet de eerstvolgende synchronisatieronde ze terug.
+            <span className="break-words">
+              Wordt ook in ClickUp gezet, als start- en opleverdatum.
+            </span>
           </p>
         )}
       </div>

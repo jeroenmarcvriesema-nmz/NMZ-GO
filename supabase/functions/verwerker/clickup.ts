@@ -767,6 +767,179 @@ async function schrijf(pad: string, token: string, body: unknown): Promise<void>
   }
 }
 
+/**
+ * Eén custom field op een taak zetten.
+ *
+ * Een ander eindpunt dan `schrijf`: velden gaan via POST op
+ * `/task/{id}/field/{veld}`, de taak zelf via PUT. Bij een labelveld is
+ * de waarde een reeks option-id's, bij een datum een tijdstempel in
+ * milliseconden.
+ */
+async function schrijfVeld(
+  taakId: string,
+  veldId: string,
+  token: string,
+  waarde: unknown,
+): Promise<void> {
+  const res = await fetch(
+    `${API}/task/${encodeURIComponent(taakId)}/field/${encodeURIComponent(veldId)}`,
+    {
+      method: 'POST',
+      headers: { Authorization: token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ value: waarde }),
+    },
+  )
+  if (res.status === 401) {
+    throw new Error(
+      'ClickUp weigert het token (401). Werk clickup_token bij in Vault ' +
+      'met vault.update_secret().',
+    )
+  }
+  if (!res.ok) {
+    throw new Error(`ClickUp gaf ${res.status} op veld ${veldId}: ${await res.text()}`)
+  }
+}
+
+/**
+ * Een datum zoals ClickUp hem wil: milliseconden op middernacht UTC.
+ *
+ * Precies de omkering van `datum()` hierboven, die `toISOString()` doet
+ * en dus in UTC leest. Een ander tijdstip kiezen betekent dat de datum
+ * die je wegschrijft er bij het teruglezen een dag naast ligt.
+ */
+function naarMs(d: string | null): number | null {
+  if (!d) return null
+  const ms = Date.parse(`${d}T00:00:00.000Z`)
+  return Number.isFinite(ms) ? ms : null
+}
+
+/**
+ * Een wijziging uit NMZ GO terug naar ClickUp.
+ *
+ * Tot nu toe ging het verkeer één kant op: ClickUp plande, NMZ GO
+ * voerde uit. Maar er verandert van alles ná het inplannen — iemand
+ * valt uit, de klus loopt uit — en dat gebeurde tot nu toe in ClickUp,
+ * terwijl de uitvoerder in NMZ GO staat. Wie hier iets wijzigt, wijzigt
+ * het nu op allebei de plekken.
+ *
+ * Alleen het veld dat is aangeraakt gaat mee. De ploeg wegschrijven bij
+ * een datumwijziging zou een keuze van de planner kunnen overschrijven
+ * die tussendoor in ClickUp is gemaakt.
+ */
+export async function werkbonBijwerken(
+  db: SupabaseClient,
+  tenantId: string,
+  werkbonId: string,
+  soort: 'ploeg' | 'planning',
+): Promise<Record<string, unknown>> {
+  const i = await geefInstellingen(db, tenantId)
+
+  const { data: bon } = await db
+    .from('werkbonnen')
+    .select('id, adres, clickup_taak_id, geplande_start, geplande_eind')
+    .eq('id', werkbonId)
+    .eq('tenant_id', tenantId)
+    .maybeSingle()
+  if (!bon) throw new Error(`werkbon ${werkbonId} bestaat niet`)
+
+  if (!bon.clickup_taak_id) {
+    return { overgeslagen: 'deze werkbon komt niet uit ClickUp', adres: bon.adres }
+  }
+
+  if (!i.actief) {
+    return { droogloop: true, adres: bon.adres, soort, zou_bijwerken: true }
+  }
+
+  const token = await geefToken(db)
+
+  if (soort === 'planning') {
+    const start = naarMs(bon.geplande_start)
+    const eind = naarMs(bon.geplande_eind)
+
+    // De taak zelf én de custom velden. De synchronisatie leest het
+    // custom veld eerst en valt terug op de taak; alleen de ene kant
+    // bijwerken laat de andere de oude datum houden, en dan wint bij de
+    // eerstvolgende import weer de oude waarde.
+    await schrijf(`/task/${bon.clickup_taak_id}`, token, {
+      ...(start !== null ? { start_date: start } : {}),
+      ...(eind !== null ? { due_date: eind } : {}),
+    })
+    if (i.veld_startdatum && start !== null) {
+      await schrijfVeld(bon.clickup_taak_id, i.veld_startdatum, token, start)
+    }
+    if (i.veld_opleverdatum && eind !== null) {
+      await schrijfVeld(bon.clickup_taak_id, i.veld_opleverdatum, token, eind)
+    }
+
+    await db.from('werkbonnen')
+      .update({ laatst_gesynct: new Date().toISOString() })
+      .eq('id', werkbonId)
+
+    return {
+      adres: bon.adres,
+      clickup_taak: bon.clickup_taak_id,
+      start: bon.geplande_start,
+      eind: bon.geplande_eind,
+    }
+  }
+
+  // ── De ploeg ──────────────────────────────────────────────────
+  if (!i.veld_medewerkers) {
+    throw new Error(
+      'Er is geen medewerkersveld ingesteld in clickup_instellingen; ' +
+      'de ploeg is niet naar ClickUp te schrijven.',
+    )
+  }
+
+  const { data: ploeg, error: ploegFout } = await db
+    .from('werkbon_medewerkers')
+    .select('personen(naam, clickup_label)')
+    .eq('werkbon_id', werkbonId)
+    .eq('tenant_id', tenantId)
+  if (ploegFout) throw new Error(`ploeg lezen mislukt: ${ploegFout.message}`)
+
+  const labels = (ploeg ?? [])
+    .map((r: any) => r.personen?.clickup_label)
+    .filter(Boolean) as string[]
+
+  // De option-id's staan in de taak zelf; een label bestaat in ClickUp
+  // alleen als er een optie voor is.
+  const taak = await haal(`/task/${encodeURIComponent(bon.clickup_taak_id)}`, token)
+  const veldDef = taak.custom_fields?.find((f: any) => f.id === i.veld_medewerkers)
+  const opties: any[] = veldDef?.type_config?.options ?? []
+
+  const ids: string[] = []
+  const onbekend: string[] = []
+  for (const label of labels) {
+    const optie = opties.find((o: any) => o?.label === label)
+    if (optie?.id) ids.push(optie.id)
+    else onbekend.push(label)
+  }
+
+  // Iemand die in ClickUp niet als optie bestaat kunnen we daar niet
+  // neerzetten. Dat is geen reden om de rest niet te schrijven, maar het
+  // hoort wel terug te komen — anders staat hij in NMZ GO op de klus en
+  // in ClickUp niet, zonder dat iemand het ziet.
+  await schrijfVeld(bon.clickup_taak_id, i.veld_medewerkers, token, ids)
+
+  await db.from('werkbonnen')
+    .update({ laatst_gesynct: new Date().toISOString() })
+    .eq('id', werkbonId)
+
+  if (onbekend.length > 0) {
+    throw new Error(
+      `de ploeg staat in ClickUp, maar ${onbekend.join(', ')} ` +
+      'heeft daar geen label onder Medewerkers en is dus niet meegestuurd',
+    )
+  }
+
+  return {
+    adres: bon.adres,
+    clickup_taak: bon.clickup_taak_id,
+    ploeg: labels,
+  }
+}
+
 async function opmerking(taakId: string, token: string, tekst: string): Promise<void> {
   const res = await fetch(`${API}/task/${taakId}/comment`, {
     method: 'POST',

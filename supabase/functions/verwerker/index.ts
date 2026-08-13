@@ -22,6 +22,7 @@ import {
   statusBijwerken,
   synchroniseer,
   tekstproef,
+  werkbonBijwerken,
 } from './clickup.ts'
 import { fotosOpruimen } from './opruimen.ts'
 
@@ -161,6 +162,27 @@ const HANDLERS: Record<string, Handler> = {
       throw new OnverwerkbaarError('tenant_id ontbreekt in de payload')
     }
     return await fotosOpruimen(db, tenantId, Number(taak.payload.wachttijd_dagen ?? 14))
+  },
+
+  // Een wijziging uit NMZ GO terug naar ClickUp: de ploeg of de
+  // planning.
+  //
+  // Kantoor wijzigt tijdens een lopende klus wie erop staat en wanneer
+  // hij af moet. Blijft dat in NMZ GO hangen, dan klopt het planbord
+  // niet meer — en de synchronisatieronde zou de ploeg binnen vijf
+  // minuten terugzetten naar wat ClickUp nog dacht.
+  'clickup.werkbon_bijwerken': async (taak, db) => {
+    const tenantId = String(taak.payload.tenant_id ?? '')
+    const werkbonId = String(taak.payload.werkbon_id ?? '')
+    const soort = String(taak.payload.soort ?? '')
+
+    if (!tenantId || !werkbonId) {
+      throw new OnverwerkbaarError('tenant_id en werkbon_id zijn allebei nodig')
+    }
+    if (soort !== 'ploeg' && soort !== 'planning') {
+      throw new OnverwerkbaarError(`onbekende soort wijziging: ${soort}`)
+    }
+    return await werkbonBijwerken(db, tenantId, werkbonId, soort)
   },
 
   // Terugkoppeling naar ClickUp: stilgelegd, hervat of opgeleverd.

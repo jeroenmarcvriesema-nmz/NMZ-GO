@@ -6,6 +6,7 @@ import { SectionHeading } from '@/components/ui/SectionHeading'
 import { Spinner } from '@/components/ui/Spinner'
 import { TaakItem } from '@/components/taak/TaakItem'
 import { Klusinfo } from '@/components/werkbon/Klusinfo'
+import { PuntToevoegen } from '@/components/werkbon/PuntToevoegen'
 import { supabase } from '@/lib/supabase'
 import { berekenVoortgang, formatDatum, cn } from '@/lib/utils'
 import { standkleur } from '@/lib/klusstand'
@@ -221,6 +222,13 @@ export function Klusuitvoering({
               onRefresh={onRefresh}
             />
           ))
+        )}
+
+        {/* Meerwerk dat op de klus zelf wordt afgesproken. Alleen voor
+            kantoor, en niet meer als de bon al is afgerond — dan is de
+            lijst waar de zwamsaneerder voor getekend heeft gesloten. */}
+        {!readOnly && werkbon.status !== 'voltooid' && (
+          <PuntToevoegen werkbonId={werkbon.id} onKlaar={onRefresh} />
         )}
       </Card>
     </>

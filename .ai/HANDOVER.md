@@ -98,7 +98,26 @@ Afspraken die daarbij horen:
   de fotoketen, 029 = stilleggen schuift niet meer op). Pak 030 en
   hoger — nooit een nummer hergebruiken. Dit ging al een keer mis:
   twee sessies maakten allebei een 027 en dat is achteraf rechtgezet.
-- **De verwerker staat op versie 15** (uitgerold op verzoek van de
+- **Het verkeer gaat sinds migratie 030 twee kanten op.** `werkbon_ploeg_zetten`
+  en `werkbon_planning_zetten` schrijven naar NMZ GO én zetten een
+  wachtrijtaak `clickup.werkbon_bijwerken` klaar. Twee dingen om te
+  weten voor je hieraan werkt:
+  1. De ploeg die hier wordt gezet krijgt `handmatig = true`. Dat moet:
+     `zetPloeg` in de synchronisatieronde wist elke ronde iedereen die
+     dat niet is. Zet je het op false, dan is de keuze binnen vijf
+     minuten weg.
+  2. Datums worden ná de eerste import níét meer uit ClickUp gezet — de
+     ronde slaat een bon met `opdracht_pad` over. Er is dus geen strijd
+     om die velden.
+- **Datums gaan als middernacht UTC naar ClickUp** (`naarMs`), precies
+  de omkering van `datum()` die met `toISOString()` leest. In een
+  Nederlandse werkruimte toont ClickUp dat als 02:00 op dezelfde dag.
+  Zou het bedrijf ooit in een tijdzone vóór UTC gaan werken, dan valt
+  die tijdstempel op de vorige dag — dán moet dit mee.
+- **De verwerker staat op versie 18** (migratie 030 + `werkbonBijwerken`).
+  Getest tegen de echte ClickUp op Dahliastraat 6, met de bestaande
+  waarden zodat er niets veranderde.
+- **De verwerker stond eerder op versie 15** (uitgerold op verzoek van de
   eigenaar, alle bestanden tegelijk). Daarin zitten: de gewijzigde
   stilleg-opmerking (geen "Nieuwe opleverdatum" meer), het doorbladeren
   van ClickUp-pagina's, en de werkopdracht die ook als losse bijlage

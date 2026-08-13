@@ -1,5 +1,13 @@
 # NMZ GO — Changelog
 
+## Wijzigen terwijl de klus loopt
+
+- **[FEATURE]** Kantoor kan nu **de ploeg van een lopende klus wijzigen** — beheerder, uitvoerder, werkvoorbereider en planner. Dat kon nergens: wie erop stond kwam uit ClickUp en was in NMZ GO niet aan te raken. Viel er iemand uit, dan moest het in ClickUp en maar hopen dat de ronde het ophaalde.
+- **[FEATURE]** Wat je hier wijzigt **gaat terug naar ClickUp**. De ploeg komt onder Medewerkers te staan, de datums als start- en opleverdatum én in de custom velden. Zonder dat zou de synchronisatieronde de ploeg binnen vijf minuten terugzetten naar wat ClickUp nog dacht — de ronde veegt namelijk elke keer iedereen weg die niet handmatig is toegewezen.
+- **[FEATURE]** Er kan een **punt worden toegevoegd** aan een klus die al loopt. Meerwerk dat in de kruipruimte wordt afgesproken stond nergens, en er werd dus ook geen foto van gevraagd. Standaard mét fotoplicht: meerwerk is juist het werk waarvan achteraf de vraag komt of het echt gedaan is. Gaat niet naar ClickUp — de punten komen uit de PDF en daar is aan die kant geen veld voor.
+- **[FIX]** Op de Planning-kaart stond dat ClickUp zou winnen en dat de eerstvolgende ronde je datums zou terugzetten. Dat was niet waar: een bon die zijn PDF heeft wordt door de ronde overgeslagen, op de status na. Die waarschuwing hield mensen van een knop af die gewoon werkte.
+- **[FIX]** Een lange titel duwde de sluitknop uit het venster op een telefoon, en de inhoud van een venster stond op 28 pixels marge terwijl de kop erboven op 24 stond. Kop en inhoud lopen nu gelijk en de marge volgt de rest van de app: krap op mobiel, ruim vanaf tablet.
+
 ## Klussen die er niet in stonden
 
 - **[FIX]** Dahliastraat 6 te Rijnsburg stond op "deze week", had een werkopdracht en kwam toch niet in de app. De reden: de PDF hing als losse bijlage aan de ClickUp-taak in plaats van in het veld "Werkopdracht (PDF)". De synchronisatie keek alleen naar dat veld, zag niets en sloeg de taak over. Voor de werkvoorbereider is een PDF in de taak slepen één handeling in plaats van drie, en aan de ClickUp-kant ziet het er hetzelfde uit — dus dat gaat gebeuren. De synchronisatie kijkt nu op allebei de plekken. De bon staat er inmiddels: 18 punten, kluiscode 1975, Rene en Justin erop.
