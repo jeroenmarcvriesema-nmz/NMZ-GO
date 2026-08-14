@@ -1,5 +1,21 @@
 # NMZ GO — Changelog
 
+## Een herziene werkopdracht, en wat er op een klus gebeurt
+
+### De herziene werkopdracht komt binnen
+- **[FIX]** Wordt er een **nieuwe versie van de werkopdracht** in ClickUp gehangen, dan leest NMZ GO die nu opnieuw. Dat gebeurde niet: de ronde slaat een bon over zodra hij zijn PDF heeft — met reden, anders wordt er elke vijf minuten vijfenveertig keer een PDF gedownload — maar daarmee kwam een herziening nooit meer binnen. Ging de container daarin van 6 naar 10 kuub, dan bleef in de app 6 staan, en op die 6 wordt besteld. Precies het geval waar de containerlijst voor is gebouwd.
+- Het kost niets. ClickUp geeft de datum van de bijlage mee in het antwoord dat we tóch al ophalen, dus die vergelijking is gratis; de PDF wordt alleen gehaald als hij écht nieuwer is (migratie 034 bewaart die datum per bon). Hangt de opdracht los aan de taak in plaats van in het veld, dan wordt de taak apart opgehaald — maar alleen als ClickUp zegt dat er sinds onze vorige ronde iets aan die taak is veranderd.
+- De vijfenveertig bonnen die er al stonden hadden nog geen datum. Die krijgen er bij de eerstvolgende ronde eentje, **zonder dat hun PDF opnieuw wordt gehaald** — wat we hebben ontleed hoort immers bij de bijlage die er nu hangt. Zonder dat ijkpunt is er niets om "nieuwer" tegen af te meten en zou een herziening op de bestaande klussen nooit gezien worden.
+- **Wat wél wordt bijgewerkt:** de kop van de opdracht — container, dixi, kluiscode, inspecteur en zijn telefoonnummer. Daar wordt op besteld en gebeld, en daarvoor wordt een herziening rondgestuurd. De PDF zelf wordt ook vervangen, dus wie hem openslaat ziet de nieuwe.
+- **Wat níét wordt bijgewerkt:** de punten. Daar hangt het afvinkwerk aan, met foto's en al; opnieuw invoeren zou dat wissen en samenvoegen betekent raden welke regel "dezelfde" is als eentje die net iets anders is opgeschreven. Staat er in de herziening ander werk, dan hoort een mens daarnaar te kijken — daarom komt elke herziening als melding terug in het resultaat van de ronde.
+
+### Een activiteitenfeed per lopende klus
+- **[FEATURE]** Klap je op **Lopend** een klus open, dan staat er naast de punten nu een **activiteitenfeed**: wie er is gestart en gestopt, welk punt wanneer is afgevinkt, wanneer er foto's bij kwamen, en of de klus is stilgelegd, hervat, opgeleverd of van ploeg of planning gewijzigd. Op volgorde van tijd, met de tijd van vandaag als klok en alles daarvoor met de dag erbij.
+- De bon laat de **toestand** zien: welke punten af zijn. Wat hij niet laat zien is het **verloop** — of het vanochtend om acht uur op gang kwam of pas om elf uur, en of er halverwege iets is veranderd. Dat is wat je 's middags wilt weten.
+- Geen fotorapportage: die staat al op de bon zelf. Foto's worden per punt samengevat — "4 foto's bij Balk 12" met het moment van de laatste. Twintig losse regels "foto toegevoegd" is geen feed maar een logboek.
+- Laadt pas als je een klus openslaat, niet voor alle acht tegelijk.
+- Een punt weet sinds migratie 034 ook **wannéér** het is afgevinkt. Uitvinken haalt dat moment weer weg — anders zou de feed een tijd tonen die niet meer klopt. Wat vóór deze migratie is afgevinkt heeft geen moment en staat er dus niet in; dat is eerlijker dan er een tijd bij verzinnen.
+
 ## Lopend, punten weghalen, en de containers
 
 ### Eén scherm voor wat er vandaag loopt

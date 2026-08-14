@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { cn, formatDatumKort } from '@/lib/utils'
 import { formatTijd, geefUren } from '@/hooks/useWerkdag'
 import { useLopend, type LopendeKlus } from '@/hooks/useLopend'
+import { Klusactiviteit } from '@/components/werkbon/Klusactiviteit'
 import {
   STANDEN, STANDVOLGORDE, UITLOOP, ASBEST, looptUit, isAsbest,
 } from '@/lib/klusstand'
@@ -251,39 +252,56 @@ function Klusblok({ klus, open, onKlap, onOpen }: {
             className="flex items-center gap-1.5 mt-3 min-h-[44px] text-xs font-semibold text-gray-500 dark:text-white/50 hover:text-gray-900 dark:hover:text-white transition-colors"
           >
             <IconChevronRight className={cn('w-4 h-4 transition-transform', open && 'rotate-90')} />
-            {open ? 'Punten verbergen' : `${klus.punten.length} punten tonen`}
+            {open ? 'Verbergen' : `Activiteit en ${klus.punten.length} punten`}
           </button>
 
           {open && (
-            <ul className="mt-1 space-y-1">
-              {klus.punten.map((p) => (
-                <li key={p.id} className="flex items-start gap-2 text-xs min-w-0">
-                  {p.voltooid
-                    ? <IconCheck className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-green-600 dark:text-green-400" />
-                    : <span className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 rounded-sm border border-gray-300 dark:border-white/20" />}
-                  <span className={cn(
-                    'break-words min-w-0 flex-1',
-                    p.voltooid
-                      ? 'text-gray-400 dark:text-white/40 line-through'
-                      : 'text-gray-700 dark:text-white/70',
-                  )}>
-                    {p.titel}
-                  </span>
-                  {p.aantalFotos > 0 ? (
-                    <span className="flex items-center gap-0.5 flex-shrink-0 text-gray-400 dark:text-white/40 tabular-nums">
-                      <IconPhoto className="w-3 h-3" />{p.aantalFotos}
-                    </span>
-                  ) : p.fotoVereist ? (
-                    <span
-                      className="flex items-center gap-0.5 flex-shrink-0 text-amber-600 dark:text-amber-400"
-                      title="Dit punt heeft fotoplicht en nog geen foto"
-                    >
-                      <IconCamera className="w-3 h-3" />
-                    </span>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4 mt-2">
+              <div className="min-w-0">
+                {/* Het verloop, niet de toestand. De bon zelf laat zien
+                    wélke punten af zijn; hier staat wannéér, in welke
+                    volgorde, en of er halverwege iets is gewijzigd. */}
+                <h4 className="text-[11px] font-bold uppercase tracking-wide text-gray-400 dark:text-white/40 mb-1.5">
+                  Activiteit
+                </h4>
+                <Klusactiviteit werkbonId={klus.id} />
+              </div>
+
+              <div className="min-w-0">
+                <h4 className="text-[11px] font-bold uppercase tracking-wide text-gray-400 dark:text-white/40 mb-1.5">
+                  Punten
+                </h4>
+                <ul className="space-y-1">
+                  {klus.punten.map((p) => (
+                    <li key={p.id} className="flex items-start gap-2 text-xs min-w-0">
+                      {p.voltooid
+                        ? <IconCheck className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-green-600 dark:text-green-400" />
+                        : <span className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 rounded-sm border border-gray-300 dark:border-white/20" />}
+                      <span className={cn(
+                        'break-words min-w-0 flex-1',
+                        p.voltooid
+                          ? 'text-gray-400 dark:text-white/40 line-through'
+                          : 'text-gray-700 dark:text-white/70',
+                      )}>
+                        {p.titel}
+                      </span>
+                      {p.aantalFotos > 0 ? (
+                        <span className="flex items-center gap-0.5 flex-shrink-0 text-gray-400 dark:text-white/40 tabular-nums">
+                          <IconPhoto className="w-3 h-3" />{p.aantalFotos}
+                        </span>
+                      ) : p.fotoVereist ? (
+                        <span
+                          className="flex items-center gap-0.5 flex-shrink-0 text-amber-600 dark:text-amber-400"
+                          title="Dit punt heeft fotoplicht en nog geen foto"
+                        >
+                          <IconCamera className="w-3 h-3" />
+                        </span>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           )}
         </>
       )}

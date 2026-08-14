@@ -2,8 +2,9 @@
 // NMZ GO — ClickUp-synchronisatie
 // ============================================================
 // Haalt de taken op die klaarstaan voor uitvoering en maakt er
-// werkbonnen van. ClickUp blijft de bron van waarheid; NMZ GO is de
-// uitvoeringskant.
+// werkbonnen van. ClickUp blijft de bron van waarheid voor de planning;
+// NMZ GO is de uitvoeringskant — en wat daar wordt gewijzigd gaat terug
+// (zie `werkbonBijwerken`).
 //
 // Drie regels die deze handler aanhoudt:
 //
@@ -148,13 +149,34 @@ function labelNamen(taak: any, id: string | null): string[] {
  * eerste — dat is wat het altijd deed en voor één bestand is het
  * hetzelfde.
  */
-function uitVeld(v: any, voorkeur?: RegExp): { url: string; naam: string } | null {
+function uitVeld(v: any, voorkeur?: RegExp): Bijlage | null {
   if (!Array.isArray(v) || v.length === 0) return null
   const gekozen = voorkeur
     ? v.find((x: any) => x?.url && voorkeur.test(String(x?.title ?? '')))
     : null
   const a = gekozen ?? v[0]
-  return a?.url ? { url: a.url, naam: a.title ?? 'document.pdf' } : null
+  return a?.url
+    ? { url: a.url, naam: a.title ?? 'document.pdf', datum: msNaarIso(a.date) }
+    : null
+}
+
+/**
+ * Eén bijlage, met de datum die ClickUp eraan geeft.
+ *
+ * Die datum is het enige waaraan te zien is dát er een herziene
+ * opdracht hangt zonder hem te downloaden — en downloaden is precies
+ * wat we bij elke ronde niet willen.
+ */
+interface Bijlage {
+  url: string
+  naam: string
+  datum: string | null
+}
+
+function msNaarIso(ms: unknown): string | null {
+  if (!ms) return null
+  const n = Number(ms)
+  return Number.isFinite(n) ? new Date(n).toISOString() : null
 }
 
 /**
@@ -172,7 +194,7 @@ function bijlage(
   id: string | null,
   patroon: RegExp,
   voorkeur?: RegExp,
-): { url: string; naam: string } | null {
+): Bijlage | null {
   const uitInstelling = uitVeld(veld(taak, id), voorkeur)
   if (uitInstelling) return uitInstelling
 
@@ -217,7 +239,7 @@ const TEKENING_BESTAND = /tekening|(^|[^a-z])tek([^a-z]|$)/i
 async function opdrachtUitBijlagen(
   taak: any,
   token: string,
-): Promise<{ url: string; naam: string } | null> {
+): Promise<Bijlage | null> {
   let bijlagen = taak.attachments
   if (!Array.isArray(bijlagen)) {
     const volledig = await haal(`/task/${encodeURIComponent(taak.id)}`, token)
@@ -236,7 +258,122 @@ async function opdrachtUitBijlagen(
     .sort((a, b) => Number(b.date ?? 0) - Number(a.date ?? 0))
 
   const gekozen = passend[0]
-  return gekozen ? { url: gekozen.url, naam: gekozen.title ?? 'werkopdracht.pdf' } : null
+  return gekozen
+    ? {
+      url: gekozen.url,
+      naam: gekozen.title ?? 'werkopdracht.pdf',
+      datum: msNaarIso(gekozen.date),
+    }
+    : null
+}
+
+/**
+ * Hangt er een nieuwere werkopdracht dan die we hebben ontleed?
+ *
+ * De ronde slaat een bon met een opdracht_pad over — anders wordt bij
+ * elke ronde vijfenveertig keer een PDF gedownload. Gevolg was dat een
+ * herziene opdracht nooit meer binnenkwam: ging de container daarin van
+ * 6 naar 10 kuub, dan bleef in NMZ GO 6 staan, en op die 6 wordt
+ * besteld.
+ *
+ * De datum van de bijlage staat in het antwoord dat we tóch al
+ * ophalen, dus die vergelijking kost niets. Alleen als de opdracht los
+ * aan de taak hangt — dat komt voor — zit hij niet in het lijstantwoord,
+ * en dan halen we de taak apart op. Dat gebeurt alleen als ClickUp zegt
+ * dat er sinds onze laatste ronde íéts aan de taak is veranderd, zodat
+ * het bij een rustige dag geen enkele aanroep kost.
+ *
+ * Drie uitkomsten:
+ *
+ * - `nieuwer` — er hangt een herziening; die moet opnieuw gelezen.
+ * - `ijken`   — we kennen de datum van deze bon nog niet. Dat geldt voor
+ *               alles van vóór migratie 034, en dat waren op het moment
+ *               van uitrollen alle vijfenveertig bonnen. Zonder ijkpunt
+ *               is er niets om "nieuwer" tegen af te meten, en dan zou
+ *               een herziening nooit gezien worden — de hele reden dat
+ *               dit er is. We zetten de datum die er nú hangt weg zónder
+ *               de PDF opnieuw te halen: wat we hebben ontleed hoort
+ *               immers bij die bijlage. Kost niets, en vanaf de ronde
+ *               erna telt een herziening wél mee.
+ * - `geen`    — er is niets veranderd.
+ */
+type Opdrachtstand =
+  | { soort: 'geen' }
+  | { soort: 'ijken'; datum: string }
+  | { soort: 'nieuwer'; opdracht: Bijlage }
+
+async function nieuwereOpdracht(
+  taak: any,
+  token: string,
+  bon: { opdracht_datum: string | null; laatst_gesynct: string | null },
+  veldId: string | null,
+): Promise<Opdrachtstand> {
+  let huidig = bijlage(taak, veldId, OPDRACHT_VELD, OPDRACHT_BESTAND)
+
+  if (!huidig) {
+    const gewijzigd = msNaarIso(taak.date_updated)
+    if (!gewijzigd || !bon.laatst_gesynct || gewijzigd <= bon.laatst_gesynct) {
+      return { soort: 'geen' }
+    }
+    huidig = await opdrachtUitBijlagen(taak, token)
+  }
+
+  if (!huidig?.datum) return { soort: 'geen' }
+  if (!bon.opdracht_datum) return { soort: 'ijken', datum: huidig.datum }
+  return huidig.datum > bon.opdracht_datum
+    ? { soort: 'nieuwer', opdracht: huidig }
+    : { soort: 'geen' }
+}
+
+/**
+ * Een herziene opdracht opnieuw ontleden.
+ *
+ * Wat wél wordt bijgewerkt: de kop van de opdracht. Daar staan de
+ * container, de dixi, de kluiscode en de inspecteur in — de dingen
+ * waarop besteld en gebeld wordt, en precies waarvoor een herziening
+ * wordt rondgestuurd.
+ *
+ * Wat níét wordt bijgewerkt: de punten. Daar hangt het afvinkwerk aan,
+ * met foto's en al. Ze opnieuw invoeren zou dat wissen, en ze proberen
+ * samen te voegen betekent raden welke regel "dezelfde" is als eentje
+ * die net iets anders is opgeschreven. Staat er in de herziening ander
+ * werk, dan hoort een mens daarnaar te kijken — daarom komt de
+ * herziening ook als bevinding terug in het resultaat van de ronde.
+ */
+async function herlees(
+  db: SupabaseClient,
+  bonId: string,
+  opdracht: Bijlage,
+  i: Instellingen,
+): Promise<TaakUitkomst> {
+  const res = await fetch(opdracht.url)
+  if (!res.ok) {
+    return { soort: 'overgeslagen', reden: `herziene werkopdracht niet op te halen (${res.status})` }
+  }
+
+  const bytes = new Uint8Array(await res.arrayBuffer())
+  const w = ontleed(await leesPdf(bytes), i.uitgesloten_punten)
+
+  await db.from('werkbonnen')
+    .update({
+      werkvoorbereiding: w.werkvoorbereiding,
+      kluiscode: w.kluiscode,
+      inspecteur: w.inspecteur,
+      inspecteur_telefoon: w.inspecteurTelefoon,
+      opdracht_datum: opdracht.datum,
+      laatst_gesynct: new Date().toISOString(),
+    })
+    .eq('id', bonId)
+
+  // Ook het bestand zelf, anders staat op de bon nog de oude PDF terwijl
+  // de gegevens uit de nieuwe komen.
+  await bewaarDocument(db, bonId, bytes, 'werkopdracht.pdf', 'opdracht_pad')
+
+  return {
+    soort: 'overgeslagen',
+    reden: `herziene werkopdracht ingelezen (${opdracht.naam}) — container, dixi en kluiscode ` +
+           'zijn bijgewerkt; de punten zijn ongemoeid gelaten, kijk na of er werk bij is gekomen',
+  }
 }
 
 /**
@@ -328,7 +465,7 @@ async function verwerkTaak(
   if (!droogloop) {
     const { data: alKlaar } = await db
       .from('werkbonnen')
-      .select('id, opdracht_pad')
+      .select('id, opdracht_pad, opdracht_datum, laatst_gesynct')
       .eq('tenant_id', tenantId)
       .eq('clickup_taak_id', taak.id)
       .maybeSingle()
@@ -341,7 +478,21 @@ async function verwerkTaak(
           laatst_gesynct: new Date().toISOString(),
         })
         .eq('id', alKlaar.id)
-      return { soort: 'ongewijzigd' }
+
+      // Hangt er een nieuwere opdracht? Dan lezen we de kop opnieuw.
+      // Zie `herlees` hieronder voor wat er dan wél en niet bijwerkt.
+      const stand = await nieuwereOpdracht(taak, ctx.token, alKlaar, i.veld_werkopdracht)
+
+      if (stand.soort === 'ijken') {
+        await db.from('werkbonnen')
+          .update({ opdracht_datum: stand.datum })
+          .eq('id', alKlaar.id)
+        return { soort: 'ongewijzigd' }
+      }
+
+      if (stand.soort === 'geen') return { soort: 'ongewijzigd' }
+
+      return await herlees(db, alKlaar.id, stand.opdracht, i)
     }
   }
 
@@ -382,6 +533,9 @@ async function verwerkTaak(
     inspecteur: w.inspecteur,
     inspecteur_telefoon: w.inspecteurTelefoon,
     werkvoorbereiding: w.werkvoorbereiding,
+    // Nodig om later te zien dát er een herziening hangt, zonder de PDF
+    // elke ronde opnieuw te downloaden.
+    opdracht_datum: opdracht.datum,
     laatst_gesynct: new Date().toISOString(),
   }
 

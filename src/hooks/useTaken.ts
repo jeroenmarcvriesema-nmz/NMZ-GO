@@ -3,9 +3,15 @@ import type { Taak } from '@/types'
 
 export function useTaken() {
   const toggleVoltooid = async (taak: Taak) => {
+    const aan = !taak.voltooid
     const { error } = await supabase
       .from('taken')
-      .update({ voltooid: !taak.voltooid })
+      // Ook het moment, sinds migratie 034. Een punt wist of het af was
+      // maar niet wannéér, en dat is precies wat een activiteitenfeed
+      // nodig heeft: "om 10:14 afgevinkt" is een gebeurtenis, "afgevinkt"
+      // is een toestand. Weer uitvinken haalt het stempel ook weg —
+      // anders zou de feed een moment tonen dat niet meer klopt.
+      .update({ voltooid: aan, voltooid_op: aan ? new Date().toISOString() : null })
       .eq('id', taak.id)
     return { error }
   }
