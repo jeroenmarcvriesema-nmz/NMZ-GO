@@ -123,10 +123,13 @@ Afspraken die daarbij horen:
   Nederlandse werkruimte toont ClickUp dat als 02:00 op dezelfde dag.
   Zou het bedrijf ooit in een tijdzone vóór UTC gaan werken, dan valt
   die tijdstempel op de vorige dag — dán moet dit mee.
-- **De verwerker staat op versie 22.** Uitrollen kan alleen via de
+- **De verwerker staat op versie 23** (was 22; v23 is migratie 035 —
+  vervolgwerk dat de klus niet stillegt). Uitrollen kan alleen via de
   Supabase-MCP en vereist dat je alle zeven bestanden voluit meestuurt;
   dat is de duurste handeling in dit project. Verzamel je werk dus en
-  rol één keer uit.
+  rol één keer uit. Meet vooraf een ijkpunt op de laatste
+  synchronisatieronden en houd de ronden erna daartegenaan — zie de
+  uitrolnotitie hierboven.
 - **Een herziene werkopdracht wordt sinds v21/v22 opnieuw ingelezen.**
   `werkbonnen.opdracht_datum` is het ijkpunt: staat de bijlage in
   ClickUp op een later moment, dan wordt de kop opnieuw ontleed
@@ -416,9 +419,25 @@ gewijzigd.
 > `supabase/functions/verwerker/` zijn twee dingen aangepast:
 > `statusBijwerken()` in `clickup.ts` kent de twee nieuwe soorten en
 > selecteert `vervolg_reden` erbij, en `index.ts` laat ze door de
-> soortcontrole. Zonder een **nieuwe uitrol van de edge function**
-> belanden die taken als onverwerkbaar in de wachtrij. Migratie én
-> uitrol horen dus samen te gaan.
+> soortcontrole. **Uitgerold als v23 op 14 augustus 11:24 UTC**, alle
+> zeven bestanden tegelijk, met migratie 035 ervóór.
+
+Hoe die uitrol is nagemeten, want dit is de handeling waar in dit
+project het meest mis kan gaan:
+
+1. **IJkpunt vooraf.** De laatste drie synchronisatieronden op v22
+   (11:05, 11:10, 11:15) gaven alle drie 30 gezien, 0 nieuw, 0
+   bijgewerkt, 26 ongewijzigd, 4 overgeslagen.
+2. **Hetzelfde erna.** De ronden van 11:30 en 11:35 draaiden op v23 en
+   gaven exact diezelfde getallen, met register 37 gelezen en 0
+   toegevoegd. Nul bijgewerkt betekent ook nul PDF-downloads — de
+   herzieningslogica uit v21/v22 doet nog precies wat hij deed.
+3. **De nieuwe tak zelf.** Een `clickup.status_bijwerken` met soort
+   `spuiten_isoleren` op Hugo de Grootlaan 7 kwam terug als geslaagd,
+   met `nieuwe_status: "nog spuiten/isoleren"` en een opmerking waarin
+   het woord "stilgelegd" niet meer voorkomt. Dat heeft één opmerking
+   op ClickUp-taak `86cb1a1h5` achtergelaten; de status stond daar al
+   op dezelfde waarde, dus er is niets verzet.
 
 In de frontend: `lib/vervolgwerk.ts` (de woordenlijst, los van de knop
 zodat het scherm van de zwamsaneerder de kantoorkaart niet zijn bundel
