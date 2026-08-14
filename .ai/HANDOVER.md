@@ -395,6 +395,38 @@ betekent "opgeleverd": dezelfde grens die
 `werkbon_punt_verwijderen()` zelf trekt (migratie 032). Beide schermen
 geven hem door. Geen migratie nodig — de RPC bestond al.
 
+**"Nog spuiten/isoleren" legde de klus stil, en dat klopte niet.** Alle
+vier de knoppen op de werkbon riepen `werkbon_stilleggen()` aan. Voor
+stilleggen en asbest is dat juist; voor "nog spuiten/isoleren" en
+"opnieuw inplannen/later" niet — dat zijn statussen op het ClickUp-bord
+terwijl de klus doorloopt. Omdat `klusstand()` `stilgelegd_op` als
+eerste leest, werd zo'n klus in de hele app rood met "Ligt stil".
+
+Migratie 035 haalt dat uit elkaar: `werkbonnen.vervolg_soort`,
+`vervolg_reden`, `vervolg_op`, `vervolg_door`, plus
+`werkbon_vervolg_melden(uuid, text, text)` en
+`werkbon_vervolg_afronden(uuid)`. Die eerste zet de ClickUp-status en
+schrijft alvast `clickup_status` mee zodat het scherm meteen klopt; de
+tweede hergebruikt bewust soort `'hervat'` in de wachtrij, want die
+zet in de verwerker `trigger_status` — precies waar zo'n klus weer
+thuishoort. `werkbon_stilleggen()` en `werkbon_hervatten()` zijn niet
+gewijzigd.
+
+> **LET OP — dit raakt de verwerker, en dat is de andere sessie.** In
+> `supabase/functions/verwerker/` zijn twee dingen aangepast:
+> `statusBijwerken()` in `clickup.ts` kent de twee nieuwe soorten en
+> selecteert `vervolg_reden` erbij, en `index.ts` laat ze door de
+> soortcontrole. Zonder een **nieuwe uitrol van de edge function**
+> belanden die taken als onverwerkbaar in de wachtrij. Migratie én
+> uitrol horen dus samen te gaan.
+
+In de frontend: `lib/vervolgwerk.ts` (de woordenlijst, los van de knop
+zodat het scherm van de zwamsaneerder de kantoorkaart niet zijn bundel
+in trekt), een blauw blok op `Klusacties`, `Klusuitvoering`,
+`WerkbonKaart` en `Lopend`, en twee nieuwe gebeurtenissoorten in
+`Klusactiviteit`. `klusstand.ts` is bewust ónaangeraakt: het hele punt
+is dat deze klussen hun echte stand houden.
+
 Nog niet gedaan, bewust: er zijn geen rendertests bijgekomen. Dit is
 renderwerk, en er is geen jsdom of testing-library in het project —
 daarvoor zou een dependency erbij moeten, en dat vraagt goedkeuring.

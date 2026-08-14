@@ -41,6 +41,9 @@ export interface LopendeKlus {
   eind: string
   stand: Klusstand
   stillegReden: string | null
+  /** Vervolgwerk: nog spuiten/isoleren of opnieuw inplannen. Geen stilstand. */
+  vervolgSoort: string | null
+  vervolgReden: string | null
   ploeg: string[]
   punten: LopendPunt[]
   aantalFotos: number
@@ -53,6 +56,7 @@ export interface LopendeKlus {
 const SELECT = `
   id, adres, bonnummer, kluiscode, datum, status,
   geplande_start, geplande_eind, stilgelegd_op, stilleg_reden, opgeleverd_op,
+  vervolg_soort, vervolg_reden,
   taken ( id, titel, voltooid, foto_vereist, volgorde, fotos ( id ) ),
   fotos!fotos_werkbon_id_fkey ( id, created_at ),
   werkbon_medewerkers ( persoon:personen ( naam ) )
@@ -131,6 +135,8 @@ export function useLopend() {
           eind: w.geplande_eind ?? w.geplande_start ?? w.datum,
           stand: klusstand(w),
           stillegReden: w.stilleg_reden ?? null,
+          vervolgSoort: w.vervolg_soort ?? null,
+          vervolgReden: w.vervolg_reden ?? null,
           ploeg: (w.werkbon_medewerkers ?? [])
             .map((wm: any) => wm.persoon?.naam)
             .filter(Boolean),

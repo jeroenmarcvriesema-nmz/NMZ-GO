@@ -13,10 +13,11 @@ import { Klusactiviteit } from '@/components/werkbon/Klusactiviteit'
 import {
   STANDEN, STANDVOLGORDE, UITLOOP, ASBEST, looptUit, isAsbest,
 } from '@/lib/klusstand'
+import { vervolgLabel } from '@/lib/vervolgwerk'
 import {
   IconUsers, IconKey, IconPhoto, IconListCheck, IconCheck, IconCamera,
   IconClockExclamation, IconBiohazard, IconChevronRight, IconRefresh,
-  IconExternalLink, IconPlayerPause,
+  IconExternalLink, IconPlayerPause, IconSpray,
 } from '@tabler/icons-react'
 
 /**
@@ -186,6 +187,19 @@ function Klusblok({ klus, open, onKlap, onOpen }: {
         )}>
           <IconPlayerPause className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
           <span className="break-words">{klus.stillegReden}</span>
+        </div>
+      )}
+
+      {/* Vervolgwerk. Blauw en niet rood: deze klus loopt door, er ligt
+          alleen nog werk van een ander soort. Hij stond hier eerder als
+          stilgelegd tussen — met een rood pauzeteken erbij. */}
+      {klus.vervolgSoort && (
+        <div className="flex items-start gap-1.5 mt-2 text-xs text-blue-700 dark:text-blue-300">
+          <IconSpray className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+          <span className="break-words">
+            <span className="font-semibold">{vervolgLabel(klus.vervolgSoort)}</span>
+            {klus.vervolgReden ? ` — ${klus.vervolgReden}` : ''}
+          </span>
         </div>
       )}
 

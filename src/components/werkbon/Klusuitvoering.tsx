@@ -10,7 +10,8 @@ import { PuntToevoegen } from '@/components/werkbon/PuntToevoegen'
 import { supabase } from '@/lib/supabase'
 import { berekenVoortgang, formatDatum, cn } from '@/lib/utils'
 import { standkleur } from '@/lib/klusstand'
-import { IconCheck, IconAlertCircle, IconCircleCheck, IconCalendar, IconListCheck } from '@tabler/icons-react'
+import { vervolgLabel } from '@/lib/vervolgwerk'
+import { IconCheck, IconAlertCircle, IconCircleCheck, IconCalendar, IconListCheck, IconSpray } from '@tabler/icons-react'
 import type { Werkbon } from '@/types'
 
 interface Props {
@@ -162,6 +163,21 @@ export function Klusuitvoering({
           </div>
           <div className="text-sm text-orange-700 dark:text-orange-200/80 mt-1">
             {werkbon.stilleg_reden}
+          </div>
+        </div>
+      )}
+
+      {/* Vervolgwerk is geen stilstand: de klus loopt door, er ligt
+          alleen nog werk van een ander soort. Blauw dus, en niet de
+          oranje balk hierboven — die zegt "hier kan niemand verder". */}
+      {werkbon.vervolg_soort && (
+        <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-300 dark:border-blue-500/30 rounded-lg p-4">
+          <div className="flex items-center gap-2 font-bold text-sm text-blue-800 dark:text-blue-300">
+            <IconSpray className="w-4 h-4 flex-shrink-0" />
+            {vervolgLabel(werkbon.vervolg_soort)}
+          </div>
+          <div className="text-sm text-blue-700 dark:text-blue-200/80 mt-1 break-words">
+            {werkbon.vervolg_reden}
           </div>
         </div>
       )}

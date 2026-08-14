@@ -1,5 +1,13 @@
 # NMZ GO — Changelog
 
+## "Nog spuiten/isoleren" is geen stilgelegde klus
+
+- **[FIX]** Er staan vier knoppen op de werkbon en alle vier riepen `werkbon_stilleggen()` aan. Voor **stilleggen** en **asbest** klopt dat — daar staat het werk stil. Voor **nog spuiten/isoleren** en **opnieuw inplannen/later** niet: dat zijn statussen op het bord in ClickUp, en de klus loopt gewoon door. Toch zetten ze `stilgelegd_op`, en omdat `klusstand()` die kolom als eerste leest ging de héle app erin mee — het kaartje werd rood met "Ligt stil", op de planning, op het dashboard, in de containerlijst en in de telling van wat er vastzit.
+- De twee vervolgknoppen gaan nu naar **`werkbon_vervolg_melden()`** (migratie 035). Die zet de status in ClickUp, legt vast wát er nog moet gebeuren en waarom, en **raakt `stilgelegd_op` niet aan**. De klus houdt zijn echte stand — bezig, niet gestart, klaar om af te ronden — en blijft als lopend werk meetellen.
+- De melding staat op de bon in een **blauw** blok in plaats van het oranje "ligt stil": nog spuiten/isoleren of opnieuw inplannen, met de toelichting en de status zoals hij op het bord staat. Ook zichtbaar op de werkbonkaart, op Lopend en op het scherm van de zwamsaneerder — die moet weten dat er nog iets ligt. Eén knop **"Vervolgwerk is gedaan"** haalt hem er weer af en zet de taak in ClickUp terug op de gewone status.
+- De twee vervolgknoppen zijn blauw geworden, zodat je vóór het klikken ziet dat ze iets anders doen dan de twee ernaast. De uitleg bij het vrije stilleggen zei dat je reden de ClickUp-status stuurt; er staat nu dat die knop de klus écht stillegt, en dat je voor de andere gevallen de blauwe knoppen hebt.
+- **Twee klussen stonden er al fout in** — Hugo de Grootlaan 7 en Muiderslotweg 222, allebei met "Nog spuiten/isoleren" — en worden door de migratie rechtgezet: hun toelichting verhuist mee, en ze liggen niet meer stil. Hun ClickUp-status was al goed, dus daar gaat niets naartoe.
+
 ## De containerlijst uit het dashboard, en punten weghalen dat werkt
 
 ### Containers & dixi's krijgen een eigen scherm

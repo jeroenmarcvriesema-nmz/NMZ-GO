@@ -185,7 +185,9 @@ const HANDLERS: Record<string, Handler> = {
     return await werkbonBijwerken(db, tenantId, werkbonId, soort)
   },
 
-  // Terugkoppeling naar ClickUp: stilgelegd, hervat of opgeleverd.
+  // Terugkoppeling naar ClickUp: stilgelegd, hervat, opgeleverd, of een
+  // van de twee soorten vervolgwerk (migratie 035 — die laatste twee
+  // zetten wél een status op het bord maar leggen de klus niet stil).
   //
   // Via de wachtrij en niet rechtstreeks vanuit de database, zodat een
   // storing bij ClickUp het stilleggen zelf nooit tegenhoudt. Ligt
@@ -198,10 +200,11 @@ const HANDLERS: Record<string, Handler> = {
     if (!tenantId || !werkbonId) {
       throw new OnverwerkbaarError('tenant_id en werkbon_id zijn allebei nodig')
     }
-    if (soort !== 'stilgelegd' && soort !== 'hervat' && soort !== 'opgeleverd') {
+    const bekend = ['stilgelegd', 'hervat', 'opgeleverd', 'spuiten_isoleren', 'opnieuw_inplannen'] as const
+    if (!(bekend as readonly string[]).includes(soort)) {
       throw new OnverwerkbaarError(`onbekende soort statuswijziging: ${soort}`)
     }
-    return await statusBijwerken(db, tenantId, werkbonId, soort)
+    return await statusBijwerken(db, tenantId, werkbonId, soort as typeof bekend[number])
   },
 }
 

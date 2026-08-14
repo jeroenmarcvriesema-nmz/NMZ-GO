@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 import {
   IconPlayerPlay, IconPlayerStop, IconCheck, IconPhoto, IconPlayerPause,
   IconCalendarRepeat, IconUsers, IconPlus, IconTrash, IconTruck, IconCircleCheck,
-  IconAlertTriangle,
+  IconAlertTriangle, IconSpray,
 } from '@tabler/icons-react'
 
 /**
@@ -48,6 +48,10 @@ const STIJL: Record<string, { icoon: typeof IconCheck; kleur: string }> = {
   punt_toegevoegd:    { icoon: IconPlus,         kleur: 'text-gray-400 dark:text-white/40' },
   punt_verwijderd:    { icoon: IconTrash,        kleur: 'text-gray-400 dark:text-white/40' },
   voorziening:        { icoon: IconTruck,        kleur: 'text-gray-400 dark:text-white/40' },
+  // Vervolgwerk is geen stilstand (migratie 035), dus ook niet rood.
+  // Blauw: er loopt nog iets, en het is bekend wát.
+  vervolg_gemeld:     { icoon: IconSpray,        kleur: 'text-blue-600 dark:text-blue-400' },
+  vervolg_afgerond:   { icoon: IconCheck,        kleur: 'text-green-600 dark:text-green-400' },
 }
 
 const WOORD: Record<string, string> = {
@@ -59,6 +63,8 @@ const WOORD: Record<string, string> = {
   punt_toegevoegd: 'Punt toegevoegd',
   punt_verwijderd: 'Punt verwijderd',
   voorziening: 'Container/dixi',
+  vervolg_gemeld: 'Vervolgwerk gemeld',
+  vervolg_afgerond: 'Vervolgwerk afgerond',
 }
 
 function tijdstip(iso: string): string {

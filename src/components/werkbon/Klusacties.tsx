@@ -7,6 +7,7 @@ import { toast } from '@/store/toastStore'
 import { useAuth } from '@/hooks/useAuth'
 import type { Werkbon } from '@/types'
 import { cn } from '@/lib/utils'
+import { vervolgLabel } from '@/lib/vervolgwerk'
 import {
   IconPlayerPause, IconPlayerPlay, IconCircleCheck,
   IconAlertTriangle, IconInfoCircle, IconCalendarRepeat,
@@ -32,30 +33,37 @@ interface Props {
  * geen foutmelding krijgt maar een duidelijke vraag.
  */
 /**
- * Waarmee een reden begint als de klus opnieuw ingepland moet worden.
+ * De vier knoppen, en het verschil dat er tussen zit.
  *
- * De database leidt de ClickUp-status af uit de tekst van de reden
- * (`statusUitReden`): staat "opnieuw inplannen" erin, dan gaat de taak
- * naar die status. Dat werkte al, maar je moest het maar net weten en
- * precies zo tikken. De knop zet het er nu zelf voor.
- */
-const OPNIEUW = 'Opnieuw inplannen'
-
-/**
- * De redenen die een eigen knop hebben.
+ * Ze zagen er alle vier hetzelfde uit en riepen alle vier
+ * `werkbon_stilleggen()` aan. Voor de eerste twee klopt dat: het werk
+ * ligt stil. Voor de andere twee niet — en dat is precies wat de
+ * eigenaar meldde. "Nog spuiten/isoleren" betekent dat het grondwerk
+ * klaar is en er nog gespoten of geïsoleerd moet worden; "opnieuw
+ * inplannen/later" dat er een nieuwe datum komt. In beide gevallen is
+ * er niets stilgelegd, maar zette de knop wél `stilgelegd_op` — en
+ * omdat `klusstand()` die kolom als eerste leest, werd de klus in de
+ * héle app rood met "Ligt stil": op de planning, op het dashboard, in
+ * de containerlijst.
  *
- * De reden blijft vrije tekst — wie een klus stillegt heeft haast — maar
- * deze drie komen zo vaak voor dat ze niet van een goed getypt woord
- * mogen afhangen. De knop zet het woord ervóór; `statusUitReden` in de
- * verwerker leest het en kiest de ClickUp-status.
+ * Sinds migratie 035 zijn het twee dingen:
  *
- * Asbest heeft er een gekregen omdat het de zwaarste is: daar hangt een
- * inventarisatie aan en mogelijk een gecertificeerde saneerder. Dat je
- * dat woord precies moet intypen om die status te raken, was een
- * onnodig risico op de verkeerde plek.
+ *   ● **stilleggen** (`werkbon_stilleggen`) — het werk staat stil, en
+ *     de app hoort dat te laten zien.
+ *   ● **vervolgwerk melden** (`werkbon_vervolg_melden`) — de klus loopt
+ *     door; er gaat alleen een status naar het bord in ClickUp zodat de
+ *     planner ziet wélk werk er nog ligt en wie hij nodig heeft.
+ *
+ * Bij stilleggen zet de knop nog steeds een vast woord vóór de reden:
+ * `statusUitReden` in de verwerker leest dat en kiest de ClickUp-status.
+ * Asbest heeft daarom een eigen knop — dat woord precies moeten intypen
+ * om de goede status te raken was een onnodig risico op de verkeerde
+ * plek. Bij vervolgwerk is dat niet nodig: daar staat de soort in de
+ * aanroep zelf.
  */
 const SOORTEN = {
   stilleggen: {
+    vervolg: null,
     prefix: null as string | null,
     knop: 'Klus stilleggen',
     titel: 'Klus stilleggen',
@@ -64,6 +72,7 @@ const SOORTEN = {
     melding: 'Klus stilgelegd, ClickUp wordt bijgewerkt',
   },
   asbest: {
+    vervolg: null,
     prefix: 'Asbest',
     knop: 'Asbest',
     titel: 'Asbest gevonden',
@@ -72,20 +81,22 @@ const SOORTEN = {
     melding: 'Klus op asbest gezet, ClickUp wordt bijgewerkt',
   },
   opnieuw: {
-    prefix: OPNIEUW,
+    vervolg: 'opnieuw_inplannen',
+    prefix: null,
     knop: 'Opnieuw inplannen',
-    titel: 'Klus opnieuw inplannen',
+    titel: 'Opnieuw inplannen/later',
     vraag: 'Waarom moet hij opnieuw ingepland worden?',
     voorbeeld: 'Bijvoorbeeld: bewoner niet thuis, vloer nog niet vrij',
-    melding: 'Klus staat op opnieuw inplannen, ClickUp wordt bijgewerkt',
+    melding: 'Op het bord gezet als opnieuw inplannen/later',
   },
   spuiten: {
-    prefix: 'Nog spuiten/isoleren',
+    vervolg: 'spuiten_isoleren',
+    prefix: null,
     knop: 'Nog spuiten/isoleren',
-    titel: 'Nog spuiten of isoleren',
+    titel: 'Nog spuiten/isoleren',
     vraag: 'Wat moet er nog gebeuren?',
     voorbeeld: 'Bijvoorbeeld: bodem is klaar, isolatie volgt volgende week',
-    melding: 'Klus staat op nog spuiten/isoleren, ClickUp wordt bijgewerkt',
+    melding: 'Op het bord gezet als nog spuiten/isoleren',
   },
 } as const
 
@@ -109,20 +120,31 @@ export function Klusacties({ werkbon, onKlaar }: Props) {
 
   const stil = Boolean(werkbon.stilgelegd_op)
   const opgeleverd = Boolean(werkbon.opgeleverd_op)
-  // Een klus die opnieuw ingepland moet worden ligt óók stil, maar om
-  // een andere reden. Dat verschil hoort op het scherm te staan.
-  const wachtOpPlanning = stil && (werkbon.stilleg_reden ?? '').toLowerCase().startsWith(OPNIEUW.toLowerCase())
+  const vervolg = werkbon.vervolg_soort ?? null
 
-  const stilleggen = async () => {
+  /**
+   * Eén knop, twee bestemmingen.
+   *
+   * Stilleggen en asbest gaan naar `werkbon_stilleggen` en zetten de
+   * klus stil. De andere twee gaan naar `werkbon_vervolg_melden` en
+   * raken `stilgelegd_op` niet aan — die zetten alleen een status op
+   * het bord in ClickUp.
+   */
+  const versturen = async () => {
     if (reden.trim().length < 3) return
     const soort = SOORTEN[modal!]
-    const volledig = soort.prefix ? `${soort.prefix}: ${reden.trim()}` : reden.trim()
 
     setBezig(true)
-    const { data, error } = await supabase.rpc('werkbon_stilleggen', {
-      p_werkbon: werkbon.id,
-      p_reden: volledig,
-    })
+    const { data, error } = soort.vervolg
+      ? await supabase.rpc('werkbon_vervolg_melden', {
+        p_werkbon: werkbon.id,
+        p_soort: soort.vervolg,
+        p_reden: reden.trim(),
+      })
+      : await supabase.rpc('werkbon_stilleggen', {
+        p_werkbon: werkbon.id,
+        p_reden: soort.prefix ? `${soort.prefix}: ${reden.trim()}` : reden.trim(),
+      })
     setBezig(false)
 
     if (error) {
@@ -132,6 +154,9 @@ export function Klusacties({ werkbon, onKlaar }: Props) {
 
     setModal(null)
     setReden('')
+    // Alleen stilleggen zoekt naar overlap: dat is de vraag "wie komt
+    // hierdoor ergens anders in de knel". Bij vervolgwerk schuift er
+    // niets, dus valt er ook niets in de knel te komen.
     const gevonden = (data as any)?.overlap ?? []
     setOverlap(gevonden)
 
@@ -140,6 +165,15 @@ export function Klusacties({ werkbon, onKlaar }: Props) {
     toast.goed(gevonden.length > 0
       ? `${soort.titel} — let op ${gevonden.length} mogelijke overlap`
       : soort.melding)
+    onKlaar()
+  }
+
+  const vervolgAfronden = async () => {
+    setBezig(true)
+    const { error } = await supabase.rpc('werkbon_vervolg_afronden', { p_werkbon: werkbon.id })
+    setBezig(false)
+    if (error) { toast.fout(error.message || 'Dat lukte niet.'); return }
+    toast.goed('Vervolgwerk afgerond, ClickUp wordt bijgewerkt')
     onKlaar()
   }
 
@@ -176,11 +210,44 @@ export function Klusacties({ werkbon, onKlaar }: Props) {
             <IconAlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-orange-600 dark:text-orange-400" />
             <div className="min-w-0">
               <div className="text-sm font-bold text-orange-800 dark:text-orange-300">
-                {wachtOpPlanning ? 'Deze klus moet opnieuw ingepland worden' : 'Deze klus ligt stil'}
+                Deze klus ligt stil
               </div>
               <div className="text-sm text-orange-700 dark:text-orange-200/80 mt-0.5">
                 {werkbon.stilleg_reden}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Vervolgwerk, en dus blauw en niet oranje. Er ligt niets stil:
+            er moet nog iets gebeuren en het is bekend wát. Dit stond
+            hiervoor in dezelfde oranje balk met "Deze klus ligt stil"
+            erboven, en dat was gewoon niet waar. */}
+        {vervolg && (
+          <div className="flex items-start gap-2 mb-4 p-3 rounded-sm bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30">
+            <IconSpray className="w-4 h-4 flex-shrink-0 mt-0.5 text-blue-600 dark:text-blue-400" />
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-bold text-blue-800 dark:text-blue-300">
+                {vervolgLabel(vervolg)}
+              </div>
+              <div className="text-sm text-blue-700 dark:text-blue-200/80 mt-0.5 break-words">
+                {werkbon.vervolg_reden}
+              </div>
+              <div className="text-xs text-blue-600/80 dark:text-blue-300/60 mt-1">
+                De klus loopt door — dit is de status op het bord in ClickUp
+                {werkbon.clickup_status ? `: ${werkbon.clickup_status}` : ''}.
+              </div>
+              {!opgeleverd && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="mt-2.5 min-h-[44px]"
+                  loading={bezig}
+                  onClick={vervolgAfronden}
+                >
+                  <IconCircleCheck className="w-4 h-4" /> Vervolgwerk is gedaan
+                </Button>
+              )}
             </div>
           </div>
         )}
@@ -200,17 +267,20 @@ export function Klusacties({ werkbon, onKlaar }: Props) {
               <IconPlayerPlay className="w-4 h-4" /> Klus hervatten
             </Button>
           ) : (
-            // Vier redenen, vier knoppen. Ze zetten alle vier dezelfde
-            // aanroep in gang; het verschil is het woord dat vóór de
-            // reden komt en dus welke status de taak in ClickUp krijgt.
-            // Tot nu toe moest je dat woord precies intypen — bij asbest
-            // was dat een onnodig risico op de verkeerde plek.
+            // Vier knoppen, twee soorten. De eerste twee leggen de klus
+            // stil, de laatste twee melden vervolgwerk en laten hem
+            // gewoon doorlopen — dat verschil zat er hiervoor niet in,
+            // en alle vier zetten `stilgelegd_op`.
             //
             // flex-wrap en niet vier op een rij: op een telefoon van 390
             // pixels passen er twee naast elkaar, en dan liever twee
             // hele knoppen dan vier afgeknepen.
+            //
+            // Staat er al vervolgwerk op de bon, dan zijn die twee
+            // knoppen weg: de melding staat hierboven met een knop om
+            // hem af te ronden.
             <div className="flex flex-wrap gap-2">
-              {(['stilleggen', 'asbest', 'opnieuw', 'spuiten'] as Soort[]).map((soort) => {
+              {(['stilleggen', 'asbest', ...(vervolg ? [] : ['opnieuw', 'spuiten'])] as Soort[]).map((soort) => {
                 const Pictogram = PICTOGRAM[soort]
                 return (
                   <Button
@@ -225,6 +295,12 @@ export function Klusacties({ werkbon, onKlaar }: Props) {
                       soort === 'asbest' &&
                         'border-orange-400 text-orange-700 hover:bg-orange-50 ' +
                         'dark:border-orange-500/50 dark:text-orange-400 dark:hover:bg-orange-500/10',
+                      // De twee vervolgknoppen in blauw: ze doen iets
+                      // anders dan de twee ernaast, en dat mag je zien
+                      // vóórdat je klikt.
+                      SOORTEN[soort].vervolg &&
+                        'border-blue-300 text-blue-700 hover:bg-blue-50 ' +
+                        'dark:border-blue-500/40 dark:text-blue-400 dark:hover:bg-blue-500/10',
                     )}
                     disabled={opgeleverd}
                     onClick={() => setModal(soort)}
@@ -292,9 +368,9 @@ export function Klusacties({ werkbon, onKlaar }: Props) {
             {modal === 'opnieuw' ? (
               <>
                 {werkbon.adres} gaat naar <em>opnieuw inplannen/later</em> in ClickUp.
-                De klus blijft bestaan met al zijn punten en foto's; hij wacht op
-                een nieuwe datum van de planner. Zet die datum daarna hieronder
-                bij <strong>Planning</strong> en hervat de klus.
+                De klus blijft bestaan met al zijn punten en foto's en wordt
+                <strong> niet stilgelegd</strong> — hij wacht op een nieuwe datum
+                van de planner. Zet die datum hieronder bij <strong>Planning</strong>.
               </>
             ) : modal === 'asbest' ? (
               <>
@@ -308,7 +384,8 @@ export function Klusacties({ werkbon, onKlaar }: Props) {
                 {werkbon.adres} gaat naar <em>nog spuiten/isoleren</em> in ClickUp.
                 Het grondwerk is klaar, er moet alleen nog gespoten of geïsoleerd
                 worden — zo ziet de planner meteen wélk werk er nog ligt en wie
-                daarvoor nodig is.
+                daarvoor nodig is. De klus wordt <strong>niet stilgelegd</strong>:
+                hij loopt door en blijft als lopend werk meetellen.
               </>
             ) : (
               <>
@@ -337,10 +414,11 @@ export function Klusacties({ werkbon, onKlaar }: Props) {
                 woord al vast en is deze uitleg ruis. */}
             {modal === 'stilleggen' && (
               <p className="text-xs text-gray-400 dark:text-white/40 mt-1.5">
-                Je reden stuurt de ClickUp-status: <strong>asbest</strong>,
-                <strong> spuiten</strong> of <strong>isoleren</strong> hebben een
-                eigen status, de rest wordt "on hold". Voor die gevallen zijn er
-                ook knoppen — dan hoef je het niet precies zo te tikken.
+                Deze knop legt de klus écht stil — hij wordt overal als
+                stilgelegd geteld. Moet er alleen nog gespoten of geïsoleerd
+                worden, of komt er een nieuwe datum? Gebruik dan de blauwe
+                knoppen: die zetten wél de status in ClickUp, maar leggen de
+                klus niet stil.
               </p>
             )}
           </div>
@@ -353,7 +431,7 @@ export function Klusacties({ werkbon, onKlaar }: Props) {
               variant="primary"
               loading={bezig}
               disabled={reden.trim().length < 3}
-              onClick={stilleggen}
+              onClick={versturen}
             >
               {modal && (() => {
                 const Pictogram = PICTOGRAM[modal]

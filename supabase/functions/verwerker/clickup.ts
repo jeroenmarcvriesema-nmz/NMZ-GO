@@ -1383,13 +1383,13 @@ export async function statusBijwerken(
   db: SupabaseClient,
   tenantId: string,
   werkbonId: string,
-  soort: 'stilgelegd' | 'hervat' | 'opgeleverd',
+  soort: 'stilgelegd' | 'hervat' | 'opgeleverd' | 'spuiten_isoleren' | 'opnieuw_inplannen',
 ): Promise<Record<string, unknown>> {
   const i = await geefInstellingen(db, tenantId)
 
   const { data: bon } = await db
     .from('werkbonnen')
-    .select('id, adres, clickup_taak_id, stilleg_reden, geplande_eind')
+    .select('id, adres, clickup_taak_id, stilleg_reden, vervolg_reden, geplande_eind')
     .eq('id', werkbonId)
     .maybeSingle()
   if (!bon) throw new Error(`werkbon ${werkbonId} bestaat niet`)
@@ -1418,6 +1418,21 @@ export async function statusBijwerken(
   } else if (soort === 'hervat') {
     status = i.trigger_status
     tekst = 'Weer hervat in NMZ GO.'
+  } else if (soort === 'spuiten_isoleren' || soort === 'opnieuw_inplannen') {
+    // Vervolgwerk, en geen stilstand (migratie 035). De klus loopt door
+    // in NMZ GO — `stilgelegd_op` blijft leeg — maar op het bord hoort
+    // te staan wélk werk er nog ligt, want daar plant de planner op.
+    // De reden komt uit `vervolg_reden` en niet uit `stilleg_reden`:
+    // die tweede hoort bij een klus die écht stilligt, en een klus kan
+    // allebei tegelijk hebben.
+    const reden = bon.vervolg_reden ?? 'geen toelichting vastgelegd'
+    if (soort === 'spuiten_isoleren') {
+      status = i.status_spuiten_isoleren ?? i.status_stilgelegd ?? 'on hold'
+      tekst = `In NMZ GO gemeld: er moet nog gespoten of geïsoleerd worden.\n${reden}`
+    } else {
+      status = i.status_opnieuw_inplannen ?? i.status_stilgelegd ?? 'on hold'
+      tekst = `In NMZ GO gemeld: deze klus moet opnieuw ingepland worden.\n${reden}\nDe nieuwe datum wordt door de planner bepaald.`
+    }
   } else {
     // De afspraak met de eigenaar: "opgeleverd" als het fotobewijs bij
     // ClickUp staat, anders "wacht op foto's". De status op het bord

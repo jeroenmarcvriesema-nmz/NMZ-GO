@@ -61,6 +61,17 @@ export interface Werkbon {
   stilleg_reden?: string | null
   opgeleverd_op?: string | null
 
+  // ── Vervolgwerk (migratie 035) ──
+  // "Nog spuiten/isoleren" en "opnieuw inplannen/later" zijn statussen
+  // op het ClickUp-bord, geen stilstand: de klus loopt door. Ze zetten
+  // daarom géén stilgelegd_op — dat zou de bon in de hele app rood
+  // maken als "Ligt stil", en dat is hij niet.
+  vervolg_soort?: 'spuiten_isoleren' | 'opnieuw_inplannen' | null
+  vervolg_reden?: string | null
+  vervolg_op?: string | null
+  /** De status zoals hij op het bord staat. Door de verwerker bevestigd. */
+  clickup_status?: string | null
+
   // ── De drie tekstvelden van het opleverrapport (migratie 002/025) ──
   opmerkingen_bewoners?: string | null
   extra_werkzaamheden?: string | null

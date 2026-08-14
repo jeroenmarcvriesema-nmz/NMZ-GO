@@ -5,10 +5,11 @@ import { ProgressBar } from '@/components/ui/ProgressBar'
 import { berekenVoortgang, formatDatumKort, cn } from '@/lib/utils'
 import { standkleur, looptUit, isAsbest, KLEURWAS, UITLOOP, ASBEST } from '@/lib/klusstand'
 import { weeknummer } from '@/lib/planning'
+import { vervolgLabel } from '@/lib/vervolgwerk'
 import type { Werkbon } from '@/types'
 import {
   IconCalendar, IconUsers, IconListCheck, IconPhoto,
-  IconKey, IconAlertTriangle, IconFileText, IconMap2,
+  IconKey, IconAlertTriangle, IconFileText, IconMap2, IconSpray,
 } from '@tabler/icons-react'
 
 /** "wk 33" of "wk 32–34" als de klus over meerdere weken loopt. */
@@ -90,6 +91,21 @@ export function WerkbonKaart({ werkbon, linkPrefix = '/werkbonnen', looptDoor }:
         <div className="flex items-start gap-1.5 mb-3 text-xs text-orange-700 dark:text-orange-300">
           <IconAlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
           <span className="leading-snug">{werkbon.stilleg_reden}</span>
+        </div>
+      )}
+
+      {/* Vervolgwerk in het blauw en niet in het oranje: deze klus ligt
+          niet stil, er ligt alleen nog werk van een ander soort. Hij
+          hield hiervoor de badge "Ligt stil" en een rood kaartje —
+          precies wat er niet klopte. Nu draagt hij zijn echte stand en
+          staat hier wát er nog moet gebeuren. */}
+      {werkbon.vervolg_soort && (
+        <div className="flex items-start gap-1.5 mb-3 text-xs text-blue-700 dark:text-blue-300">
+          <IconSpray className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+          <span className="leading-snug">
+            <span className="font-semibold">{vervolgLabel(werkbon.vervolg_soort)}</span>
+            {werkbon.vervolg_reden ? ` — ${werkbon.vervolg_reden}` : ''}
+          </span>
         </div>
       )}
 
