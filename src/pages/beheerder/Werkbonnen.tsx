@@ -211,7 +211,13 @@ export default function Werkbonnen() {
           }
         />
       ) : inHuidigeWeek ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        /* Twee kolommen pas vanaf lg, niet vanaf md. Op md verschijnt
+           óók de zijbalk van 240 px, en samen met de paginamarge bleef
+           er per kaart 216 px over — smaller dan op een telefoon. Daar
+           liep het adres achter de statusbadge langs en brak "wk 33–34"
+           over drie regels. Vanaf lg is een kaart 344 px; op een tablet
+           staat hij nu op de volle breedte. */
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {gefilterd.map((w) => <WerkbonKaart key={w.id} werkbon={w} />)}
         </div>
       ) : (
@@ -222,7 +228,7 @@ export default function Werkbonnen() {
           {groepeerPerWeek(gefilterd).map((blok) => (
             <div key={blok.maandag.toISOString()}>
               <Weekkop maandag={blok.maandag} nummer={blok.nummer} aantal={blok.items.length} />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-3">
                 {blok.items.map(({ bon, begintHier }) => (
                   <WerkbonKaart key={bon.id} werkbon={bon} looptDoor={!begintHier} />
                 ))}
