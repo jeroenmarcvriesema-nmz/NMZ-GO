@@ -337,7 +337,35 @@ wit als de inhoud eronder) en vandaag licht op als hele kolom in plaats
 van alleen bovenaan. Alles binnen de regel uit `PRODUCT_VISION.md`: de
 basis blijft neutraal, en elke kleur zegt iets.
 
-Nog niet gedaan, bewust: er zijn geen tests bijgekomen. Dit is
+**Containers & dixi's staan op een eigen scherm.** De volledige lijst
+hing als kaart halverwege het dashboard. Nu: `/voorzieningen`
+(`pages/beheerder/Voorzieningen.tsx`, slot `'kantoor'`, in de zijbalk
+onder Uitloop en in het "Meer"-blad op een telefoon), met op het
+dashboard drie aantikbare tegels uit
+`components/dashboard/Voorzieningentegels.tsx`, direct onder de
+werkvoorraad. `components/dashboard/Voorzieningenkaart.tsx` is weg.
+
+De dringendheid heeft een eigen tabel gekregen — `src/lib/bestelstand.ts`,
+de tegenhanger van `klusstand.ts` maar dan voor spullen in plaats van
+klussen. `bestelstand(termijn, stapel)` geeft het woord ("3 dagen over
+de datum", "begint morgen") en `URGENTIES` de kleuren: rood te laat,
+oranje vandaag of morgen, blauw binnen drie dagen, grijs later. Geen
+geel, en een test bewaakt dat. Twaalf tests in
+`tests/bestelstand.test.ts`. De hook `useVoorzieningen` is niet
+gewijzigd — die blijft van de andere sessie.
+
+**De knop "Punt weg" was nergens te zien.** Hij stond samen met de
+fotoplichtknop binnen `!readOnly` in `TaakItem`. Op `WerkbonDetail`
+staat `readOnly` altijd aan (kantoor vinkt niet af) en op
+`Klusuitvoering` staat hij uit voor de zwamsaneerder, die
+`magWerkBeheren` niet heeft — de knop bestond dus wel en was op geen
+enkel scherm bereikbaar. De beheerknoppen staan nu in een eigen blok,
+achter `magWerkBeheren && !gesloten`. `gesloten` is een nieuwe prop en
+betekent "opgeleverd": dezelfde grens die
+`werkbon_punt_verwijderen()` zelf trekt (migratie 032). Beide schermen
+geven hem door. Geen migratie nodig — de RPC bestond al.
+
+Nog niet gedaan, bewust: er zijn geen rendertests bijgekomen. Dit is
 renderwerk, en er is geen jsdom of testing-library in het project —
 daarvoor zou een dependency erbij moeten, en dat vraagt goedkeuring.
 Gecontroleerd is er met een tijdelijke voorbeeldpagina in Chromium (390

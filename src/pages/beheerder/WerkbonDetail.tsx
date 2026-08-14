@@ -187,7 +187,18 @@ export default function WerkbonDetail() {
             }
           />
           {werkbon.taken?.map((taak) => (
-            <TaakItem key={taak.id} taak={taak} werkbonId={werkbon.id} readOnly onRefresh={refetch} />
+            // `readOnly` gaat over afvinken en fotograferen: dat doet de
+            // ploeg op de klus, niet kantoor achter een bureau. De
+            // beheerknoppen — punt eraf, fotoplicht — staan er los van
+            // en verschijnen zolang de bon niet is opgeleverd.
+            <TaakItem
+              key={taak.id}
+              taak={taak}
+              werkbonId={werkbon.id}
+              readOnly
+              gesloten={Boolean(werkbon.opgeleverd_op)}
+              onRefresh={refetch}
+            />
           ))}
           {!werkbon.taken?.length && <p className="text-sm text-gray-400 dark:text-white/40 text-center py-6">Nog geen taken.</p>}
         </Card>

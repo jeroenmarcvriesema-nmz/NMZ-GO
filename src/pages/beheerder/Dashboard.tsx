@@ -6,7 +6,7 @@ import { MeldingItem } from '@/components/dashboard/MeldingItem'
 import { ProjectTabel } from '@/components/dashboard/ProjectTabel'
 import { ActivityFeed } from '@/components/dashboard/ActivityFeed'
 import { Standbalk } from '@/components/dashboard/Standbalk'
-import { Voorzieningenkaart } from '@/components/dashboard/Voorzieningenkaart'
+import { Voorzieningentegels } from '@/components/dashboard/Voorzieningentegels'
 import { Weekdoorkijk } from '@/components/dashboard/Weekdoorkijk'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
@@ -120,7 +120,7 @@ export default function Dashboard() {
           Een tegel op nul gaat nergens heen. Doorklikken naar een lege
           lijst is een belofte die niet wordt waargemaakt, en het haalt
           bovendien het optillen bij hover weg — zie KpiCard. */}
-      <div className="grid grid-cols-2 xl:grid-cols-5 gap-3 sm:gap-4 mb-8 sm:mb-10">
+      <div className="grid grid-cols-2 xl:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <KpiCard
           label={STANDEN.stilgelegd.label}
           value={v.stilgelegd}
@@ -167,6 +167,18 @@ export default function Dashboard() {
         />
       </div>
 
+      {/* Wat er bij een derde partij besteld en afgemeld moet worden.
+          Direct onder de werkvoorraad, want dit is het enige blok op
+          dit scherm waar een dag uitstel meteen geld kost: huur die
+          doorloopt, of een ploeg die op dag één zonder container staat.
+          Het stond halverwege de pagina als volledige lijst — je moest
+          er langs alles heen naartoe scrollen wat er niet over ging.
+          Het kopje staat in het component zelf, zodat het meeverdwijnt
+          zolang de lijst nog onderweg is. */}
+      <div className="mb-8 sm:mb-10">
+        <Voorzieningentegels />
+      </div>
+
       {/* De vorm van de werkvoorraad, en hoe de week eruitziet.
           Vijf getallen vertellen hoevéél er is maar niet hoe het staat:
           of de voorraad vooral uit wachtend werk bestaat of uit klussen
@@ -200,14 +212,6 @@ export default function Dashboard() {
           />
           <Weekdoorkijk dagen={data.doorkijk} onDag={() => navigate('/planning')} />
         </div>
-      </div>
-
-      {/* Wat er bij een derde partij besteld en afgemeld moet worden.
-          Staat bewust boven het projectoverzicht: dit is het enige blok
-          op dit scherm waar een dag uitstel direct geld kost — huur die
-          doorloopt, of een ploeg die op dag één zonder container staat. */}
-      <div className="mb-6 xl:mb-8">
-        <Voorzieningenkaart />
       </div>
 
       {/* Projectoverzicht + Activiteit */}
