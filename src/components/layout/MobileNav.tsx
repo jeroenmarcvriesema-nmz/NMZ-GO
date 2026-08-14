@@ -10,6 +10,7 @@ import {
   IconCalendarWeek,
   IconMapPin,
   IconClockExclamation,
+  IconTruck,
   IconUsers,
   IconHome,
   IconClipboardList,
@@ -146,6 +147,7 @@ export function MobileNav() {
                   {magGebruikersBeheren && (
                     <MeerRegel icon={<IconUsers />} label="Team" onClick={() => ga('/medewerkers')} />
                   )}
+                  <MeerRegel icon={<IconTruck />} label="Containers &amp; dixi's" onClick={() => ga('/voorzieningen')} />
                   <MeerRegel icon={<IconArchive />} label="Archief" onClick={() => ga('/archief')} />
                   <MeerRegel icon={<IconFileExport />} label="Rapporten" onClick={() => ga('/rapporten')} />
                   <MeerRegel icon={<IconFolderOpen />} label="Projecten" onClick={() => ga('/projecten')} />

@@ -18,6 +18,7 @@ import {
   IconClipboardCheck,
   IconArchive,
   IconClockExclamation,
+  IconTruck,
   IconBug,
   IconLogout,
   IconSun,
@@ -83,6 +84,10 @@ export function Sidebar() {
 
             <NavItem to="/lopend"    icon={<IconActivity />} label="Lopend" />
             <NavItem to="/uitloop"   icon={<IconClockExclamation />} label="Uitloop" />
+            {/* Containers en dixi's: een eigen scherm en niet een kaart
+                op het dashboard. Het is een lijst die je afwerkt, geen
+                getal dat je afleest. */}
+            <NavItem to="/voorzieningen" icon={<IconTruck />} label="Containers" />
 
             <NavSection label="Werkbonnen" />
             <NavItem to="/werkbonnen"       icon={<IconMapPin />} label="Alle werkbonnen" />

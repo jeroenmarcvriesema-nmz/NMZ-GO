@@ -38,6 +38,7 @@ const Rapporten        = lazy(() => import('@/pages/beheerder/Rapporten'))
 const Archief          = lazy(() => import('@/pages/beheerder/Archief'))
 const Uitloop          = lazy(() => import('@/pages/beheerder/Uitloop'))
 const Lopend           = lazy(() => import('@/pages/beheerder/Lopend'))
+const Voorzieningen    = lazy(() => import('@/pages/beheerder/Voorzieningen'))
 const MijnWerkbonnen   = lazy(() => import('@/pages/medewerker/MijnWerkbonnen'))
 const MijnWeek         = lazy(() => import('@/pages/medewerker/MijnWeek'))
 const MijnBonnen       = lazy(() => import('@/pages/medewerker/MijnBonnen'))
@@ -198,6 +199,7 @@ export default function App() {
             <Route path="/archief"          element={<KantoorGuard><Archief /></KantoorGuard>} />
             <Route path="/uitloop"          element={<KantoorGuard><Uitloop /></KantoorGuard>} />
             <Route path="/lopend"           element={<KantoorGuard><Lopend /></KantoorGuard>} />
+            <Route path="/voorzieningen"    element={<KantoorGuard><Voorzieningen /></KantoorGuard>} />
             <Route path="/storingen"        element={<EigenaarGuard><Storingen /></EigenaarGuard>} />
 
             <Route path="/mijn-werkbonnen" element={<AuthGuard><MijnWerkbonnen /></AuthGuard>} />

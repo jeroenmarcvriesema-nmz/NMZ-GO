@@ -12,11 +12,21 @@ import { IconCamera, IconCameraOff, IconCheck, IconSquare, IconPhoto, IconAlertC
 interface TaakItemProps {
   taak: Taak
   werkbonId: string
+  /** Lezen mag, afvinken en fotograferen niet. Zegt niets over kantoor. */
   readOnly?: boolean
+  /**
+   * De klus is opgeleverd — het dossier is dicht.
+   *
+   * Dan kan er ook door kantoor geen punt meer af: dat is wat de
+   * opdrachtgever heeft gezien. `werkbon_punt_verwijderen()` weigert
+   * het (migratie 032), en een knop die gegarandeerd een foutmelding
+   * oplevert hoort er niet te staan.
+   */
+  gesloten?: boolean
   onRefresh: () => void
 }
 
-export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps) {
+export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: TaakItemProps) {
   const { toggleVoltooid, zetFotoVereist } = useTaken()
   const { upload, getUrls } = useFotos()
   const { profile, magWerkBeheren } = useAuth()
@@ -252,6 +262,17 @@ export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps
               <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFotoUpload} disabled={uploading} />
             </label>
           )}
+
+          {/* Bij de foto's en niet bij de knoppen: dit gaat over wat je
+              hierboven wél of niet ziet staan. Het stond in het blok
+              met de afvinkknop, en dus zag kantoor op de werkbon niets
+              als de plaatjes het niet deden. */}
+          {fotoStand === 'mislukt' && (
+            <span className="w-full text-xs text-brand-red dark:text-red-400 flex items-start gap-1 mt-1">
+              <IconAlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+              De foto&apos;s konden niet worden geladen — ze zijn wél opgeslagen.
+            </span>
+          )}
         </div>
       )}
 
@@ -285,90 +306,95 @@ export function TaakItem({ taak, werkbonId, readOnly, onRefresh }: TaakItemProps
               {fotos.length} {fotos.length === 1 ? 'foto' : "foto's"} · nog niet afgevinkt
             </span>
           )}
+        </div>
+      )}
 
-          {fotoStand === 'mislukt' && (
-            <span className="text-xs text-brand-red dark:text-red-400 flex items-center gap-1">
-              <IconAlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-              De foto&apos;s konden niet worden geladen — ze zijn wél opgeslagen.
-            </span>
-          )}
+      {/* Wat kantoor met dit punt kan.
+          Dit stond binnen `!readOnly` en was daarmee overal onzichtbaar:
+          op de werkbon van kantoor staat `readOnly` altijd aan — dat
+          scherm vinkt niet af — en op het scherm waar het wél uit staat
+          zit de zwamsaneerder, die `magWerkBeheren` niet heeft. De knop
+          bestond dus wel en was nergens te zien.
 
-          {/* Alleen voor kantoor, en niet meer als de bon is afgerond:
-              dan is de lijst waar de zwamsaneerder voor getekend heeft
-              gesloten. De database weigert het ook, maar een knop die
-              gegarandeerd een foutmelding oplevert hoort er niet te
-              staan. */}
-          {magWerkBeheren && !readOnly && (
-            bevestigWeg ? (
-              <span className="flex items-center gap-1.5">
-                <button
-                  onClick={verwijderPunt}
-                  disabled={verwijderBezig}
-                  className="text-xs font-bold flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-brand-red bg-brand-red text-white transition-all duration-150 ease-brand disabled:opacity-50"
-                >
-                  <IconTrash className="w-3.5 h-3.5" />
-                  {verwijderBezig ? 'Bezig…' : 'Definitief weg'}
-                </button>
-                <button
-                  onClick={() => setBevestigWeg(false)}
-                  className="text-xs font-semibold px-2.5 py-1.5 rounded-sm border border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50"
-                >
-                  Annuleren
-                </button>
-              </span>
-            ) : (
+          Twee dingen die niets met de werkdag te maken hebben: een punt
+          eraf halen dat de parser verkeerd las of dat toch niet
+          doorgaat, en de fotoplicht wisselen. Ze horen bij het beheren
+          van de opdracht, niet bij het uitvoeren ervan. */}
+      {magWerkBeheren && !gesloten && (
+        <div className="flex items-center gap-2 mt-3 pl-10 flex-wrap">
+          <button
+            onClick={wisselFotoplicht}
+            disabled={fotoplichtBezig}
+            className={cn(
+              'text-xs font-semibold flex items-center gap-1.5 min-h-[36px] px-2.5 rounded-sm border transition-all duration-150 ease-brand disabled:opacity-50',
+              taak.foto_vereist
+                ? 'border-brand-yellow bg-brand-yellow-light dark:bg-brand-yellow/10 text-brand-yellow-dark dark:text-brand-yellow'
+                : 'border-gray-200 dark:border-white/10 text-gray-400 dark:text-white/40'
+            )}
+            title={taak.foto_vereist
+              ? 'Fotoplicht uitzetten voor dit punt'
+              : 'Fotoplicht weer aanzetten'}
+          >
+            {taak.foto_vereist
+              ? <><IconCamera className="w-3.5 h-3.5" /> Foto verplicht</>
+              : <><IconCameraOff className="w-3.5 h-3.5" /> Geen foto nodig</>}
+          </button>
+
+          {/* Twee tikken, want dit is onomkeerbaar. Eén tik op een
+              prullenbak naast een afvinkvakje is te makkelijk gebeurd —
+              zeker op een telefoon met handschoenen aan. */}
+          {bevestigWeg ? (
+            <span className="flex items-center gap-1.5">
               <button
-                onClick={() => setBevestigWeg(true)}
-                title="Dit punt van de werkbon halen"
-                className="text-xs font-semibold flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-gray-200 dark:border-white/10 text-gray-400 dark:text-white/40 hover:border-brand-red hover:text-brand-red transition-all duration-150 ease-brand"
+                onClick={verwijderPunt}
+                disabled={verwijderBezig}
+                className="text-xs font-bold flex items-center gap-1.5 min-h-[36px] px-2.5 rounded-sm border border-brand-red bg-brand-red text-white transition-all duration-150 ease-brand disabled:opacity-50"
               >
-                <IconTrash className="w-3.5 h-3.5" /> Punt weg
+                <IconTrash className="w-3.5 h-3.5" />
+                {verwijderBezig ? 'Bezig…' : 'Definitief weg'}
               </button>
-            )
-          )}
-
-          {magWerkBeheren && (
+              <button
+                onClick={() => setBevestigWeg(false)}
+                className="text-xs font-semibold min-h-[36px] px-2.5 rounded-sm border border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50"
+              >
+                Annuleren
+              </button>
+            </span>
+          ) : (
             <button
-              onClick={wisselFotoplicht}
-              disabled={fotoplichtBezig}
-              className={cn(
-                'text-xs font-semibold flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border transition-all duration-150 ease-brand disabled:opacity-50',
-                taak.foto_vereist
-                  ? 'border-brand-yellow bg-brand-yellow-light dark:bg-brand-yellow/10 text-brand-yellow-dark dark:text-brand-yellow'
-                  : 'border-gray-200 dark:border-white/10 text-gray-400 dark:text-white/40'
-              )}
-              title={taak.foto_vereist
-                ? 'Fotoplicht uitzetten voor dit punt'
-                : 'Fotoplicht weer aanzetten'}
+              onClick={() => setBevestigWeg(true)}
+              title="Dit punt van de werkbon halen"
+              className="text-xs font-semibold flex items-center gap-1.5 min-h-[36px] px-2.5 rounded-sm border border-gray-200 dark:border-white/10 text-gray-400 dark:text-white/40 hover:border-brand-red hover:text-brand-red hover:bg-brand-red-light dark:hover:bg-brand-red/10 transition-all duration-150 ease-brand"
             >
-              {taak.foto_vereist
-                ? <><IconCamera className="w-3.5 h-3.5" /> Foto verplicht</>
-                : <><IconCameraOff className="w-3.5 h-3.5" /> Geen foto nodig</>}
+              <IconTrash className="w-3.5 h-3.5" /> Punt weg
             </button>
           )}
+        </div>
+      )}
 
-          {fout && (
-            <div className="w-full flex flex-col gap-2 text-xs text-brand-red dark:text-red-400 bg-brand-red-light dark:bg-brand-red/10 border border-brand-red rounded-sm p-2.5 mt-1">
-              <div className="flex items-start gap-2">
-                <IconAlertCircle className="w-4 h-4 flex-shrink-0" />
-                <span className="leading-relaxed">{fout}</span>
-              </div>
+      {/* Buiten allebei de blokken: een mislukte verwijdering door
+          kantoor moet ook te lezen zijn op een scherm waar de
+          afvinkknop niet staat. */}
+      {fout && (
+        <div className="flex flex-col gap-2 text-xs text-brand-red dark:text-red-400 bg-brand-red-light dark:bg-brand-red/10 border border-brand-red rounded-sm p-2.5 mt-3 ml-10">
+          <div className="flex items-start gap-2">
+            <IconAlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span className="leading-relaxed">{fout}</span>
+          </div>
 
-              {/* Alleen als er ook echt iets klaarstaat om te versturen.
-                  Een knop die niets vasthoudt is een belofte die je niet
-                  waarmaakt. */}
-              {wachtendeFoto && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  loading={uploading}
-                  className="self-start min-h-[44px]"
-                  onClick={() => verstuurFoto(wachtendeFoto)}
-                >
-                  <IconRefresh className="w-4 h-4" /> Foto opnieuw versturen
-                </Button>
-              )}
-            </div>
+          {/* Alleen als er ook echt iets klaarstaat om te versturen.
+              Een knop die niets vasthoudt is een belofte die je niet
+              waarmaakt. */}
+          {wachtendeFoto && (
+            <Button
+              variant="secondary"
+              size="sm"
+              loading={uploading}
+              className="self-start min-h-[44px]"
+              onClick={() => verstuurFoto(wachtendeFoto)}
+            >
+              <IconRefresh className="w-4 h-4" /> Foto opnieuw versturen
+            </Button>
           )}
         </div>
       )}

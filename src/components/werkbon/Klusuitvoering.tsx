@@ -219,6 +219,7 @@ export function Klusuitvoering({
               taak={taak}
               werkbonId={werkbon.id}
               readOnly={readOnly || werkbon.status === 'voltooid'}
+              gesloten={Boolean(werkbon.opgeleverd_op)}
               onRefresh={onRefresh}
             />
           ))

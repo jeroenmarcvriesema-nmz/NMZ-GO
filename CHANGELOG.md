@@ -1,5 +1,19 @@
 # NMZ GO — Changelog
 
+## De containerlijst uit het dashboard, en punten weghalen dat werkt
+
+### Containers & dixi's krijgen een eigen scherm
+- **[FEATURE]** Nieuw scherm **Containers & dixi's** (`/voorzieningen`), in de zijbalk onder Uitloop en op een telefoon in het "Meer"-blad. De volledige lijst stond als kaart halverwege het dashboard: je moest ernaartoe scrollen langs alles waar het niet over ging, terwijl dit het enige blok op dat scherm is waar een dag uitstel meteen geld kost.
+- Op het dashboard staan nu **drie aantikbare tegels** — Af te melden, Te bestellen, Staat er — direct onder de werkvoorraad. Met het scherpste geval eronder in plaats van een samenvatting: "langste 8 dagen over de datum" zegt of dit vandaag moet, "3 open" niet. Een tegel op nul gaat nergens heen.
+- Kleur draagt de dringendheid: **rood** is over de datum, **oranje** vandaag of morgen, **blauw** binnen drie dagen, **grijs** later. Als streepje links van de regel, als chip mét het woord erin, en in de kop van de stapel — die de kleur van zijn zwaarste regel krijgt, zodat je aan de kaart al ziet of er iets te laat is. Geen geel: dat is van het merk.
+- De tekst stond in drie regels grijs van elf pixels onder elkaar en las op een telefoon als één vlek. Nu: het adres groot, daaronder wát het is en wannéér het moet als aparte chips, en de datums en het bonnummer eronder.
+- De knoppen dragen in beide standen kleur, en het woord verandert mee: vóór het stempelen staat de handeling ("Bestellen", "Afmelden"), daarna de stand ("Besteld", "Afgemeld"). Ze waren allebei grijs tot je ze aantikte, waardoor wat er nog moest gebeuren en wat al gedaan was alleen in een vinkje van veertien pixels verschilden.
+
+### Punten weghalen was nergens te zien
+- **[FIX]** De knop **Punt weg** stond achter `!readOnly` en was daarmee op élk scherm onzichtbaar. Op de werkbon van kantoor staat `readOnly` altijd aan — daar wordt niet afgevinkt — en op het scherm waar hij uit staat zit de zwamsaneerder, die de bevoegdheid niet heeft. De knop bestond dus wel, maar niemand kon erbij. Hetzelfde gold voor de knop die de **fotoplicht** per punt aan- en uitzet.
+- Afvinken en beheren zijn nu twee dingen: `readOnly` gaat over de ploeg, de beheerknoppen staan er los van en verschijnen zolang de bon niet is opgeleverd — dezelfde grens die `werkbon_punt_verwijderen()` zelf trekt (migratie 032).
+- De melding "de foto's konden niet worden geladen" stond in datzelfde blok en was daardoor voor kantoor onzichtbaar. Die staat nu bij de foto's, waar hij over gaat.
+
 ## Een herziene werkopdracht, en wat er op een klus gebeurt
 
 ### De herziene werkopdracht komt binnen
