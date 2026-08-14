@@ -279,9 +279,10 @@ async function opdrachtUitBijlagen(
  * De datum van de bijlage staat in het antwoord dat we tóch al
  * ophalen, dus die vergelijking kost niets. Alleen als de opdracht los
  * aan de taak hangt — dat komt voor — zit hij niet in het lijstantwoord,
- * en dan halen we de taak apart op. Dat gebeurt alleen als ClickUp zegt
- * dat er sinds onze laatste ronde íéts aan de taak is veranderd, zodat
- * het bij een rustige dag geen enkele aanroep kost.
+ * en dan halen we de taak apart op. Dat gebeurt als ClickUp zegt dat er
+ * sinds onze laatste ronde íéts aan de taak is veranderd, of als deze
+ * bon nog geen ijkpunt heeft; zodra hij dat wél heeft kost een rustige
+ * dag geen enkele aanroep.
  *
  * Drie uitkomsten:
  *
@@ -312,17 +313,37 @@ async function nieuwereOpdracht(
 
   if (!huidig) {
     const gewijzigd = msNaarIso(taak.date_updated)
-    if (!gewijzigd || !bon.laatst_gesynct || gewijzigd <= bon.laatst_gesynct) {
-      return { soort: 'geen' }
-    }
+    const verse = !!gewijzigd && !!bon.laatst_gesynct && gewijzigd > bon.laatst_gesynct
+
+    // Heeft deze bon nog helemaal geen ijkpunt, dan kijken we één keer
+    // ook zonder dat ClickUp iets meldt. Anders krijgt een bon waarvan
+    // de opdracht los aan de taak hangt nooit een datum — `laatst_gesynct`
+    // wordt immers elke ronde op nu gezet, dus `date_updated` komt daar
+    // nooit meer overheen — en blijft een herziening daar voor altijd
+    // onzichtbaar. Na die ene keer is hij geijkt en geldt de gewone
+    // regel weer.
+    if (!verse && bon.opdracht_datum) return { soort: 'geen' }
+
     huidig = await opdrachtUitBijlagen(taak, token)
   }
 
   if (!huidig?.datum) return { soort: 'geen' }
-  if (!bon.opdracht_datum) return { soort: 'ijken', datum: huidig.datum }
-  return huidig.datum > bon.opdracht_datum
-    ? { soort: 'nieuwer', opdracht: huidig }
-    : { soort: 'geen' }
+
+  // Als tijdstip vergelijken, niet als tekst. Postgres geeft een
+  // timestamptz terug als "2026-04-24T11:34:29.251+00:00" en ClickUp
+  // levert "2026-04-24T11:34:29.251Z" — hetzelfde moment, andere
+  // tekst. Alfabetisch staat "Z" ná "+", dus `nieuwer > bekend` was
+  // altijd waar en gold élke opdracht als herzien. De eerste ronde na
+  // het uitrollen laadde daardoor zesentwintig PDF's opnieuw, en de
+  // ronde daarna weer, precies het gedrag dat dit stuk moest
+  // voorkomen.
+  const nu = Date.parse(huidig.datum)
+  const bekend = bon.opdracht_datum ? Date.parse(bon.opdracht_datum) : NaN
+
+  if (!Number.isFinite(bekend)) return { soort: 'ijken', datum: huidig.datum }
+  if (!Number.isFinite(nu)) return { soort: 'geen' }
+
+  return nu > bekend ? { soort: 'nieuwer', opdracht: huidig } : { soort: 'geen' }
 }
 
 /**
