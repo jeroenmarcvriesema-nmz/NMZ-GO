@@ -8,6 +8,7 @@
 - Vier features die sinds hun eigen migratie geen enkele keer gewerkt kunnen hebben. Alle vier zaten ze achter een knop die kantoor pas in beeld kreeg toen het scherm eromheen af was, en dat is precies waarom het pas nu opviel.
 - De controle blijft staan en gaat niet weg: dit is het dossier waar je bij een discussie over uitloop of meerwerk op terugvalt, en het Uitloop-scherm filtert er hard op één soort — een typfout betekent daar een gebeurtenis die niemand meer terugvindt. De afspraak staat nu als commentaar op de controle in de database zelf: schrijf je een nieuwe soort, zet hem in dezelfde migratie erbij.
 - Bestaande gegevens blijven ongemoeid. Er stonden alleen soorten in die al waren toegestaan — de rest is nooit binnengekomen.
+- **[FIX]** En zodat dit niet nog eens maanden onopgemerkt blijft: `tests/migraties.test.ts` leest de migraties zoals Postgres ze zou toepassen, houdt per kolom bij welke waarden de laatste check nog toestaat, en legt daar elke waarde naast die ergens in een insert wordt geschreven. Draait mee in de CI op elke push. Zonder migratie 034 valt hij om met alle vijf de overtredingen, mét de naam van het bestand en de waarde die ontbreekt — een build-fout in plaats van een telefoontje. De regel staat nu ook bij de verboden acties in `.ai/CLAUDE.md`.
 
 ## Lopend, punten weghalen, en de containers
 
