@@ -94,10 +94,19 @@ schrijven; git voegt dat niet netjes samen.
 Afspraken die daarbij horen:
 
 - **Eerst `git pull`, elke keer.** Beide sessies duwen naar `main`.
-- **Migratienummers.** Tot en met **029** is gebruikt (026 t/m 028 door
-  de fotoketen, 029 = stilleggen schuift niet meer op). Pak 030 en
-  hoger — nooit een nummer hergebruiken. Dit ging al een keer mis:
-  twee sessies maakten allebei een 027 en dat is achteraf rechtgezet.
+- **Migratienummers.** Tot en met **034** is gebruikt. **Pak 035 en
+  hoger, en kijk eerst in `supabase/migrations/` in plaats van dit
+  lijstje** — dit document loopt per definitie achter op de map.
+  Nooit een nummer hergebruiken. Dat ging al drie keer mis: twee
+  sessies maakten allebei een 027, en er staan nu nog steeds twee 030's
+  (`storingen_alleen_eigenaar` en `wijzigen_tijdens_de_klus`) en twee
+  031's (`werkdag_automatisch_afsluiten` en `status_spuiten_isoleren`)
+  naast elkaar. Alle vier zijn toegepast en werken, maar de nummers
+  zeggen niets meer over de volgorde.
+  Wat er sinds 029 bij is gekomen: 030 wijzigen tijdens de klus
+  (ploeg/planning/punt toevoegen), 031 status spuiten-isoleren,
+  032 punt verwijderen, 033 containers en dixi's afvinken,
+  034 `werkbonnen.opdracht_datum` + `taken.voltooid_op`.
 - **Het verkeer gaat sinds migratie 030 twee kanten op.** `werkbon_ploeg_zetten`
   en `werkbon_planning_zetten` schrijven naar NMZ GO én zetten een
   wachtrijtaak `clickup.werkbon_bijwerken` klaar. Twee dingen om te
@@ -114,9 +123,30 @@ Afspraken die daarbij horen:
   Nederlandse werkruimte toont ClickUp dat als 02:00 op dezelfde dag.
   Zou het bedrijf ooit in een tijdzone vóór UTC gaan werken, dan valt
   die tijdstempel op de vorige dag — dán moet dit mee.
-- **De verwerker staat op versie 18** (migratie 030 + `werkbonBijwerken`).
-  Getest tegen de echte ClickUp op Dahliastraat 6, met de bestaande
-  waarden zodat er niets veranderde.
+- **De verwerker staat op versie 22.** Uitrollen kan alleen via de
+  Supabase-MCP en vereist dat je alle zeven bestanden voluit meestuurt;
+  dat is de duurste handeling in dit project. Verzamel je werk dus en
+  rol één keer uit.
+- **Een herziene werkopdracht wordt sinds v21/v22 opnieuw ingelezen.**
+  `werkbonnen.opdracht_datum` is het ijkpunt: staat de bijlage in
+  ClickUp op een later moment, dan wordt de kop opnieuw ontleed
+  (container, dixi, kluiscode, inspecteur) en de PDF vervangen. De
+  punten blijven met opzet ongemoeid. Twee dingen die hier al fout
+  gingen en die je niet opnieuw moet uitvinden:
+  1. **Vergelijk als tijdstip, niet als tekst.** Postgres levert
+     `...+00:00`, ClickUp `...Z`. Alfabetisch is "Z" groter, dus een
+     `>` op de strings gold voor élke bon. De eerste ronde na dat
+     uitrollen laadde zesentwintig PDF's opnieuw.
+  2. **Een bon zonder ijkpunt moet er eerst een krijgen.** Dat gebeurt
+     zonder download. Voor bonnen waarvan de opdracht los aan de taak
+     hangt geldt de "is er iets veranderd"-drempel niet bij die eerste
+     keer — `laatst_gesynct` gaat elke ronde op nu staan, dus die
+     drempel wordt daarna nooit meer gehaald.
+  Nagemeten op productie: 31 gezien, 27 ongewijzigd, 4 overgeslagen
+  (opdrachten die van het sjabloon afwijken), nul downloads per ronde.
+- **Versie 18** was migratie 030 + `werkbonBijwerken`, getest tegen de
+  echte ClickUp op Dahliastraat 6 met de bestaande waarden zodat er
+  niets veranderde.
 - **De verwerker stond eerder op versie 15** (uitgerold op verzoek van de
   eigenaar, alle bestanden tegelijk). Daarin zitten: de gewijzigde
   stilleg-opmerking (geen "Nieuwe opleverdatum" meer), het doorbladeren
