@@ -9,7 +9,7 @@ import { formatDatum } from '@/lib/utils'
 import type { Werkbon, Rapportage } from '@/types'
 import {
   IconFileText, IconPhoto, IconInfoCircle, IconDeviceFloppy,
-  IconAlertTriangle, IconClock, IconCircleCheck,
+  IconAlertTriangle, IconClock, IconCircleCheck, IconExternalLink,
 } from '@tabler/icons-react'
 
 interface Props {
@@ -199,7 +199,7 @@ export function Opleverrapport({ werkbon, onKlaar }: Props) {
               <IconInfoCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
               {fotos === 0
                 ? 'Een rapport zonder foto’s is een lege huls met een briefhoofd. Zodra de ploeg de eerste foto heeft geüpload kan het rapport aangevraagd worden.'
-                : 'De aanvraag wordt vastgelegd en in de wachtrij gezet. Het document zelf wordt gebouwd zodra de rapportgenerator draait; tot die tijd blijft de aanvraag staan.'}
+                : 'De aanvraag gaat in de wachtrij en wordt binnen een minuut opgepakt. Het rapport krijgt de klusgegevens, de uitgevoerde punten en alle foto’s, en is daarna hier te openen en af te drukken.'}
             </p>
           </>
         )}
@@ -230,12 +230,13 @@ function Rapportagestand({ rapportage }: { rapportage: Rapportage }) {
     return (
       <div className="flex items-start gap-2 p-3 rounded-sm bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30">
         <IconCircleCheck className="w-4 h-4 flex-shrink-0 mt-0.5 text-green-600 dark:text-green-400" />
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="text-sm font-bold text-green-800 dark:text-green-300">Rapport klaar</div>
           <div className="text-xs text-green-700 dark:text-green-200/70 mt-0.5">
             Gemaakt op {formatDatum(rapportage.gegenereerd_op ?? rapportage.aangevraagd_op)}
             {rapportage.clickup_geupload_op && ' · staat in ClickUp'}
           </div>
+          {rapportage.bestandspad && <OpenRapport pad={rapportage.bestandspad} />}
         </div>
       </div>
     )
@@ -249,10 +250,53 @@ function Rapportagestand({ rapportage }: { rapportage: Rapportage }) {
           Aangevraagd op {formatDatum(rapportage.aangevraagd_op)}
         </div>
         <div className="text-xs text-gray-500 dark:text-white/50 mt-0.5">
-          De aanvraag staat in de wachtrij. Het document wordt gebouwd zodra de
-          rapportgenerator draait — die is er nog niet, dus dit blijft even staan.
+          De aanvraag staat in de wachtrij. De verwerker pakt hem binnen een minuut
+          op; bij veel foto’s duurt het bouwen zelf nog even.
         </div>
       </div>
+    </div>
+  )
+}
+
+/**
+ * Het rapport openen in een nieuw tabblad.
+ *
+ * De bucket is besloten, dus er is geen vaste link — die moet per keer
+ * ondertekend worden. Het tabblad gaat open vóór het wachten, anders
+ * ziet een telefoon het als een pop-up en blokkeert hij hem. Dezelfde
+ * omweg als bij de documenten op de klusinfo.
+ */
+function OpenRapport({ pad }: { pad: string }) {
+  const [bezig, setBezig] = useState(false)
+
+  const open = async () => {
+    setBezig(true)
+    const tab = window.open('', '_blank')
+    const { data, error } = await supabase.storage
+      .from('werkbon-documenten')
+      .createSignedUrl(pad, 3600)
+    setBezig(false)
+
+    if (error || !data?.signedUrl) {
+      tab?.close()
+      toast.fout('Het rapport kon niet worden geopend. Controleer je verbinding.')
+      return
+    }
+    if (tab) tab.location.href = data.signedUrl
+    else window.location.href = data.signedUrl
+  }
+
+  return (
+    <div className="mt-2.5">
+      <Button variant="secondary" size="sm" className="min-h-[44px]" loading={bezig} onClick={open}>
+        <IconExternalLink className="w-4 h-4" /> Rapport openen
+      </Button>
+      {/* Afdrukken naar PDF is de weg naar een bestand dat de deur uit
+          kan. Dat staat er expliciet bij, want een tabblad met een
+          document ziet er niet uit als iets dat je kunt versturen. */}
+      <p className="text-xs text-green-700/80 dark:text-green-200/60 mt-1.5">
+        Opent in een nieuw tabblad. Afdrukken (Ctrl/Cmd + P) geeft de PDF om te versturen.
+      </p>
     </div>
   )
 }

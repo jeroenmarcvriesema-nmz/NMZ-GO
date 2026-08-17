@@ -25,6 +25,7 @@ import {
   werkbonBijwerken,
 } from './clickup.ts'
 import { fotosOpruimen } from './opruimen.ts'
+import { bouwOpleverrapport, meldRapportMislukt } from './rapport.ts'
 
 // Een fout die niet opnieuw geprobeerd moet worden.
 class OnverwerkbaarError extends Error {
@@ -32,6 +33,21 @@ class OnverwerkbaarError extends Error {
     super(message)
     this.name = 'OnverwerkbaarError'
   }
+}
+
+/**
+ * Is dit een blijvende fout?
+ *
+ * Op naam en niet op klasse. Een handler in een eigen bestand kan deze
+ * klasse niet importeren zonder een kringverwijzing te maken, dus die
+ * gooien een eigen fout met dezelfde naam. Met alleen `instanceof` zou
+ * zo'n fout stilletjes als tijdelijk gelden en vijf keer opnieuw
+ * worden geprobeerd — vijf keer hetzelfde antwoord, en pas daarna de
+ * conclusie die er meteen al was.
+ */
+function isBlijvend(e: unknown): boolean {
+  return e instanceof OnverwerkbaarError
+    || (e instanceof Error && e.name === 'OnverwerkbaarError')
 }
 
 interface Taak {
@@ -206,7 +222,49 @@ const HANDLERS: Record<string, Handler> = {
     }
     return await statusBijwerken(db, tenantId, werkbonId, soort as typeof bekend[number])
   },
+
+  // Het opleverrapport bouwen: het enige document dat NMZ GO naar
+  // buiten stuurt.
+  //
+  // De knop die dit aanvraagt staat sinds migratie 025 live, maar deze
+  // taaksoort had geen handler — elke aanvraag liep zijn pogingen leeg
+  // en werd onverwerkbaar. Kantoor drukte op een knop die niets deed.
+  //
+  // Wie een rapport mág maken is op dit moment al beslist door
+  // `rapportage_aanvragen()`: uitvoerder of hoger, en minstens één
+  // foto. Hier wordt alleen nog uitgevoerd wat daar is goedgekeurd.
+  'rapportage.genereren': async (taak, db) => {
+    const tenantId = String(taak.payload.tenant_id ?? '')
+    const werkbonId = String(taak.payload.werkbon_id ?? '')
+    const rapportageId = String(taak.payload.rapportage_id ?? '')
+
+    if (!tenantId || !werkbonId || !rapportageId) {
+      throw new OnverwerkbaarError('tenant_id, werkbon_id en rapportage_id zijn alle drie nodig')
+    }
+
+    try {
+      return await bouwOpleverrapport(db, tenantId, werkbonId, rapportageId)
+    } catch (e) {
+      // De aanvraag pas op mislukt zetten als er niets meer volgt.
+      // Bij een tijdelijke storing komt er nog een poging, en dan is
+      // "mislukt" op het scherm een leugen die vanzelf weer klopt —
+      // maar kantoor heeft hem intussen wel gelezen.
+      const reden = e instanceof Error ? e.message : String(e)
+      const laatste = isBlijvend(e) || taak.pogingen >= LAATSTE_POGING
+      if (laatste) await meldRapportMislukt(db, rapportageId, reden)
+      throw e
+    }
+  },
 }
+
+/**
+ * Vanaf deze poging volgt er niets meer.
+ *
+ * `verwerkingstaken.max_pogingen` staat standaard op vijf (migratie
+ * 004) en `pogingen` telt de mislukte rondes. Zit hij op vier, dan is
+ * de ronde die nu draait de laatste.
+ */
+const LAATSTE_POGING = 4
 
 // ── De lus ───────────────────────────────────────────────────
 
@@ -274,7 +332,7 @@ Deno.serve(async (req) => {
         geslaagd++
       } catch (e) {
         const reden = e instanceof Error ? e.message : String(e)
-        const rpc = e instanceof OnverwerkbaarError ? 'taak_onverwerkbaar' : 'taak_mislukt'
+        const rpc = isBlijvend(e) ? 'taak_onverwerkbaar' : 'taak_mislukt'
         await db.rpc(rpc, { taak_id: taak.id, reden })
         mislukt++
       }
