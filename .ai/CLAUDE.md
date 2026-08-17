@@ -17,11 +17,13 @@ Dit bestand is het **startpunt**. De rest van de documentatie staat in dezelfde 
 | [DEPLOYMENT.md](./DEPLOYMENT.md) | Git-workflowoverzicht, build, productie (Netlify/Supabase), rollback |
 | [TESTING.md](./TESTING.md) | Handmatige testprocedure, build procedure, Definition of Done, release checklist |
 | [ROADMAP.md](./ROADMAP.md) | Wat bewust nog niet gebouwd is, bekende aandachtspunten |
-| [FEATURE_BACKLOG.md](./FEATURE_BACKLOG.md) | Sprint 3–6 en verdere toekomstige features, met prioriteit |
-| [SPRINTS.md](./SPRINTS.md) | Sprintwerkwijze en sprintlog |
-| [HANDOVER.md](./HANDOVER.md) | Overdrachtsdocument tussen sessies/tools — lees dit als je een eerdere sessie voortzet |
+| [FEATURE_BACKLOG.md](./FEATURE_BACKLOG.md) | Wat er nog op de rol staat, met prioriteit — de opleverketen voorop |
+| [SPRINTS.md](./SPRINTS.md) | Geschiedenis: sprints en de fasen van Epic 4. Vooral archief |
+| [HANDOVER.md](./HANDOVER.md) | Overdracht tussen sessies. **Hoofdstuk 0 is de actuele stand**; de rest is geschiedenis |
 
 Elke sessie leest minimaal dit bestand. Ga naar het specifieke document zodra een taak dat domein raakt (bv. een RLS-wijziging → eerst `ARCHITECTURE.md` en `GIT_WORKFLOW.md` lezen).
+
+> **Waar je de actuele stand vindt.** `PROJECT.md` → Huidige status voor de cijfers, `HANDOVER.md` hoofdstuk 0 voor waar de vorige sessie gebleven was, en `CHANGELOG.md` in de projectroot voor de functionele geschiedenis. Alles wat verderop in `HANDOVER.md` en in `SPRINTS.md` staat, beschrijft eerdere versies van de app — lees dat als geschiedenis, niet als opdracht. **Controleer een cijfer of een aanname liever tegen de database of de code dan tegen een document**; documentatie loopt hier aantoonbaar achter.
 
 ---
 
@@ -48,7 +50,7 @@ Verplichte werkwijze voor elke AI-sessie (zoals Claude Code) op dit project:
 3. **Introduceer geen duplicate componenten.** Zoek eerst of een vergelijkbare component al bestaat in `components/ui/` of de relevante domeinmap.
 4. **Gebruik bestaande componenten en hooks waar mogelijk**, ook als een net-iets-andere variant sneller vanaf nul te bouwen zou zijn.
 5. **Maak eerst een kort implementatieplan** voordat je een wijziging doorvoert die veel bestanden raakt, of die gedeelde architectuur raakt (auth, routing, RLS). Pas nooit in één keer tientallen of honderden bestanden aan zonder dat plan eerst te delen.
-6. **Controleer `npm run build` voordat je een taak als afgerond beschouwt.** Niet optioneel — zie `GIT_WORKFLOW.md` voor de volledige build-/testprocedure.
+6. **Controleer `npm run build` én `npm test` voordat je een taak als afgerond beschouwt.** Niet optioneel — zie `GIT_WORKFLOW.md` voor de volledige build-/testprocedure. Let op het verschil: `npm run build` typecheckt alleen `src/`, `npm run controle` doet ook `tests/`.
 7. **Los build-fouten zelf op** binnen de scope van de taak, tenzij de fout op een dieperliggend probleem buiten scope wijst — dan expliciet melden.
 8. **Controleer routing** na elke wijziging aan pagina's, routes of guards: klopt `App.tsx`, juiste guard-type, geen dode/dubbele route.
 9. **Controleer imports**: geen ongebruikte imports, geen gebroken `@/`-paden.
@@ -69,6 +71,8 @@ Nooit toegestaan zonder expliciete, voorafgaande bevestiging van de gebruiker:
 - Een RLS-policy die zichzelf-referentieert via een `EXISTS`-subquery op dezelfde tabel — veroorzaakte eerder `42P17 infinite recursion`.
 - Een policy met `or true` of andere overbroad-condities, ook niet "tijdelijk om te debuggen".
 - Een bestaande, al uitgevoerde migratie wijzigen — altijd een nieuwe migratie toevoegen.
+- Een migratienummer hergebruiken. Kijk eerst wat er in `supabase/migrations/` ligt en pak het eerstvolgende vrije nummer. Dit is al twee keer misgegaan doordat twee sessies tegelijk hetzelfde nummer pakten (`027`, en later `030`/`031` die allebei dubbel bestaan).
+- Een edge function half uitrollen. `verwerker` gaat in zijn geheel, álle bestanden in één `deploy_edge_function`-aanroep — een halve uitrol heeft de verwerker eerder plat gelegd.
 - De `service_role`-key gebruiken of blootstellen in client-code.
 - Nieuwe dependencies toevoegen aan `package.json` zonder expliciete goedkeuring.
 - `git push --force` naar `main`, `git reset --hard`, `git clean -f`, branches verwijderen zonder expliciete bevestiging.
@@ -87,9 +91,9 @@ Nooit toegestaan zonder expliciete, voorafgaande bevestiging van de gebruiker:
 
 Een wijziging is pas "klaar" als:
 
-1. `npm run build` slaagt zonder TypeScript- of build-fouten.
+1. `npm run build` slaagt zonder TypeScript- of build-fouten, en `npm test` is groen.
 2. De betrokken flow is handmatig getest (happy path + minstens één randgeval) — zie testprocedure in `GIT_WORKFLOW.md`.
-3. Beide rollen zijn gecheckt waar relevant (beheerder + medewerker).
+3. Beide kanten van de rolgrens zijn gecheckt waar relevant (een kantoorrol + medewerker; bij gebruikersbeheer of storingen ook de smallere sloten — zie `src/lib/rollen.ts`).
 4. Mobiel én desktop zijn gecontroleerd op responsiveness.
 5. Geen console errors/warnings die aan de wijziging zelf te wijten zijn.
 6. RLS-policies kloppen als de database is aangeraakt: geen recursieve policies, geen overbroad-condities, idempotente migratie.

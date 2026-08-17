@@ -11,7 +11,11 @@ Dit project ontwikkelt in **sprints**. Een sprint-checkpoint markeert een punt w
 - Bij het starten van een nieuwe sprint: lees eerst de laatste sprint-checkpoint-commit en `CHANGELOG.md` (projectroot) om te begrijpen wat de actuele, werkende stand van de app is voordat je verder bouwt.
 - Werk deze log bij zodra een sprint-checkpoint wordt gecommit — kort: wat is toegevoegd/gefixed, wat is de status.
 
-> **Let op over dit logboek:** de git-geschiedenis van dit project bevat op het moment van schrijven één zichtbare checkpoint-commit (`Sprint 2.1 werkende versie`). Eerdere sprints (bv. wat tot "2.0" of "2.1" leidde) zijn niet reconstrueerbaar uit de huidige git-historie — vermoedelijk is eerdere geschiedenis samengevoegd of niet los gecommit. De log hieronder begint bij wat daadwerkelijk verifieerbaar is uit `git log` en `CHANGELOG.md`, niet uit aannames.
+> **Let op over dit logboek:** de sprintnummering is halverwege dit project doodgebloed. Vanaf Epic 4 wordt er niet meer in genummerde sprints gewerkt maar in **fasen van een epic**, en sinds augustus 2026 in de praktijk gewoon in kleine, doorlopende commits rechtstreeks op `main` — vaak met meerdere sessies tegelijk. Dat is de werkelijke werkwijze; doe niet alsof er nog sprint-checkpoints worden gezet.
+>
+> Wat daarvoor in de plaats is gekomen als geheugen: `CHANGELOG.md` voor de functionele geschiedenis, en `HANDOVER.md` hoofdstuk 0 voor de actuele stand. Lees díé twee als je wilt weten waar het project staat — niet het logboek hieronder, dat vooral geschiedenis is.
+>
+> Eerdere sprints (wat tot "2.0" of "2.1" leidde) zijn niet reconstrueerbaar uit de git-historie; die is bij een her-init samengevoegd.
 
 ---
 
@@ -72,6 +76,31 @@ Architectuur volledig uitgewerkt; zie hoofdstuk 0 van `HANDOVER.md` voor de link
 
 **Testkanttekening:** de rollentest (beheerder + medewerker) na deze RLS-wijziging is nog niet uitgevoerd — `supabase.co` is niet bereikbaar vanuit de ontwikkelomgeving. `GIT_WORKFLOW.md` schrijft die test voor; doe hem alsnog vóór dit als afgerond geldt.
 
-### Fase 1 — Serverlaag en verwerkingswachtrij (volgende stap)
+### Fase 1 t/m 5 — afgerond
 
-Eerste Edge Function, takenwachtrij in Postgres, periodieke starter, en een beheerdersscherm dat toont wat er draait. Bewust nog zonder ClickUp, om het patroon te bewijzen op iets ongevaarlijks.
+De serverlaag staat en draait in productie. Wat er sinds fase 0 is gebouwd, in grote lijnen:
+
+| Fase | Wat | Stand |
+|---|---|---|
+| 1 | Edge function `verwerker`, takenwachtrij in Postgres (`verwerkingstaken`/`verwerkingsronden`), periodieke starter via pg_cron | ✅ |
+| 2 | ClickUp lezen: klussen met status `volgende week` stromen binnen uit *Uitvoering 2026 Diemen* én *Leek* | ✅ |
+| 3 | Waarneembaarheid: rondes, overgeslagen klussen met reden, `clickup.tekstproef` om te zien wat de parser leest | ✅ |
+| 4 | Documenten binnenhalen (werkopdracht, werktekening), privé-opslag | ✅ |
+| 4b | Werkopdracht uitlezen naar punten met een deterministische parser — geen taalmodel, dus geen hallucinatierisico | ✅ |
+| 5 | Terugkoppeling naar ClickUp: status, opmerking, ploeg en planning schrijven direct terug | ✅ |
+| — | Opleverrapport als PDF | ❌ nog niet gebouwd, zie `FEATURE_BACKLOG.md` |
+
+**Drie kernbesluiten van de eigenaar die hierbij horen** (en die blijven gelden):
+
+1. **Serverlaag bij de bestaande leverancier.** Supabase Edge Functions, geen nieuwe partij erbij.
+2. **Multi-tenancy meteen inbouwen**, vooruitlopend op een mogelijke SaaS/white-label-toekomst — omdat het achteraf toevoegen betekent dat elke RLS-policy herschreven moet worden.
+3. **ClickUp is leidend, NMZ GO schrijft direct terug.** Elke wijziging in NMZ GO gaat *direct* terug, niet pas bij afronding — anders overschrijft een synchronisatieronde het werk van de monteur.
+
+### Wat er van ClickUp vastligt
+
+- Alleen Space **Werkvoorbereiding** (`90152805075`) doet mee, niet de 98 "Project Management X"-spaces. Eén taak = één adres = één werkbon.
+- Twee lijsten synchroniseren: **Uitvoering 2026 Diemen** (`901517814355`) en **Uitvoering 2026 Leek** (`901522829990`). De losse lijst *Uitvoering* (`901506909996`) blijft er bewust buiten; die lijkt een restant. Ze staan als constante bij elkaar bovenin de handler, zodat een derde vestiging één regel is.
+- **Status `volgende week` betekent "klaar voor uitvoering"** — dat is de synchronisatietrigger. Elk weekend wordt die handmatig omgezet naar `deze week`; die omzetting ís de vrijgavebeslissing, dus NMZ GO heeft geen eigen vrijgaveknop nodig.
+- Van de 30 custom fields doen er drie mee: **Kluiscode**, **Werkopdracht (PDF)** en **Werktekening**. De rest staat al op de werkopdracht zelf.
+- Datums gaan als **middernacht UTC** naar ClickUp (`naarMs`), de omkering van `datum()` die met `toISOString()` leest. In een Nederlandse werkruimte toont ClickUp dat als 02:00 dezelfde dag. Zou het bedrijf ooit in een tijdzone vóór UTC gaan werken, dan valt die tijdstempel op de vorige dag — dán moet dit mee.
+- Datums worden ná de eerste import **níét** meer uit ClickUp gezet: de ronde slaat een bon met `opdracht_pad` over. Er is dus geen strijd om die velden.

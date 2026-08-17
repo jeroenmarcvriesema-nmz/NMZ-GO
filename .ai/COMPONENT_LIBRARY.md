@@ -22,13 +22,15 @@ Dit document beschrijft elke bestaande component in `src/components/`, plus de c
 **Varianten:** `accent`: `yellow` · `red` · `green` (linker accentrand, `border-l-4`).
 **Regels:** basis voor alle domeinkaarten (zie `WerkbonKaart`). Geen los kaart-element met eigen padding/radius/shadow bouwen — hergebruik `Card`.
 
-### Badge / StatusBadge
+### Badge
 **Bestand:** `src/components/ui/Badge.tsx`
-**Doel:** korte statuslabel; `StatusBadge` is een domeinspecifieke wrapper voor `WerkbonStatus`.
-**Gebruik:** `<Badge variant="green">Actief</Badge>` of `<StatusBadge status={werkbon.status} />`
+**Doel:** kort statuslabel.
+**Gebruik:** `<Badge variant="green">Afgerond</Badge>`
 **Styling:** `inline-flex`, `text-xs font-bold`, `rounded-md`, `px-2.5 py-1`.
 **Varianten:** `yellow` · `red` · `green` · `gray` (default) · `blue` · `orange`.
-**Regels:** status wordt **altijd** via `Badge`/`StatusBadge` getoond, nooit via losse gekleurde tekst. Nieuwe statustypes (bv. `ProjectStatus`) krijgen een eigen `<Type>Badge`-wrapper naar het patroon van `StatusBadge`, geen nieuwe losse badge-implementatie.
+**Regels:** status wordt **altijd** via `Badge` getoond, nooit via losse gekleurde tekst. De kleur komt niet uit de aanroeper maar uit `STANDEN` in `src/lib/klusstand.ts` — dat is de enige woordenlijst voor klusstanden. Verzin geen eigen toewijzing van stand naar kleur.
+
+> **`StatusBadge` bestaat niet meer.** Die was een wrapper om de kolom `werkbonnen.status`, en die kolom wordt door de app nergens meer geschreven. De stand wordt sindsdien **afgeleid** met `klusstand()` uit de feiten (stilgelegd → opgeleverd → voltooid → een afgevinkt punt → anders niet gestart). Bouw hem niet terug.
 
 ### Input / Textarea
 **Bestand:** `src/components/ui/Input.tsx`
@@ -181,59 +183,114 @@ Dit document beschrijft elke bestaande component in `src/components/`, plus de c
 
 ---
 
-## Nog te bouwen (volgens `UI_GUIDELINES.md` / `FEATURE_BACKLOG.md`)
+## De rest van `components/ui/`
 
-Deze componenten ontbreken nog als gedeelde, herbruikbare bouwsteen. Bij de eerste keer dat een scherm dit nodig heeft: bouw de gedeelde component in `components/ui/`, gebruik hem niet ad-hoc lokaal in een pagina.
+### Select
+**Bestand:** `src/components/ui/Select.tsx`
+**Doel:** keuze uit een vaste lijst, in dezelfde visuele taal als `Input`.
+**Props:** `label?`, `error?`, `opties` (`{ waarde, label }[]`), plus alles wat een `<select>` accepteert.
+**Regels:** bewust een echte `<select>` en geen nagebouwde lijst. Op een telefoon krijgt de gebruiker dan het vertrouwde keuzewiel van het toestel, en toetsenbordbediening werkt zonder dat wij iets hoeven te doen. De eigen pijl vervangt die van de browser, die per besturingssysteem anders oogt.
+
+### Dropdown
+**Bestand:** `src/components/ui/Dropdown.tsx`
+**Doel:** menu met acties achter één knop — voor handelingen, niet voor het kiezen van een waarde.
+**Regels:** verwar dit niet met `Select`. Een keuze die iets *opslaat* is een `Select`; een lijstje *acties* is een `Dropdown`. Zit er een onomkeerbare actie in, markeer die dan visueel apart.
+
+### Voortgangsring
+**Bestand:** `src/components/ui/Voortgangsring.tsx`
+**Doel:** voortgang als ring, waar `ProgressBar` te breed of te zwaar is (dagkaart, compacte kop).
+**Regels:** de kleur komt **van buiten**, als tekstklasse uit `STANDEN` — de component kiest zelf nooit een kleur. Zo blijft er één kleurtaal.
+
+### EmptyState
+**Bestand:** `src/components/ui/EmptyState.tsx`
+**Doel:** één vorm voor "er is hier nog niets", op elk overzicht.
+**Props:** `icon` (verplicht, Tabler-icoon — **nooit** een emoji), `titel`, `uitleg?`, `actie?`, `className?`.
+**Regels:** neutraal vlak, geen rood en geen uitroepteken — een lege lijst is geen fout. Hoogstens één actie, en alleen als die actie de leegte ook echt oplost ("Nieuwe werkbon" wél, "Filters wissen" alleen wanneer er filters actief zijn).
+
+### ErrorState
+**Bestand:** `src/components/ui/ErrorState.tsx`
+**Doel:** tegenhanger van `EmptyState` voor wanneer het laden mislukt. Zonder dit component is een mislukte load niet te onderscheiden van een lege lijst.
+**Props:** `titel?` (standaard "Er ging iets mis"), `melding`, `onOpnieuw?`, `className?`.
+**Regels:** `melding` is mensentaal, nooit een ruwe servermelding — die hoort in de console, niet op het scherm van een monteur. Toon `onOpnieuw` alleen als opnieuw proberen ook echt kan helpen.
+
+### Toaster + toastStore
+**Bestand:** `src/components/ui/Toaster.tsx`, `src/store/toastStore.ts`
+**Doel:** actiefeedback die het scherm niet blokkeert. Vervangt alle `alert()`-aanroepen.
+**Gebruik:** importeer `toast` uit `@/store/toastStore` en roep `toast.goed(...)`, `toast.fout(...)` of `toast.info(...)` aan. De `Toaster` zelf staat één keer in `App.tsx` en hoort nergens anders gerenderd te worden.
+**Regels:** een fout blijft 7 seconden staan, de rest 4 — een monteur haalt zijn telefoon soms net uit zijn zak. Kleur zit alleen in het icoon en de rand; het vlak blijft neutraal zodat een melding niet met de merkkleur concurreert. Op mobiel staat de toast bóven de tabbalk, binnen duimbereik.
+
+---
+
+## De rest van `components/layout/`
+
+### Weekkiezer / Weekkop
+**Bestanden:** `src/components/layout/Weekkiezer.tsx`, `Weekkop.tsx`
+**Doel:** één manier om een week te kiezen en te tonen, met weeknummer. Gebruikt op planning, werkbonnen en "mijn week".
+**Regels:** `maandagVanWerkweek()` (in `lib/planning.ts`) rolt op zondag door naar de komende maandag — zonder dat opende de planning in het weekend op de week die net voorbij was. Reken die datum nergens anders opnieuw uit.
+
+### Meldingen
+**Bestand:** `src/components/layout/Meldingen.tsx`
+**Doel:** de meldingenlijst in de schil, los van `MeldingItem` (dat één regel tekent).
+
+### Foutvanger
+**Bestand:** `src/components/layout/Foutvanger.tsx`
+**Doel:** error boundary rond de app die crashes wegschrijft naar de tabel `fouten`.
+**Regels:** wat hier binnenkomt gaat eerst door `lib/foutfilter.ts`, dat rommel van browserextensies buiten de storingenlijst houdt. Een crash die de gebruiker niet raakt, hoort niet op het scherm van de eigenaar.
+
+---
+
+## De rest van `components/dashboard/`
+
+### Standbalk
+**Bestand:** `src/components/dashboard/Standbalk.tsx`
+**Doel:** de werkvoorraad als gestapelde balk, met of zonder legenda, plus een `rijen`-variant voor kaarten met meer ruimte.
+**Regels:** gebruikt uitsluitend bestaande standkleuren uit `STANDEN`.
+
+### Weekdoorkijk
+**Bestand:** `src/components/dashboard/Weekdoorkijk.tsx`
+**Doel:** vooruitblik op de week op het dashboard.
+**Regels:** leest `DashboardData.doorkijk`, dat in `useDashboard` uit dezelfde smalle voorraadquery komt — géén extra ronde naar de server. Houd dat zo.
+
+### Voorzieningentegels
+**Bestand:** `src/components/dashboard/Voorzieningentegels.tsx`
+**Doel:** containers en dixi's in tegelvorm op het dashboard; het volledige overzicht staat op `/voorzieningen`.
+**Regels:** de bestelstand wordt afgeleid in `lib/bestelstand.ts`, niet in de component.
+
+---
+
+## De rest van `components/werkbon/` en `components/taak/`
+
+De werkbon is opgeknipt in blokken die zowel op het kantoorscherm (`/werkbonnen/:id`) als op het monteursscherm gebruikt worden. Dat is bewust: er was eerder één werkbon met twee verschillende schermen eromheen, en die liepen uit de pas.
+
+| Component | Doel |
+|---|---|
+| `Klusinfo` | Adres, opdrachtgever, kluiscode, documenten om te openen |
+| `Klusploeg` | Wie er op de klus staat; wijzigen schrijft direct terug naar ClickUp |
+| `Klusplanning` | Wanneer de klus loopt; wijzigen schrijft direct terug naar ClickUp |
+| `Klusuitvoering` | De punten met hun foto's — het blok dat Vandaag én `/werkbon/:id` tekenen |
+| `Klusacties` | Afronden, heropenen, stilleggen, opleveren |
+| `Klusactiviteit` | Wat er met deze klus is gebeurd, uit `werkbon_gebeurtenissen` |
+| `PlanningKaart` | De klus zoals hij in het weekoverzicht staat |
+| `Werktijden` | Start- en eindtijd van de werkdag |
+| `PuntToevoegen` | Een punt met de hand toevoegen aan een bon |
+| `Opleverrapport` | De drie vrije tekstvelden en de aanvraagknop |
+| `Synchronisatie` | De ClickUp-koppeling van deze bon: wat is er gelezen, wat is overgeslagen |
+| `Fotoviewer` (in `taak/`) | Een foto groot bekijken, inclusief de uitleg bij een opgeruimde foto |
+
+**Twee regels die over dit hele blok gaan:**
+
+1. **Ploeg die vanuit NMZ GO wordt gezet, krijgt `handmatig = true`.** Dat moet: `zetPloeg` in de synchronisatieronde wist elke ronde iedereen die dat niet is. Zet je het op `false`, dan is de keuze binnen vijf minuten weg.
+2. **Een opgeruimde foto is geen gebroken plaatje.** `Foto.opgeruimd_op` gevuld betekent: rij bestaat, bestand weg. `TaakItem` en het archief laten die paden buiten de ondertekening en tonen een vakje "bij ClickUp".
+
+---
+
+## Nog te bouwen
 
 | Component | Doel | Richtlijn |
 |---|---|---|
 | `Table` (generiek) | Herbruikbare tabel-primitive | `ProjectTabel` als referentiepatroon (zie hierboven) |
 | `Dialog` | Lichte bevestigingsvraag (ja/nee), geen volledige `Modal` | Zie `UI_GUIDELINES.md` → Modals & dialogs |
 
-Het bouwen van deze componenten is een eigen, geplande taak (zie `FEATURE_BACKLOG.md`) — niet iets dat terloops als bijproduct van een feature-taak wordt geïntroduceerd.
+**Waarom deze twee nog wachten.** De bestaande tabellen verschillen te veel om nu al een gemene deler uit te destilleren. Een `Dialog` is ooit gebouwd en weer verwijderd toen bleek dat hij geen afnemer had — bouw hem op het moment dat de eerste echt onomkeerbare actie landt, niet eerder. Inmiddels zijn er wél verwijderacties (een punt weghalen); als daar een bevestiging bij hoort, is dat het moment.
 
-**Waarom deze twee nog wachten.** Er is op dit moment geen scherm dat ze nodig heeft: de drie bestaande tabellen verschillen te veel om nu al een gemene deler uit te destilleren, en er is geen enkele verwijder- of andere onomkeerbare actie in de UI. Een `Dialog` is tijdens deze sprint gebouwd en weer verwijderd toen bleek dat hij geen afnemer had — bouw hem op het moment dat de eerste destructieve actie landt, niet eerder.
-
----
-
-## Toegevoegd in de designsprint
-
-### `EmptyState` — `components/ui/EmptyState.tsx`
-
-**Doel:** één vorm voor "er is hier nog niets", op elk overzicht.
-
-**Props:** `icon` (verplicht, Tabler-icoon — **nooit** een emoji), `titel`, `uitleg?`, `actie?`, `className?`.
-
-**Regels:** neutraal vlak, geen rood en geen uitroepteken — een lege lijst is geen fout. Hoogstens één actie, en alleen als die actie de leegte ook echt oplost ("Nieuwe werkbon" wél, "Filters wissen" alleen wanneer er filters actief zijn).
-
-**Gebruikt in:** `Werkbonnen`, `Projecten`, `Medewerkers`, `Rapporten`, `Registreer` (ongeldige uitnodigingslink).
-
-### `ErrorState` — `components/ui/ErrorState.tsx`
-
-**Doel:** tegenhanger van `EmptyState` voor wanneer het laden mislukt. Zonder dit component was een mislukte load niet te onderscheiden van een lege lijst.
-
-**Props:** `titel?` (standaard "Er ging iets mis"), `melding`, `onOpnieuw?`, `className?`.
-
-**Regels:** `melding` is mensentaal, nooit een ruwe servermelding — die hoort in de console, niet op het scherm van een monteur. Toon `onOpnieuw` alleen als opnieuw proberen ook echt kan helpen.
-
-**Gebruikt in:** `Werkbonnen`, `Projecten`, en het foutscherm van `AuthGuard` in `App.tsx`.
-
-### `Toaster` + `toastStore` — `components/ui/Toaster.tsx`, `store/toastStore.ts`
-
-**Doel:** actiefeedback die het scherm niet blokkeert. Vervangt alle zes `alert()`-aanroepen.
-
-**Gebruik:** importeer `toast` uit `@/store/toastStore` en roep `toast.goed(...)`, `toast.fout(...)` of `toast.info(...)` aan. De `Toaster` zelf staat één keer in `App.tsx` en hoort nergens anders gerenderd te worden.
-
-**Regels:** een fout blijft 7 seconden staan, de rest 4 — een monteur haalt zijn telefoon soms net uit zijn zak. Kleur zit alleen in het icoon en de rand; het vlak blijft neutraal zodat een melding niet met de merkkleur concurreert. Op mobiel staat de toast bóven de tabbalk, binnen duimbereik.
-
-**Let op:** dit is een derde Zustand-store, naast `authStore` en `themeStore`. Bewust dezelfde vorm — geen nieuw state-systeem, wel een eigen kleine store per zorg.
-
-### `Select` — `components/ui/Select.tsx`
-
-**Doel:** keuze uit een vaste lijst, in dezelfde visuele taal als `Input`. Gebouwd toen het medewerkersscherm rollen moest kunnen toekennen — precies de afspraak: bouwen zodra een scherm het vraagt, niet eerder.
-
-**Props:** `label?`, `error?`, `opties` (`{ waarde, label }[]`), plus alles wat een `<select>` accepteert.
-
-**Regels:** bewust een echte `<select>` en geen nagebouwde lijst. Op een telefoon krijgt de gebruiker dan het vertrouwde keuzewiel van het toestel, en toetsenbordbediening werkt zonder dat wij iets hoeven te doen. De eigen pijl vervangt die van de browser, die per besturingssysteem anders oogt.
-
-**Gebruikt in:** `Medewerkers` (rol toekennen).
+Bouw ze in `components/ui/`, niet ad-hoc lokaal in een pagina.
