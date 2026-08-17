@@ -6,19 +6,30 @@ Dit document is de operationele checklist voor het valideren van werk aan NMZ GO
 
 ## Geautomatiseerde tests
 
-Sinds de audit is er een testrunner: **Vitest**, met `npm test` (of `npm run controle` voor typecheck + tests in één). De tests staan in `tests/` en draaien in Node — er zit bewust geen enkele test in die een browser of een database nodig heeft.
+Sinds de audit is er een testrunner: **Vitest**, met `npm test` (of `npm run controle` voor typecheck + tests in één). Stand op 14 augustus 2026: **198 tests in 14 bestanden, allemaal groen.** De tests staan in `tests/` en draaien in Node — er zit bewust geen enkele test in die een browser of een database nodig heeft.
 
 Wat er getest wordt is niet willekeurig gekozen. Het is de pure logica op de plekken waar aantoonbaar fouten zaten:
 
 | Bestand | Wat het bewaakt |
 | --- | --- |
 | `tests/ontleden.test.ts` | De werkopdracht-parser: ankers, opsommingstekens, doorlopende zinnen, genummerde punten, het lege kluiscode-veld dat het kopje eronder opslokte. |
+| `tests/opdracht.test.ts` | `controleerDocument()`: welk bestand als werkopdracht of werktekening geaccepteerd wordt. |
 | `tests/planning.test.ts` | `kiesVandaag()` (gaf ooit het adres van de klus die het verst weg lag), weekberekening, en `isoDatum()` dat in UTC de dag ervóór teruggaf. |
+| `tests/klusstand.test.ts` | `klusstand()`: de afgeleide stand van een klus, de enige bron van de kleurtaal. |
+| `tests/klusgroepen.test.ts` | Het groeperen van losse bonnen tot klusgroepen op de projectenpagina. |
 | `tests/statusregels.test.ts` | Van een vrije reden naar de juiste ClickUp-status, inclusief de voorrang van asbest. |
+| `tests/voorzieningen.test.ts` | Containers en dixi's: besteld/afgemeld en wat dat voor de kaart betekent. |
+| `tests/bestelstand.test.ts` | De bestelstand van een voorziening: wat er besteld is, wat nog moet, en wat afgemeld is. |
+| `tests/rollen.test.ts` | Het menu tegen de routes: geen knop die de gebruiker terugstuurt. Zie `src/lib/rollen.ts`. |
+| `tests/zoeken.test.ts` | Het zoekveld over de tien velden waar het in kijkt. |
 | `tests/taakid.test.ts` | Het taak-id uit een geplakte ClickUp-link halen. |
 | `tests/export.test.ts` | De CSV-export: puntkomma, BOM, en velden met een puntkomma of aanhalingsteken erin. |
+| `tests/foutfilter.test.ts` | Rommel van browserextensies buiten de storingenlijst houden. |
+| `tests/uploadfout.test.ts` | Een mislukte foto-upload vertalen naar mensentaal. |
 
 Elke test hoort bij een fout die echt is voorgekomen. Voeg je er een toe, houd die regel dan aan: een test die nooit iets had kunnen vangen, vangt straks ook niets.
+
+**Let op het verschil tussen de commando's.** `npm run build` typecheckt bewust alleen `src/`; `npm run controle` en de CI doen ook `tests/`. Een fout in een test hoort geen uitrol tegen te houden.
 
 `.github/workflows/controle.yml` draait bij elke push `tsc --noEmit`, `npm test` en een productiebuild. Er staan geen sleutels in die workflow en dat blijft zo — hij praat niet met Supabase of ClickUp.
 
@@ -32,7 +43,7 @@ De geautomatiseerde tests dekken de rekenkundige kant; de procedure hieronder de
 
 1. **Build-check:** `npm run build` slaagt zonder TypeScript- of build-fouten.
 2. **Dev-server-check:** `npm run dev`, en de betrokken flow handmatig doorlopen in de browser.
-3. **Beide rollen testen** waar relevant: elke wijziging aan gedeelde componenten, hooks, routing of RLS-policies wordt getest als **zowel beheerder als medewerker**.
+3. **Beide kanten van de rolgrens testen** waar relevant: elke wijziging aan gedeelde componenten, hooks, routing of RLS-policies wordt getest als **kantoorrol én als medewerker**. Raakt de wijziging gebruikersbeheer of storingen, test dan ook de smallere sloten (beheerder vs. uitvoerder, eigenaar vs. de rest) — zie `src/lib/rollen.ts`.
 4. **Volledige gebruikersflow doorlopen**, niet alleen het gewijzigde scherm in isolatie — bv. bij een wijziging aan taken: van inloggen, naar werkbon openen, taak afvinken, foto uploaden, tot terug naar het overzicht.
 5. **Randgevallen:**
    - Lege staten (geen werkbonnen, geen taken, geen medewerkers).
@@ -41,9 +52,9 @@ De geautomatiseerde tests dekken de rekenkundige kant; de procedure hieronder de
    - Trage/haperende verbinding (relevant voor foto-upload door medewerkers in het veld).
 6. **Responsiveness:** de flow op mobiele breedte (device of browser-simulatie) én op desktop-breedte.
 7. **Console-check:** geen onverwachte errors/warnings die aan de wijziging te wijten zijn.
-8. **Routing-check:** nieuwe/gewijzigde routes zijn correct toegevoegd in `App.tsx`, met het juiste guard-type (`BeheerderGuard`/`AuthGuard`), geen dode of dubbele route.
+8. **Routing-check:** nieuwe/gewijzigde routes zijn correct toegevoegd in `App.tsx` én in `ROUTE_SLOT` in `src/lib/rollen.ts`, met het juiste slot (`kantoor`/`gebruikersbeheer`/`eigenaar`/`ingelogd`), geen dode of dubbele route. `tests/rollen.test.ts` houdt het menu hiertegenaan — een route die je alleen in `App.tsx` zet, laat die test vallen.
 9. **Import-check:** geen ongebruikte imports, geen gebroken `@/`-paden, geen circulaire imports.
-10. **Thema-check:** zolang er geen volledig dark-mode-systeem is uitgerold (zie `PRODUCT_VISION.md`), controleren dat er geen onbedoelde `dark:`-variants zijn geïntroduceerd en dat het bestaande lichte thema consistent blijft.
+10. **Thema-check:** het gewijzigde scherm bekijken in **licht én donker**. Beide thema's zijn volledig uitgerold en gelijkwaardig; light is de standaard. Elke nieuwe kleur krijgt een `dark:`-variant — controleer vooral tinten die in donkere modus dichter bij elkaar komen te liggen (zie `PRODUCT_VISION.md`).
 
 ---
 

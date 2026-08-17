@@ -3,7 +3,16 @@
 ## Git workflow
 
 - `main` is de enige beschermde branch en moet altijd deploybaar zijn (Netlify bouwt vanaf `main`).
-- Werk voor iets groter dan een triviale fix in een kortlevende branch (`feature/<korte-naam>`, `fix/<korte-naam>`), en merge terug via een PR of expliciete review.
+- Werk voor iets groter dan een triviale fix in een kortlevende branch (`feature/<korte-naam>`, `fix/<korte-naam>`), en merge terug via een PR of expliciete review. In de praktijk wordt er vaak rechtstreeks op `main` gewerkt en zijn de PR's die er ooit waren gesloten zonder merge; dat mag, maar dan geldt de regel hieronder over parallelle sessies des te sterker.
+
+### Meerdere sessies tegelijk
+
+Het komt regelmatig voor dat er twee of drie sessies naast elkaar aan dit project werken. Dat gaat goed zolang ze niet in dezelfde bestanden schrijven — git voegt dat niet netjes samen. Afspraken:
+
+- **Eerst `git pull`, elke keer.** Ook als je denkt dat je de enige bent.
+- **Verdeel per map, niet per taak.** Bijvoorbeeld: de ene sessie in `supabase/functions/` en migraties, de andere in `src/`. Spreek dat expliciet af voordat je begint.
+- **Migratienummers: kijk eerst wat er ligt.** Pak het eerstvolgende vrije nummer en hergebruik er nooit een. Dit is al twee keer misgegaan — bij `027` en opnieuw bij `030`/`031`, die allebei dubbel bestaan doordat twee sessies tegelijk hetzelfde nummer pakten. De inhoud verschilde, dus de database klopt, maar de map is er misleidend van geworden.
+- **Documentatie in `.ai/` is gedeeld terrein.** Werk je die bij, doe het dan in één afgebakende commit en push meteen, zodat het venster waarin een andere sessie erop kan botsen zo klein mogelijk is.
 - **Commit messages:** kort, imperatief, beschrijf het *waarom*, niet alleen het *wat*. Gebruik prefixen waar zinvol: `fix:`, `feat:`, `refactor:`, `chore:`, `docs:`. Kritieke fixes (auth, RLS, data-integriteit) worden duidelijk gemarkeerd, zoals `[CRITICAL FIX]` in `CHANGELOG.md`.
 - **Nooit** `--force` pushen naar `main`, nooit `--no-verify`, nooit destructieve git-commando's (`reset --hard`, `clean -f`, branch-verwijdering) zonder expliciete bevestiging van de gebruiker.
 - Migraties die al zijn uitgevoerd op een omgeving: nooit aanpassen in een latere commit — altijd een nieuwe migratie (zie `ARCHITECTURE.md` → Database).
@@ -25,16 +34,24 @@
 
 ## Testprocedure
 
-Er is **geen geautomatiseerde testsuite** in dit project (geen test-runner in `package.json`). Kwaliteitsborging gebeurt via een **verplichte handmatige testprocedure** die bij elke taak wordt doorlopen voordat iets als afgerond geldt:
+Er is **wél een geautomatiseerde testsuite**: Vitest, 198 tests in 14 bestanden onder `tests/`. Draai `npm test`, of `npm run controle` voor typecheck én tests in één. `.github/workflows/controle.yml` doet hetzelfde bij elke push.
+
+Let op het verschil: `npm run build` typecheckt bewust alleen `src/`; `npm run controle` en de CI doen ook `tests/`. Een fout in een test hoort geen uitrol tegen te houden.
+
+De tests dekken de rekenkundige kant — parser, planning, statusregels, rollen, export. Wat er níét doorheen komt is alles wat door RLS, Storage of ClickUp loopt; daar is de handmatige procedure hieronder voor, plus `supabase/tests/rollentest.sql`. Zie `TESTING.md` voor wat elk testbestand precies bewaakt.
+
+De handmatige procedure blijft dus verplicht bij elke taak, náást de tests:
 
 1. **Build-check:** `npm run build` slaagt zonder TypeScript- of build-fouten.
+1b. **Testcheck:** `npm test` is groen (of `npm run controle` voor typecheck + tests).
 2. **Dev-server-check:** `npm run dev`, en de betrokken flow handmatig doorlopen in de browser.
-3. **Beide rollen testen** waar relevant: iedere wijziging aan gedeelde componenten, hooks, routing of RLS-policies wordt getest als **zowel beheerder als medewerker**.
+3. **Beide kanten van de rolgrens testen** waar relevant: iedere wijziging aan gedeelde componenten, hooks, routing of RLS-policies wordt getest als **kantoorrol én als medewerker**. Raakt de wijziging gebruikersbeheer of de storingen, test dan ook de smallere sloten (beheerder vs. uitvoerder, eigenaar vs. de rest) — zie `src/lib/rollen.ts`.
 4. **Volledige gebruikersflow doorlopen**, niet alleen het gewijzigde scherm in isolatie — bv. bij een wijziging aan taken: van inloggen, naar werkbon openen, taak afvinken, foto uploaden, tot terug naar het overzicht.
 5. **Randgevallen:** lege staten (geen werkbonnen, geen taken), een mislukte Supabase-call, en een niet-geautoriseerde rol die een beheerder-route probeert te openen.
 6. **Responsiveness:** de flow op mobiele breedte (telefoon-simulatie of echt device) én op desktop-breedte.
 7. **Console-check:** geen onverwachte errors/warnings die aan de wijziging te wijten zijn.
 8. **Routing-check:** nieuwe/gewijzigde routes zijn correct toegevoegd in `App.tsx`, met het juiste guard-type, en er is geen dode of dubbele route achtergebleven.
 9. **Import-check:** geen ongebruikte imports, geen gebroken `@/`-paden, geen circulaire imports geïntroduceerd.
+10. **Thema-check:** het gewijzigde scherm in licht én donker bekijken. Elke nieuwe kleur krijgt een `dark:`-variant.
 
-Als een toekomstige sessie een geautomatiseerde testsuite introduceert, is dat een expliciete, apart besproken beslissing (zie `ROADMAP.md`) — niet iets dat stilzwijgend in een feature-taak wordt meegenomen.
+Voeg je een test toe, houd dan de regel aan die de bestaande suite volgt: **elke test hoort bij een fout die daadwerkelijk is voorgekomen.** Een test die nooit iets had kunnen vangen, vangt straks ook niets.
