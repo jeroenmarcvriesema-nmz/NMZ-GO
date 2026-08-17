@@ -73,7 +73,14 @@ export default function Werkbonnen() {
   // beantwoorden zonder scrollen en rekenen. Twee standen dus: per week
   // om te plannen, en de volledige lijst om te zoeken — want zoeken op
   // een adres van vorige maand moet ook kunnen.
-  const [perWeek, setPerWeek] = useState(true)
+  //
+  // Behalve wanneer je hier vanaf een tegel binnenkomt. Die tegels
+  // tellen over álle klussen — dat is het hele punt van de
+  // werkvoorraad — en landden op een lijst die alleen deze week toont.
+  // "Bezig 3" bracht je dan naar twee klussen, want de derde liep vorige
+  // week. Een tegel die een getal belooft hoort dat getal ook te laten
+  // zien; wie daarna op een week wil filteren zet de knop zelf om.
+  const [perWeek, setPerWeek] = useState(() => !zoekParams.get('stand'))
   const [week, setWeek] = useState(0)
   const maandag = maandagVerschoven(week)
 
