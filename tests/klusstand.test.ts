@@ -69,6 +69,32 @@ describe('klusstand', () => {
   it('laat puntenKlaar voorgaan op de takenlijst', () => {
     expect(klusstand({ status: 'open', puntenKlaar: 0, taken: punten(4, 9) })).toBe('niet_gestart')
   })
+
+  it('een lopende werkdag is bezig, ook zonder afgevinkt punt', () => {
+    // Mario klokte om 07:55 in op zeventien punten en vinkte er nog
+    // geen af. Dat stond een ochtend lang als "Nog niet gestart" op
+    // het dashboard, inclusief de melding dat er niemand begonnen was.
+    expect(klusstand({ status: 'open', taken: punten(0, 17), looptNu: true })).toBe('bezig')
+    expect(klusstand({ status: 'open', looptNu: true })).toBe('bezig')
+  })
+
+  it('een lopende werkdag verandert niets aan wat zwaarder weegt', () => {
+    // Wie vergeet uit te klokken op een klus die stilgelegd of
+    // opgeleverd is, verandert daarmee de stand niet. En alles
+    // afgevinkt blijft wachten op afronden, ook als de klok doorloopt.
+    expect(klusstand({ stilgelegd_op: '2026-08-01', looptNu: true })).toBe('stilgelegd')
+    expect(klusstand({ opgeleverd_op: '2026-08-04', looptNu: true })).toBe('opgeleverd')
+    expect(klusstand({ status: 'voltooid', looptNu: true })).toBe('afgerond')
+    expect(klusstand({ status: 'open', taken: punten(9, 9), looptNu: true })).toBe('af_te_ronden')
+  })
+
+  it('zonder werkdaglogs blijft de uitkomst wat hij was', () => {
+    // Niet elk scherm haalt `werkdag_logs` op. Een ontbrekend veld mag
+    // niet stilletjes iets anders betekenen dan "niemand geklokt".
+    expect(klusstand({ status: 'open', taken: punten(0, 17) })).toBe('niet_gestart')
+    expect(klusstand({ status: 'open', taken: punten(0, 17), looptNu: false })).toBe('niet_gestart')
+    expect(klusstand({ status: 'open', taken: punten(0, 17), looptNu: null })).toBe('niet_gestart')
+  })
 })
 
 describe('standkleur', () => {
