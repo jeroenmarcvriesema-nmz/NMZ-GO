@@ -241,7 +241,7 @@ export default function Dashboard() {
             <EmptyState
               icon={<IconCalendar />}
               titel="Vandaag staat er niets gepland"
-              uitleg="Werkbonnen met de datum van vandaag verschijnen hier zodra ze zijn aangemaakt."
+              uitleg="Hier staan de klussen die vandaag lopen, plus alles waar vandaag op geklokt is."
               actie={<Button variant="primary" size="sm" onClick={() => navigate('/werkbonnen/nieuw')}><IconPlus className="w-4 h-4" /> Nieuwe werkbon</Button>}
             />
           ) : (

@@ -69,7 +69,7 @@ export function WerkbonKaart({ werkbon, linkPrefix = '/werkbonnen', looptDoor }:
     >
       <div className="flex items-start justify-between gap-3 mb-2">
         <div className="min-w-0">
-          <div className="text-base font-bold tracking-tight text-gray-900 dark:text-white">
+          <div className="text-base font-bold tracking-tight text-gray-900 dark:text-white break-words">
             {werkbon.adres}
           </div>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-gray-500 dark:text-white/60 mt-0.5">
@@ -88,9 +88,9 @@ export function WerkbonKaart({ werkbon, linkPrefix = '/werkbonnen', looptDoor }:
       </div>
 
       {stil && werkbon.stilleg_reden && (
-        <div className="flex items-start gap-1.5 mb-3 text-xs text-orange-700 dark:text-orange-300">
+        <div className="flex items-start gap-1.5 mb-3 min-w-0 text-xs text-orange-700 dark:text-orange-300">
           <IconAlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-          <span className="leading-snug">{werkbon.stilleg_reden}</span>
+          <span className="min-w-0 leading-snug break-words">{werkbon.stilleg_reden}</span>
         </div>
       )}
 
@@ -109,40 +109,62 @@ export function WerkbonKaart({ werkbon, linkPrefix = '/werkbonnen', looptDoor }:
         </div>
       )}
 
+      {/* Elk brokje krijgt `min-w-0` en elk pictogram `flex-shrink-0`.
+          Zonder dat eerste krimpt een flex-item niet onder zijn inhoud
+          (`min-width` staat standaard op `auto`), en dan steekt de regel
+          buiten de kaart in plaats van af te breken. Dat gebeurde hier:
+          de datumregel — weeknummer, "loopt door" en twee datums achter
+          elkaar — paste op een telefoon niet meer en liep het kader uit.
+          Bij de ploeg gold hetzelfde zodra er drie namen op een klus
+          stonden. De andere kaarten in de app deden dit al goed; deze
+          was blijven staan. */}
       <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-400 dark:text-white/40 mb-3">
         {/* Het weeknummer erbij. In een lijst met dertig bonnen zeggen
             twee losse datums weinig; "wk 33" is waar in gepland wordt en
             wat er in ClickUp staat. Loopt een klus over meer weken, dan
             staat de reeks er — dat is precies het geval waarin je je
-            anders vergist. */}
-        <span className="flex items-center gap-1">
-          <IconCalendar className="w-3.5 h-3.5" />
-          <span className="font-semibold text-gray-500 dark:text-white/50">{weekBereik(werkbon)}</span>
+            anders vergist.
+
+            Mag zelf ook afbreken: op een smal scherm is dit het langste
+            brokje van de rij, en dan hoort de datum onder het weeknummer
+            te komen in plaats van naast de kaartrand. */}
+        <span className="flex flex-wrap items-center gap-x-1 gap-y-0.5 min-w-0">
+          <IconCalendar className="w-3.5 h-3.5 flex-shrink-0" />
+          {/* "wk 33–34" hoort bij elkaar. Zonder dit brak hij op het
+              streepje af en stond er "wk / 33– / 34" onder elkaar. */}
+          <span className="whitespace-nowrap font-semibold text-gray-500 dark:text-white/50">
+            {weekBereik(werkbon)}
+          </span>
           {looptDoor && <span className="font-semibold text-gray-500 dark:text-white/50">loopt door</span>}
-          <span>
+          <span className="whitespace-nowrap">
             {formatDatumKort(werkbon.geplande_start ?? werkbon.datum)}
             {werkbon.geplande_eind && ` – ${formatDatumKort(werkbon.geplande_eind)}`}
           </span>
         </span>
 
         {(werkbon.medewerkers || []).length > 0 && (
-          <span className="flex items-center gap-1">
-            <IconUsers className="w-3.5 h-3.5" />
-            {werkbon.medewerkers!.map((m) => m.naam).join(', ')}
+          <span className="flex items-start gap-1 min-w-0">
+            <IconUsers className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+            <span className="min-w-0 leading-snug break-words">
+              {werkbon.medewerkers!.map((m) => m.naam).join(', ')}
+            </span>
           </span>
         )}
 
-        <span className="flex items-center gap-1">
-          <IconListCheck className="w-3.5 h-3.5" />{voltooide}/{taken.length} punten
+        <span className="flex items-center gap-1 min-w-0">
+          <IconListCheck className="w-3.5 h-3.5 flex-shrink-0" />{voltooide}/{taken.length} punten
         </span>
 
         {fotos > 0 && (
-          <span className="flex items-center gap-1"><IconPhoto className="w-3.5 h-3.5" />{fotos}</span>
+          <span className="flex items-center gap-1 min-w-0">
+            <IconPhoto className="w-3.5 h-3.5 flex-shrink-0" />{fotos}
+          </span>
         )}
 
         {werkbon.kluiscode && (
-          <span className="flex items-center gap-1 font-semibold text-gray-500 dark:text-white/50">
-            <IconKey className="w-3.5 h-3.5" />{werkbon.kluiscode}
+          <span className="flex items-center gap-1 min-w-0 font-semibold text-gray-500 dark:text-white/50">
+            <IconKey className="w-3.5 h-3.5 flex-shrink-0" />
+            <span className="break-all">{werkbon.kluiscode}</span>
           </span>
         )}
 
@@ -150,10 +172,14 @@ export function WerkbonKaart({ werkbon, linkPrefix = '/werkbonnen', looptDoor }:
             kruis neerzetten zou onrust geven bij de vele klussen waar
             er terecht geen is. */}
         {werkbon.opdracht_pad && (
-          <span className="flex items-center gap-1"><IconFileText className="w-3.5 h-3.5" />opdracht</span>
+          <span className="flex items-center gap-1 min-w-0">
+            <IconFileText className="w-3.5 h-3.5 flex-shrink-0" />opdracht
+          </span>
         )}
         {werkbon.tekening_pad && (
-          <span className="flex items-center gap-1"><IconMap2 className="w-3.5 h-3.5" />tekening</span>
+          <span className="flex items-center gap-1 min-w-0">
+            <IconMap2 className="w-3.5 h-3.5 flex-shrink-0" />tekening
+          </span>
         )}
       </div>
 
