@@ -33,7 +33,6 @@
 // ============================================================
 
 import { SupabaseClient } from 'jsr:@supabase/supabase-js@2'
-import { Image } from 'https://deno.land/x/imagescript@1.2.17/mod.ts'
 import {
   bouwRapport,
   datumInWoorden,
@@ -63,28 +62,73 @@ function base64(bytes: Uint8Array): string {
 }
 
 /**
+ * Zoveel bytes aan foto's gaat er hooguit in één rapport.
+ *
+ * Een vangnet voor het geval het verkleinen niet beschikbaar is. Zonder
+ * grens zou het document tientallen megabytes worden en stukloopt de
+ * upload — en dan is er helemaal geen rapport.
+ */
+const MAX_BEELD_BYTES = 25_000_000
+
+/**
+ * De beeldbibliotheek, één keer geladen en daarna onthouden.
+ *
+ * Bewust een dynamische import binnen een try, en niet bovenaan het
+ * bestand. Een import die bovenaan staat en niet laadt, neemt de hele
+ * edge function mee — en in deze functie zit ook de ClickUp-
+ * synchronisatie, het bijwerken van statussen en het opruimen van
+ * foto's. Eén bibliotheek voor het verkleinen van plaatjes hoort dat
+ * niet te kunnen. Lukt het laden niet, dan gaan de foto's onverkleind
+ * mee en staat dat in de uitkomst van de taak.
+ */
+let verkleinerGeprobeerd = false
+let Beeld: any = null
+
+async function laadVerkleiner(): Promise<any> {
+  if (verkleinerGeprobeerd) return Beeld
+  verkleinerGeprobeerd = true
+  try {
+    const mod = await import('https://deno.land/x/imagescript@1.2.17/mod.ts')
+    Beeld = (mod as any).Image ?? null
+  } catch {
+    Beeld = null
+  }
+  return Beeld
+}
+
+/**
  * Eén foto klein genoeg maken om in het document te passen.
  *
- * Lukt het verkleinen niet — een bestand dat geen geldige JPEG is, of
- * een formaat dat de decoder niet kent — dan gaat het origineel mee
- * zolang het klein genoeg is. Een foto stilletjes weglaten uit
- * bewijsmateriaal is de slechtste van de mogelijke uitkomsten; hem
- * onverkleind meenemen is alleen maar groot.
+ * Lukt het verkleinen niet — geen bibliotheek, een bestand dat geen
+ * geldige JPEG is, een formaat dat de decoder niet kent — dan gaat het
+ * origineel mee. Een foto stilletjes weglaten uit bewijsmateriaal is de
+ * slechtste van de mogelijke uitkomsten; onverkleind meenemen is alleen
+ * maar groot, en dát is te zien aan de uitkomst van de taak.
  */
 async function verklein(
   bytes: Uint8Array,
-): Promise<{ data: string; verkleind: boolean } | null> {
-  try {
-    const beeld = await Image.decode(bytes)
-    if (beeld.width > FOTO_BREEDTE) {
-      beeld.resize(FOTO_BREEDTE, Image.RESIZE_AUTO)
+): Promise<{ data: string; bytes: number; verkleind: boolean }> {
+  const Img = await laadVerkleiner()
+  if (Img) {
+    try {
+      const beeld = await Img.decode(bytes)
+      if (beeld.width > FOTO_BREEDTE) {
+        beeld.resize(FOTO_BREEDTE, Img.RESIZE_AUTO)
+      }
+      const klein: Uint8Array = await beeld.encodeJPEG(FOTO_KWALITEIT)
+      return {
+        data: `data:image/jpeg;base64,${base64(klein)}`,
+        bytes: klein.length,
+        verkleind: true,
+      }
+    } catch {
+      // Valt door naar het origineel hieronder.
     }
-    const klein = await beeld.encodeJPEG(FOTO_KWALITEIT)
-    return { data: `data:image/jpeg;base64,${base64(klein)}`, verkleind: true }
-  } catch {
-    // 2 MB is de grens waarboven één foto het document zou domineren.
-    if (bytes.length > 2_000_000) return null
-    return { data: `data:image/jpeg;base64,${base64(bytes)}`, verkleind: false }
+  }
+  return {
+    data: `data:image/jpeg;base64,${base64(bytes)}`,
+    bytes: bytes.length,
+    verkleind: false,
   }
 }
 
@@ -95,6 +139,8 @@ export interface Rapportuitkomst {
   punten?: number
   fotos?: number
   overgeslagen?: number
+  /** Foto's die onverkleind meegingen — bibliotheek niet beschikbaar. */
+  onverkleind?: number
   bytes?: number
   overgeslagen_al_klaar?: boolean
 }
@@ -177,6 +223,8 @@ export async function bouwOpleverrapport(
   // past nergens in.
   const beeldPerFoto = new Map<string, Rapportfoto>()
   let overgeslagen = 0
+  let onverkleind = 0
+  let beeldBytes = 0
 
   for (const f of fotos ?? []) {
     const { data: blob, error } = await db.storage.from(BUCKET_FOTOS).download(f.storage_path)
@@ -184,12 +232,21 @@ export async function bouwOpleverrapport(
       overgeslagen++
       continue
     }
-    const klein = await verklein(new Uint8Array(await blob.arrayBuffer()))
-    if (!klein) {
+
+    const beeld = await verklein(new Uint8Array(await blob.arrayBuffer()))
+    if (!beeld.verkleind) onverkleind++
+
+    // Boven de grens stoppen we met inladen in plaats van door te gaan
+    // tot de upload klapt. Een rapport met tweeëntwintig van de
+    // drieëntwintig foto's is bruikbaar; geen rapport is dat niet. Het
+    // aantal staat in de uitkomst, dus het is geen stille afloop.
+    if (beeldBytes + beeld.bytes > MAX_BEELD_BYTES) {
       overgeslagen++
       continue
     }
-    beeldPerFoto.set(f.id, { bron: klein.data, fase: f.fase })
+
+    beeldBytes += beeld.bytes
+    beeldPerFoto.set(f.id, { bron: beeld.data, fase: f.fase })
   }
 
   // ── Alles op zijn plaats ──
@@ -266,6 +323,7 @@ export async function bouwOpleverrapport(
     punten: punten.length,
     fotos: beeldPerFoto.size,
     overgeslagen,
+    onverkleind,
     bytes: bestand.length,
   }
 }
