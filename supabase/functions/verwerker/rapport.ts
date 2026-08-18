@@ -149,7 +149,14 @@ async function verklein(
   return { bytes: ruw, verkleind: false }
 }
 
-/** Waar de verkleinde foto's tussen twee rondes wachten. */
+/**
+ * Waar de verkleinde foto's tussen twee rondes wachten.
+ *
+ * Begint met het tenant-id, en dat wijkt bewust af van het rapport
+ * hieronder. Aan deze map komt uitsluitend de verwerker met zijn
+ * service-rol; de leesregels van Storage spelen hier dus geen rol. Bij
+ * het rapport wél, en daar moet de werkbon vooraan.
+ */
 function cachemap(tenantId: string, werkbonId: string): string {
   return `${tenantId}/${werkbonId}/rapport-cache`
 }
@@ -389,12 +396,23 @@ export async function bouwOpleverrapport(
   // ── Wegschrijven ──
   // Een vast pad per rapportage: opnieuw draaien overschrijft het
   // vorige bestand in plaats van er een tweede naast te zetten.
-  const pad = `${tenantId}/${werkbonId}/opleverrapport-${bon.bonnummer ?? werkbonId}.html`
+  //
+  // De werkbon staat vooraan, en dat is geen smaak. De leesregel op
+  // deze bucket leest de eerste map als werkbon-id
+  // (`mag_bij_werkbon(storage.foldername(name)[1])`). Zet je daar iets
+  // anders neer — het tenant-id bijvoorbeeld — dan schrijft de
+  // verwerker het bestand probleemloos weg, want die gaat met de
+  // service-rol langs de regels heen, en kan kantoor het daarna nooit
+  // openen. Dezelfde indeling dus als de werkopdracht en de tekening.
+  const pad = `${werkbonId}/opleverrapport-${bon.bonnummer ?? werkbonId}.html`
   const bestand = new TextEncoder().encode(html)
 
+  // Zonder `; charset=utf-8`: Storage vergelijkt de hele koptekst met
+  // zijn lijst met toegestane types en herkent de variant met charset
+  // niet. Het document draagt zijn codering zelf in een <meta>.
   const { error: uploadFout } = await db.storage
     .from(BUCKET_DOCUMENTEN)
-    .upload(pad, bestand, { contentType: 'text/html; charset=utf-8', upsert: true })
+    .upload(pad, bestand, { contentType: 'text/html', upsert: true })
 
   if (uploadFout) throw new Error(`rapport opslaan mislukt: ${uploadFout.message}`)
 
