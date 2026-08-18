@@ -32,7 +32,14 @@
 // 8 MB. Drieëntwintig daarvan ongewijzigd in één bestand is ruim 40 MB,
 // en als base64 nog een derde meer. Dat past in geen mail en opent
 // traag. Op duizend pixels — ruim voor de 60 mm waarop ze afgedrukt
-// worden — komt het hele rapport op een paar megabyte.
+// worden — komt Hooistraat 8 met drieëntwintig foto's uit op 7,7 MB.
+// Dat is gemeten, niet geschat: de schatting hierboven stond eerst op
+// "een paar megabyte" en zat er een factor drie naast.
+//
+// 7,7 MB gaat door de meeste mailboxen heen, maar ruim is het niet.
+// Moet het kleiner, dan zijn `FOTO_BREEDTE` en `FOTO_KWALITEIT` de
+// knoppen: 800 pixels bij kwaliteit 65 halveert het ongeveer en is met
+// 340 dpi op papier nog altijd meer dan drukwerk vraagt.
 //
 // De originelen blijven staan. Dit verkleint alleen wat in het
 // document gaat; het bewijsmateriaal zelf raakt het niet aan.
