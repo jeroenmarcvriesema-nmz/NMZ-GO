@@ -56,8 +56,16 @@ jobs:
       #
       # `cache` en niet `check`: het gaat om de vraag of alles laadt,
       # niet om een typecheck die deze bestanden nooit gehad hebben.
+      #
+      # `--node-modules-dir=none` omdat de stap hierboven `npm ci` heeft
+      # gedraaid. Deno ziet die node_modules staan, schakelt over naar
+      # Node-modus en zoekt de npm-afhankelijkheden van supabase-js daar
+      # — waar ze niet in staan, want dit is een frontend-map. De edge
+      # runtime van Supabase lost `npm:`-verwijzingen zelf op; deze vlag
+      # laat Deno hetzelfde doen in plaats van in de verkeerde map te
+      # kijken.
       - name: Imports controleren
-        run: deno cache supabase/functions/${{ inputs.functie }}/index.ts
+        run: deno cache --node-modules-dir=none supabase/functions/${{ inputs.functie }}/index.ts
 
       - name: Uitrollen
         env:
