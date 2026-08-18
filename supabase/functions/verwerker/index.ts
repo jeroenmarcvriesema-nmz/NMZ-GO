@@ -301,6 +301,17 @@ Deno.serve(async (req) => {
   let rondeFout: string | null = null
 
   try {
+    // Eerst opruimen wat is blijven hangen. Een handler die door de
+    // runtime wordt afgekapt — te veel processortijd, een herstart —
+    // laat zijn taak op 'bezig' staan, en `claim_verwerkingstaken`
+    // kijkt daar niet naar. Zonder deze stap is zo'n taak voorgoed
+    // onzichtbaar: geen fout, geen herhaling, geen spoor. Zie migratie
+    // 036; de rapportgenerator was de eerste die er zwaar genoeg voor was.
+    const { data: teruggezet } = await db.rpc('taken_terugzetten', {
+      p_ouder_dan: '10 minutes',
+    })
+    if (teruggezet) console.log(`${teruggezet} vastgelopen taken teruggezet`)
+
     const { data: taken, error } = await db.rpc('claim_verwerkingstaken', { aantal: BATCH })
     if (error) throw new Error(`claimen mislukt: ${error.message}`)
 

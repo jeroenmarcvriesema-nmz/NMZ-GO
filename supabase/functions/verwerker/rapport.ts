@@ -9,17 +9,30 @@
 //
 // Dit is die handler.
 //
+// ── Waarom dit over meerdere rondes gaat ──
+// De eerste opzet verkleinde alle foto's in één aanroep. Dat liep vast
+// op "CPU Time exceeded": een edge function krijgt een krappe
+// processorbudget en het uitpakken van een JPEG in WebAssembly is puur
+// rekenwerk. Drieëntwintig foto's is ver over de grens — en omdat de
+// functie middenin wordt afgekapt, blijft de taak op 'bezig' hangen
+// zonder fout, wat er van buiten uitziet als een generator die niets doet.
+//
+// Nu doet elke ronde een handvol foto's, zet het verkleinde resultaat
+// in een cachemap in Storage, en zet zichzelf terug in de wachtrij
+// zolang er nog werk is. Staat alles klaar, dan bouwt de laatste ronde
+// het document — dat is alleen nog samenvoegen en kost bijna niets.
+//
+// Trager, maar het komt af. Drieëntwintig foto's zijn zo'n acht rondes,
+// dus een minuut of acht. Voor een rapport dat een paar keer per week
+// wordt opgemaakt is dat ruim voldoende, en niemand zit erop te wachten:
+// de aanvraag staat in de wachtrij en meldt zich als hij klaar is.
+//
 // ── Waarom de foto's verkleind worden ──
 // De foto's in de bucket zijn gemiddeld 1,2 MB en de grootste is bijna
 // 8 MB. Drieëntwintig daarvan ongewijzigd in één bestand is ruim 40 MB,
-// en als base64 nog een derde meer. Dat is geen document meer maar een
-// probleem: het past niet in een mail, het opent traag, en het bouwen
-// ervan loopt tegen het geheugen van de edge function aan.
-//
-// Op papier is een foto in dit rapport ongeveer 60 mm breed. Duizend
-// pixels is daar ruim voldoende voor — ook op een scherm waarop iemand
-// inzoomt — en levert bestanden van rond de honderd kilobyte. Het hele
-// rapport komt daarmee op een paar megabyte.
+// en als base64 nog een derde meer. Dat past in geen mail en opent
+// traag. Op duizend pixels — ruim voor de 60 mm waarop ze afgedrukt
+// worden — komt het hele rapport op een paar megabyte.
 //
 // De originelen blijven staan. Dit verkleint alleen wat in het
 // document gaat; het bewijsmateriaal zelf raakt het niet aan.
@@ -46,6 +59,18 @@ const FOTO_BREEDTE = 1000
 
 /** JPEG-kwaliteit na verkleinen. */
 const FOTO_KWALITEIT = 72
+
+/**
+ * Zoveel foto's verkleint één ronde.
+ *
+ * Het uitpakken van een JPEG in WebAssembly is puur rekenwerk en een
+ * edge function heeft daar een krap budget voor. Drie is bewust
+ * voorzichtig: bij drieëntwintig foto's kost dat acht rondes van elk een
+ * minuut, en niemand wacht erop. Hoger mag pas als een echte run laat
+ * zien dat het past — "CPU Time exceeded" kost een halve generator en
+ * levert geen foutmelding op die iets uitlegt.
+ */
+const PER_RONDE = 3
 
 const BUCKET_FOTOS = 'werkbon-fotos'
 const BUCKET_DOCUMENTEN = 'werkbon-documenten'
@@ -106,30 +131,43 @@ async function laadVerkleiner(): Promise<any> {
  * maar groot, en dát is te zien aan de uitkomst van de taak.
  */
 async function verklein(
-  bytes: Uint8Array,
-): Promise<{ data: string; bytes: number; verkleind: boolean }> {
+  ruw: Uint8Array,
+): Promise<{ bytes: Uint8Array; verkleind: boolean }> {
   const Img = await laadVerkleiner()
   if (Img) {
     try {
-      const beeld = await Img.decode(bytes)
+      const beeld = await Img.decode(ruw)
       if (beeld.width > FOTO_BREEDTE) {
         beeld.resize(FOTO_BREEDTE, Img.RESIZE_AUTO)
       }
       const klein: Uint8Array = await beeld.encodeJPEG(FOTO_KWALITEIT)
-      return {
-        data: `data:image/jpeg;base64,${base64(klein)}`,
-        bytes: klein.length,
-        verkleind: true,
-      }
+      return { bytes: klein, verkleind: true }
     } catch {
       // Valt door naar het origineel hieronder.
     }
   }
-  return {
-    data: `data:image/jpeg;base64,${base64(bytes)}`,
-    bytes: bytes.length,
-    verkleind: false,
-  }
+  return { bytes: ruw, verkleind: false }
+}
+
+/** Waar de verkleinde foto's tussen twee rondes wachten. */
+function cachemap(tenantId: string, werkbonId: string): string {
+  return `${tenantId}/${werkbonId}/rapport-cache`
+}
+
+/**
+ * Welke foto's staan er al verkleind klaar?
+ *
+ * De cachemap is het geheugen tussen twee rondes. Staat een foto er al
+ * in, dan is hij in een eerdere ronde gedaan en slaan we het dure deel
+ * over — dat is precies wat deze opzet mogelijk maakt.
+ */
+async function alKlaar(
+  db: SupabaseClient, tenantId: string, werkbonId: string,
+): Promise<Set<string>> {
+  const { data } = await db.storage
+    .from(BUCKET_DOCUMENTEN)
+    .list(cachemap(tenantId, werkbonId), { limit: 1000 })
+  return new Set((data ?? []).map((o: any) => String(o.name).replace(/\.jpg$/, '')))
 }
 
 export interface Rapportuitkomst {
@@ -143,6 +181,12 @@ export interface Rapportuitkomst {
   onverkleind?: number
   bytes?: number
   overgeslagen_al_klaar?: boolean
+  /** Hoeveel foto's de klus in totaal heeft, over alle rondes. */
+  van_totaal?: number
+  /** Wat er na deze ronde nog te verkleinen valt. */
+  resterend?: number
+  /** Staat het document er? Bij `false` volgt er nog een ronde. */
+  klaar?: boolean
 }
 
 /**
@@ -217,18 +261,28 @@ export async function bouwOpleverrapport(
 
   if (fotoFout) throw new Error(`foto's lezen mislukt: ${fotoFout.message}`)
 
-  // Eén voor één ophalen en verkleinen. Alles tegelijk zou sneller
-  // zijn en legt het geheugen van de edge function om: een foto van
-  // 8 MB is uitgepakt tientallen megabytes, en dat maal drieëntwintig
-  // past nergens in.
-  const beeldPerFoto = new Map<string, Rapportfoto>()
+  // ── Het dure deel, in porties ──
+  // Elke ronde een handvol foto's uitpakken, verkleinen en in de
+  // cachemap zetten. Wat er al staat wordt overgeslagen. Zo blijft
+  // iedere aanroep ruim binnen het processorbudget en gaat geen enkel
+  // stukje werk twee keer.
+  const gedaan = await alKlaar(db, tenantId, werkbonId)
+  const teDoen = (fotos ?? []).filter((f: any) => !gedaan.has(f.id))
+
+  let verwerkt = 0
   let overgeslagen = 0
   let onverkleind = 0
-  let beeldBytes = 0
 
-  for (const f of fotos ?? []) {
+  for (const f of teDoen.slice(0, PER_RONDE)) {
     const { data: blob, error } = await db.storage.from(BUCKET_FOTOS).download(f.storage_path)
     if (error || !blob) {
+      // Het bestand is er niet meer. Een leeg vak in de cache zodat de
+      // volgende ronde hem niet opnieuw probeert en het rapport niet
+      // eindeloos blijft hangen op één verdwenen foto.
+      await db.storage.from(BUCKET_DOCUMENTEN)
+        .upload(`${cachemap(tenantId, werkbonId)}/${f.id}.jpg`, new Uint8Array(0), {
+          contentType: 'image/jpeg', upsert: true,
+        })
       overgeslagen++
       continue
     }
@@ -236,17 +290,57 @@ export async function bouwOpleverrapport(
     const beeld = await verklein(new Uint8Array(await blob.arrayBuffer()))
     if (!beeld.verkleind) onverkleind++
 
-    // Boven de grens stoppen we met inladen in plaats van door te gaan
-    // tot de upload klapt. Een rapport met tweeëntwintig van de
-    // drieëntwintig foto's is bruikbaar; geen rapport is dat niet. Het
-    // aantal staat in de uitkomst, dus het is geen stille afloop.
-    if (beeldBytes + beeld.bytes > MAX_BEELD_BYTES) {
-      overgeslagen++
-      continue
-    }
+    const { error: cacheFout } = await db.storage.from(BUCKET_DOCUMENTEN)
+      .upload(`${cachemap(tenantId, werkbonId)}/${f.id}.jpg`, beeld.bytes, {
+        contentType: 'image/jpeg', upsert: true,
+      })
+    if (cacheFout) throw new Error(`foto tussenopslaan mislukt: ${cacheFout.message}`)
+    verwerkt++
+  }
 
-    beeldBytes += beeld.bytes
-    beeldPerFoto.set(f.id, { bron: beeld.data, fase: f.fase })
+  // Nog niet alles gedaan: zichzelf terugzetten in de wachtrij en
+  // stoppen. De taak slaagt — er is niets misgegaan, er is alleen nog
+  // werk. Een taak die "mislukt" meldt terwijl hij vordert, jaagt
+  // iemand op onderzoek naar een storing die er niet is.
+  const resterend = teDoen.length - verwerkt - overgeslagen
+  if (resterend > 0) {
+    const { error: vervolgFout } = await db.rpc('taak_aanmaken', {
+      p_soort: 'rapportage.genereren',
+      p_payload: { tenant_id: tenantId, werkbon_id: werkbonId, rapportage_id: rapportageId },
+      p_prioriteit: 120,
+    })
+    if (vervolgFout) throw new Error(`vervolgtaak aanmaken mislukt: ${vervolgFout.message}`)
+
+    return {
+      rapportage_id: rapportageId,
+      werkbon_id: werkbonId,
+      punten: (bon.taken ?? []).length,
+      fotos: gedaan.size + verwerkt,
+      van_totaal: (fotos ?? []).length,
+      resterend,
+      klaar: false,
+    }
+  }
+
+  // ── Alles staat klaar: inladen en samenvoegen ──
+  // Dit deel is goedkoop. De foto's zijn nu een paar honderd kilobyte
+  // in plaats van megabytes, en er komt geen decoder meer aan te pas.
+  const beeldPerFoto = new Map<string, Rapportfoto>()
+  let beeldBytes = 0
+
+  for (const f of fotos ?? []) {
+    const { data: blob } = await db.storage
+      .from(BUCKET_DOCUMENTEN)
+      .download(`${cachemap(tenantId, werkbonId)}/${f.id}.jpg`)
+    if (!blob) continue
+
+    const bytes = new Uint8Array(await blob.arrayBuffer())
+    // Een leeg vak is een foto die niet meer bestond.
+    if (bytes.length === 0) continue
+
+    if (beeldBytes + bytes.length > MAX_BEELD_BYTES) break
+    beeldBytes += bytes.length
+    beeldPerFoto.set(f.id, { bron: `data:image/jpeg;base64,${base64(bytes)}`, fase: f.fase })
   }
 
   // ── Alles op zijn plaats ──
@@ -316,15 +410,29 @@ export async function bouwOpleverrapport(
 
   if (bijwerkFout) throw new Error(`rapportage bijwerken mislukt: ${bijwerkFout.message}`)
 
+  // De cachemap opruimen. Hij heeft zijn werk gedaan en is een kopie
+  // van bewijsmateriaal dat elders al staat; laten slingeren zou de
+  // bucket laten groeien met elk rapport dat ooit is gemaakt.
+  //
+  // Pas ná het bijwerken hierboven: gaat het opruimen mis, dan is het
+  // rapport er nog steeds en staat de aanvraag op klaar. Andersom zou
+  // een mislukte opruiming een geslaagd rapport ongedaan maken.
+  const cachePad = (fotos ?? []).map((f: any) => `${cachemap(tenantId, werkbonId)}/${f.id}.jpg`)
+  if (cachePad.length > 0) {
+    await db.storage.from(BUCKET_DOCUMENTEN).remove(cachePad)
+  }
+
   return {
     rapportage_id: rapportageId,
     werkbon_id: werkbonId,
     bestandspad: pad,
     punten: punten.length,
     fotos: beeldPerFoto.size,
+    van_totaal: (fotos ?? []).length,
     overgeslagen,
     onverkleind,
     bytes: bestand.length,
+    klaar: true,
   }
 }
 
