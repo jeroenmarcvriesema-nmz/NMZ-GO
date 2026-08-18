@@ -78,8 +78,10 @@ blijven staan.
 **Uitrollen gaat via de workflow, niet met de hand.** Actions →
 *Uitrollen* → functie kiezen → Run. Die leest de map van schijf en
 stuurt hem in zijn geheel; er wordt niets overgetypt en half uitrollen
-kan niet meer. Vereist twee repository secrets: `SUPABASE_ACCESS_TOKEN`
-en `SUPABASE_PROJECT_REF`.
+kan niet meer. Vereist één repository secret: `SUPABASE_ACCESS_TOKEN`.
+De project-ref zit in de workflow zelf — die staat toch al in de
+uitgeleverde frontend en is dus geen geheim; `SUPABASE_PROJECT_REF` mag
+hem overschrijven voor een tweede omgeving.
 
 De workflow draait eerst typecheck en tests, en daarna `deno cache` op
 de functie — dat haalt elke import op en faalt als er een niet bestaat.
