@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { useWerkbonnen, useWerkbon } from '@/hooks/useWerkbonnen'
 import { useAuth } from '@/hooks/useAuth'
 import { useWerkdag, formatTijd, geefUren } from '@/hooks/useWerkdag'
@@ -11,12 +12,12 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Avatar } from '@/components/ui/Avatar'
 import { Voortgangsring } from '@/components/ui/Voortgangsring'
 import { berekenVoortgang, cn } from '@/lib/utils'
-import { kiesVandaag, isoDatum } from '@/lib/planning'
+import { kiesVandaag, uitgelopenWerk, isoDatum } from '@/lib/planning'
 import { klusstand, STANDEN, type Klusstand } from '@/lib/klusstand'
 import {
   IconCalendar, IconPlayerPlay, IconPlayerStop,
   IconPhoto, IconClock, IconTrophy,
-  IconUsers, IconCircleCheck,
+  IconUsers, IconCircleCheck, IconAlertTriangle, IconChevronRight,
 } from '@tabler/icons-react'
 
 function groet(): string {
@@ -74,6 +75,13 @@ export default function MijnWerkbonnen() {
 
   const voornaam = (profile?.naam ?? '').split(' ')[0]
   const gekozen = kiesVandaag(werkbonnen)
+
+  // Werk van eerdere dagen dat nog niet af is, behalve de klus die
+  // hierboven al gekozen is. Staat er vandaag een nieuwe klus gepland,
+  // dan pakt `kiesVandaag` die — en dan is het werk van gisteren nog
+  // steeds nergens te zien. Daar gingen de meeste vragen over.
+  const navigate = useNavigate()
+  const blijftLiggen = uitgelopenWerk(werkbonnen).filter((w) => w.id !== gekozen?.id)
 
   /**
    * De lijst hierboven komt zonder foto's binnen — met dertig bonnen
@@ -160,6 +168,40 @@ export default function MijnWerkbonnen() {
               {formatTijd(werkdag.startTijd)} — {formatTijd(werkdag.stopTijd)} ·{' '}
               {geefUren(werkdag.startTijd, werkdag.stopTijd)} uur
             </p>
+          </div>
+        )}
+
+        {/* Wat er van eerdere dagen nog openstaat. Bewust bóven de klus
+            van vandaag: wie hier komt kijken omdat hij gisteren niet
+            klaar kwam, moet het meteen zien en niet eerst langs een
+            ander adres scrollen. */}
+        {blijftLiggen.length > 0 && (
+          <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/25 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-2.5">
+              <IconAlertTriangle className="w-4 h-4 flex-shrink-0 text-amber-700 dark:text-amber-400" />
+              <span className="text-sm font-bold text-amber-900 dark:text-amber-200">
+                {blijftLiggen.length === 1
+                  ? 'Nog niet afgerond van een eerdere dag'
+                  : `${blijftLiggen.length} klussen nog niet afgerond`}
+              </span>
+            </div>
+            <div className="space-y-1.5">
+              {blijftLiggen.map((w) => (
+                <button
+                  key={w.id}
+                  onClick={() => navigate(`/werkbon/${w.id}`)}
+                  className="w-full min-h-[44px] flex items-center gap-2 text-left px-3 py-2 rounded-sm bg-white dark:bg-surface-dark-2 border border-amber-200 dark:border-amber-500/25 hover:border-amber-400 transition-colors"
+                >
+                  <span className="flex-1 min-w-0 text-sm font-semibold text-gray-900 dark:text-white break-words">
+                    {w.adres}
+                  </span>
+                  <span className="text-xs text-amber-700 dark:text-amber-400 tabular-nums whitespace-nowrap">
+                    {berekenVoortgang(w.taken ?? [])}%
+                  </span>
+                  <IconChevronRight className="w-4 h-4 flex-shrink-0 text-gray-400 dark:text-white/40" />
+                </button>
+              ))}
+            </div>
           </div>
         )}
 

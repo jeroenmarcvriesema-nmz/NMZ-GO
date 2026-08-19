@@ -184,9 +184,18 @@ export function looptOp(w: Ingepland, dag: string): boolean {
  *
  * De volgorde die klopt:
  *   1. Een klus die vandaag loopt (vandaag valt binnen start en eind).
- *   2. Anders de eerstvolgende die nog moet beginnen.
- *   3. Anders de laatste die nog niet af is — dan is hij uitgelopen en
- *      moet hij juist bovenaan staan.
+ *   2. Anders werk dat nog niet af is en waarvan de datum voorbij is.
+ *   3. Anders de eerstvolgende die nog moet beginnen.
+ *
+ * Punt 2 stond hier eerst onderaan, ná "de eerstvolgende die nog moet
+ * beginnen". Dat was verkeerd om, en het leverde de meeste vragen op
+ * van de hele app: een klus die uitliep verdween 's ochtends van het
+ * scherm van de ploeg. Ze stonden er nog, maar de app liet hun
+ * volgende klus zien — of, als die er niet was, niets.
+ *
+ * Wat gisteren niet af kwam is vandaag het eerste dat af moet. Dat
+ * weegt zwaarder dan werk dat pas volgende week begint, en zwaarder
+ * dan een leeg scherm.
  */
 export function kiesVandaag<T extends Ingepland>(bonnen: T[], nu: string = isoDatum()): T | null {
   const open = bonnen.filter((w) => w.status !== 'voltooid' && !w.opgeleverd_op)
@@ -197,13 +206,38 @@ export function kiesVandaag<T extends Ingepland>(bonnen: T[], nu: string = isoDa
     .sort((a, b) => startVan(a).localeCompare(startVan(b)))
   if (loopt.length > 0) return loopt[0]
 
+  // Uitgelopen werk. De klus die het kortst geleden had moeten
+  // eindigen staat vooraan: daar stond de ploeg gisteren, en dat is de
+  // klus waar ze vanochtend over bellen.
+  const uitgelopen = uitgelopenWerk(open, nu)
+  if (uitgelopen.length > 0) return uitgelopen[0]
+
   const komt = open
     .filter((w) => startVan(w) > nu)
     .sort((a, b) => startVan(a).localeCompare(startVan(b)))
   if (komt.length > 0) return komt[0]
 
-  // Alles ligt in het verleden en is niet af: uitgelopen werk.
   return [...open].sort((a, b) => eindVan(b).localeCompare(eindVan(a)))[0]
+}
+
+/**
+ * Alles wat niet af is en waarvan de einddatum voorbij is.
+ *
+ * `kiesVandaag` pakt hier de eerste uit, maar het scherm heeft de hele
+ * lijst nodig: staat er vandaag óók een nieuwe klus gepland, dan kiest
+ * `kiesVandaag` die, en moet het werk van gisteren er alsnog naast
+ * staan. Anders is het precies zo onzichtbaar als het was.
+ *
+ * Nieuwste eind eerst — wat gisteren afliep vóór wat vorige maand
+ * afliep.
+ */
+export function uitgelopenWerk<T extends Ingepland>(
+  bonnen: T[],
+  nu: string = isoDatum(),
+): T[] {
+  return bonnen
+    .filter((w) => w.status !== 'voltooid' && !w.opgeleverd_op && eindVan(w) < nu)
+    .sort((a, b) => eindVan(b).localeCompare(eindVan(a)))
 }
 
 /**

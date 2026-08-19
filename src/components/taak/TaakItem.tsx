@@ -7,7 +7,8 @@ import { supabase } from '@/lib/supabase'
 import { useFotos } from '@/hooks/useFotos'
 import { useAuth } from '@/hooks/useAuth'
 import type { Taak } from '@/types'
-import { IconCamera, IconCameraOff, IconCheck, IconSquare, IconPhoto, IconAlertCircle, IconArchive, IconRefresh, IconTrash } from '@tabler/icons-react'
+import { IconCamera, IconCameraOff, IconCheck, IconSquare, IconPhoto, IconAlertCircle, IconArchive, IconRefresh, IconTrash, IconRotate,
+} from '@tabler/icons-react'
 
 interface TaakItemProps {
   taak: Taak
@@ -41,6 +42,7 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
   // naast een afvinkvakje, op een telefoon met handschoenen aan, is te
   // makkelijk gebeurd.
   const [verwijderBezig, setVerwijderBezig] = useState(false)
+  const [heropenBezig, setHeropenBezig] = useState(false)
   const [bevestigWeg, setBevestigWeg] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const fotos = taak.fotos ?? []
@@ -153,6 +155,28 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
       // letterlijk — een eigen tekst zou minder zeggen.
       setFout(error.message || 'Het punt kon niet worden verwijderd.')
       setBevestigWeg(false)
+      return
+    }
+    await onRefresh()
+  }
+
+  /**
+   * Het punt weer openzetten, vanaf het scherm van kantoor.
+   *
+   * Loopt langs dezelfde `toggleVoltooid` als het vinkje van de ploeg,
+   * dus ook het stempel `voltooid_op` gaat eraf — een moment dat niet
+   * meer klopt is erger dan geen moment. De database laat dit toe voor
+   * uitvoerder of hoger, ook bij een afgeronde bon; dat is precies het
+   * geval waarvoor deze knop bestaat.
+   */
+  const heropen = async () => {
+    if (!taak.voltooid || heropenBezig) return
+    setFout(null)
+    setHeropenBezig(true)
+    const { error } = await toggleVoltooid(taak)
+    setHeropenBezig(false)
+    if (error) {
+      setFout(error.message || 'Het punt kon niet worden heropend.')
       return
     }
     await onRefresh()
@@ -322,6 +346,29 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
           van de opdracht, niet bij het uitvoeren ervan. */}
       {magWerkBeheren && !gesloten && (
         <div className="flex items-center gap-2 mt-3 pl-10 flex-wrap">
+          {/* Een afgevinkt punt weer openzetten.
+              Afvinken blijft het werk van de ploeg op de klus — daarom
+              staat `readOnly` op het scherm van kantoor aan en zit deze
+              knop hier, bij de beheerknoppen, en niet op het vinkje.
+              Het gevolg was alleen dat níemand een punt nog kon
+              heropenen zodra de bon was afgerond: de ploeg mag het dan
+              niet meer van de database, en kantoor had er geen knop
+              voor. Terwijl dat juist het moment is waarop blijkt dat er
+              een foto ontbreekt.
+              Blijft weg zodra de bon is opgeleverd: dan is het rapport
+              de deur uit en is heropenen geen kleine correctie meer. */}
+          {taak.voltooid && (
+            <button
+              onClick={heropen}
+              disabled={heropenBezig}
+              className="text-xs font-semibold flex items-center gap-1.5 min-h-[36px] px-2.5 rounded-sm border border-gray-200 dark:border-white/10 text-gray-600 dark:text-white/60 hover:border-brand-yellow hover:text-brand-yellow-dark dark:hover:text-brand-yellow transition-all duration-150 ease-brand disabled:opacity-50"
+              title="Zet dit punt weer open, zodat de ploeg er foto's bij kan zetten"
+            >
+              <IconRotate className="w-3.5 h-3.5" />
+              {heropenBezig ? 'Bezig…' : 'Heropenen'}
+            </button>
+          )}
+
           <button
             onClick={wisselFotoplicht}
             disabled={fotoplichtBezig}

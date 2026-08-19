@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  isoDatum, maandagVan, weekDagen, kiesVandaag, looptOp, dagenUitloop,
+  isoDatum, maandagVan, weekDagen, kiesVandaag, looptOp, dagenUitloop, uitgelopenWerk,
   weeknummer, weekLabel, maandagVerschoven, inWeek,
   maandagVanWerkweek, groepeerPerWeek,
 } from '@/lib/planning'
@@ -131,6 +131,48 @@ describe('kiesVandaag', () => {
       bon({ id: 'recent', geplande_start: '2026-08-03', geplande_eind: '2026-08-07' }),
     ]
     expect(kiesVandaag(lijst, '2026-08-12')?.id).toBe('recent')
+  })
+
+  it('laat werk dat gisteren niet af kwam voorgaan op werk van volgende week', () => {
+    // Dit leverde de meeste vragen op van de hele app. Een klus liep
+    // uit, en 's ochtends stond er de volgende klus op het scherm van
+    // de ploeg — of niets. Ze stonden nog op de steiger van gisteren.
+    const lijst = [
+      bon({ id: 'volgende-week', geplande_start: '2026-08-24', geplande_eind: '2026-08-28' }),
+      bon({ id: 'niet-af',       geplande_start: '2026-08-10', geplande_eind: '2026-08-11' }),
+    ]
+    expect(kiesVandaag(lijst, '2026-08-12')?.id).toBe('niet-af')
+  })
+
+  it('laat een klus die vandaag loopt wel voorgaan op uitgelopen werk', () => {
+    // Uitgelopen werk weegt zwaar, maar niet zwaarder dan de klus waar
+    // hij vandaag daadwerkelijk staat ingepland.
+    const lijst = [
+      bon({ id: 'niet-af', geplande_start: '2026-08-10', geplande_eind: '2026-08-11' }),
+      bon({ id: 'vandaag', geplande_start: '2026-08-12', geplande_eind: '2026-08-14' }),
+    ]
+    expect(kiesVandaag(lijst, '2026-08-12')?.id).toBe('vandaag')
+  })
+})
+
+describe('uitgelopenWerk', () => {
+  it('geeft alles wat niet af is en over zijn datum heen', () => {
+    const lijst = [
+      bon({ id: 'vandaag', geplande_start: '2026-08-12', geplande_eind: '2026-08-14' }),
+      bon({ id: 'oud',     geplande_start: '2026-07-01', geplande_eind: '2026-07-03' }),
+      bon({ id: 'gisteren', geplande_start: '2026-08-10', geplande_eind: '2026-08-11' }),
+    ]
+    // Nieuwste eind eerst: wat gisteren afliep vóór wat in juli afliep.
+    expect(uitgelopenWerk(lijst, '2026-08-12').map((b) => b.id)).toEqual(['gisteren', 'oud'])
+  })
+
+  it('telt afgerond en opgeleverd werk niet mee', () => {
+    const lijst = [
+      bon({ id: 'af',         geplande_eind: '2026-08-01', status: 'voltooid' }),
+      bon({ id: 'opgeleverd', geplande_eind: '2026-08-01', opgeleverd_op: '2026-08-02' }),
+      bon({ id: 'open',       geplande_eind: '2026-08-01' }),
+    ]
+    expect(uitgelopenWerk(lijst, '2026-08-12').map((b) => b.id)).toEqual(['open'])
   })
 })
 
