@@ -68,16 +68,34 @@ const FOTO_BREEDTE = 1000
 const FOTO_KWALITEIT = 72
 
 /**
- * Zoveel foto's verkleint één ronde.
+ * Hooguit zoveel foto's per ronde.
  *
  * Het uitpakken van een JPEG in WebAssembly is puur rekenwerk en een
- * edge function heeft daar een krap budget voor. Drie is bewust
- * voorzichtig: bij drieëntwintig foto's kost dat acht rondes van elk een
- * minuut, en niemand wacht erop. Hoger mag pas als een echte run laat
- * zien dat het past — "CPU Time exceeded" kost een halve generator en
- * levert geen foutmelding op die iets uitlegt.
+ * edge function heeft daar een krap budget voor.
  */
 const PER_RONDE = 3
+
+/**
+ * En hooguit zoveel bronbytes per ronde.
+ *
+ * Een vast aantal foto's bleek niet genoeg. Dahliastraat 6 liep met
+ * drie per ronde alsnog één keer tegen "CPU Time exceeded" aan, want
+ * niet elke foto kost evenveel: ze lopen van een paar honderd kilobyte
+ * tot bijna 8 MB, en drie grote achter elkaar is iets heel anders dan
+ * drie kleine. Het aantal zegt dus weinig; het aantal pixels zegt
+ * alles.
+ *
+ * Vier megabyte aan bronmateriaal is de grens. Eén foto gaat er altijd
+ * doorheen, ook als hij in zijn eentje groter is — anders zou een
+ * enkele grote foto de hele klus laten vastlopen op een grens die hem
+ * moest beschermen.
+ *
+ * Wat het kost als het misgaat: de functie wordt middenin afgekapt, de
+ * taak blijft op 'bezig' staan en pas de opruimer uit migratie 036
+ * bevrijdt hem — tien minuten later. Eén afgebroken ronde kost dus
+ * meer dan tien extra rondes. Voorzichtig zijn is hier goedkoop.
+ */
+const MAX_BRONBYTES_PER_RONDE = 4_000_000
 
 const BUCKET_FOTOS = 'werkbon-fotos'
 const BUCKET_DOCUMENTEN = 'werkbon-documenten'
@@ -287,7 +305,13 @@ export async function bouwOpleverrapport(
   let overgeslagen = 0
   let onverkleind = 0
 
+  let bronBytes = 0
+
   for (const f of teDoen.slice(0, PER_RONDE)) {
+    // Het budget geldt vanaf de tweede foto: de eerste gaat er altijd
+    // doorheen, hoe groot ook.
+    if (verwerkt + overgeslagen > 0 && bronBytes >= MAX_BRONBYTES_PER_RONDE) break
+
     const { data: blob, error } = await db.storage.from(BUCKET_FOTOS).download(f.storage_path)
     if (error || !blob) {
       // Het bestand is er niet meer. Een leeg vak in de cache zodat de
@@ -301,7 +325,10 @@ export async function bouwOpleverrapport(
       continue
     }
 
-    const beeld = await verklein(new Uint8Array(await blob.arrayBuffer()))
+    const bron = new Uint8Array(await blob.arrayBuffer())
+    bronBytes += bron.length
+
+    const beeld = await verklein(bron)
     if (!beeld.verkleind) onverkleind++
 
     const { error: cacheFout } = await db.storage.from(BUCKET_DOCUMENTEN)
