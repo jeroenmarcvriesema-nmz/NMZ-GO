@@ -1,5 +1,14 @@
 # NMZ GO — Changelog
 
+## Zeven knoppen die stilletjes niets deden
+
+- **[FIX]** **De ploeg wijzigen, de planning verzetten, een punt toevoegen of weghalen, een container of dixi afvinken, en vervolgwerk melden of afronden werkten geen van alle.** Ze gaven `violates check constraint "werkbon_gebeurtenissen_soort_check"` en lieten de klus achter zoals hij was. Migratie 039 zet het recht.
+- De oorzaak zat in het logboek, niet in de knoppen. `werkbon_gebeurtenissen` kende sinds migratie 015 drie soorten — stilgelegd, hervat, opgeleverd — en elke handeling die er daarna bij kwam schrijft een eigen soort in dat logboek zonder dat de controle daarop is meegegroeid.
+- Waarom dat de hele handeling sloopt en niet alleen de regel eronder: die insert is de laatste stap ín de functie, en een functie is één transactie. De afgekeurde logregel rolt alles terug wat ervoor gebeurde. Kantoor zette dus een nieuwe ploeg op de bon, kreeg een foutmelding, en de oude ploeg stond er nog. Dat is het vervelendste soort fout — de foutmelding gaat over iets anders dan wat er misging.
+- **[FIX]** En zodat dit niet nog eens maanden onopgemerkt blijft: `tests/migraties.test.ts` leest de migraties zoals Postgres ze zou toepassen, houdt per kolom bij welke waarden de laatste check nog toestaat, en legt daar elke waarde naast die ergens in een insert wordt geschreven. Draait mee in de CI op elke push. De test vond zelf twee van de zeven overtredingen die met de hand over het hoofd waren gezien.
+- Zonder migratie 039 valt hij om met alle zeven, mét de naam van het bestand en de waarde die ontbreekt — een build-fout in plaats van een telefoontje. De regel staat nu ook bij de verboden acties in `.ai/CLAUDE.md`.
+- Bestaande gegevens blijven ongemoeid. Er stonden alleen soorten in die al waren toegestaan — de rest is nooit binnengekomen.
+
 ## "Nog spuiten/isoleren" is geen stilgelegde klus
 
 - **[FIX]** Er staan vier knoppen op de werkbon en alle vier riepen `werkbon_stilleggen()` aan. Voor **stilleggen** en **asbest** klopt dat — daar staat het werk stil. Voor **nog spuiten/isoleren** en **opnieuw inplannen/later** niet: dat zijn statussen op het bord in ClickUp, en de klus loopt gewoon door. Toch zetten ze `stilgelegd_op`, en omdat `klusstand()` die kolom als eerste leest ging de héle app erin mee — het kaartje werd rood met "Ligt stil", op de planning, op het dashboard, in de containerlijst en in de telling van wat er vastzit.
