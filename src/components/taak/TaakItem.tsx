@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { useFotos } from '@/hooks/useFotos'
 import { useAuth } from '@/hooks/useAuth'
 import type { Taak } from '@/types'
+import { Puntopmerkingen } from '@/components/taak/Puntopmerkingen'
 import { IconCamera, IconCameraOff, IconCheck, IconSquare, IconPhoto, IconAlertCircle, IconArchive, IconRefresh, IconTrash, IconRotate,
 } from '@tabler/icons-react'
 
@@ -344,6 +345,13 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
           eraf halen dat de parser verkeerd las of dat toch niet
           doorgaat, en de fotoplicht wisselen. Ze horen bij het beheren
           van de opdracht, niet bij het uitvoeren ervan. */}
+      {/* Het gesprekje bij dit punt. Staat buiten `readOnly` en buiten
+          `magWerkBeheren`: kantoor mag hier juist wél iets kwijt terwijl
+          het nergens anders op dit scherm iets mag, en de ploeg moet
+          kunnen antwoorden. Wel weg zodra de bon is opgeleverd — dan is
+          het rapport de deur uit en is het gesprek gesloten. */}
+      {!gesloten && <Puntopmerkingen taakId={taak.id} werkbonId={werkbonId} />}
+
       {magWerkBeheren && !gesloten && (
         <div className="flex items-center gap-2 mt-3 pl-10 flex-wrap">
           {/* Een afgevinkt punt weer openzetten.
