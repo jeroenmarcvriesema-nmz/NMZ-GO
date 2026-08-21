@@ -243,7 +243,7 @@ export function Opleverrapport({ werkbon, onKlaar }: Props) {
               <IconInfoCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
               {fotos === 0
                 ? 'Een rapport zonder foto’s is een lege huls met een briefhoofd. Zodra de ploeg de eerste foto heeft geüpload kan het rapport aangevraagd worden.'
-                : 'De aanvraag wordt vastgelegd en in de wachtrij gezet. Het document zelf wordt gebouwd zodra de rapportgenerator draait; tot die tijd blijft de aanvraag staan.'}
+                : 'De aanvraag wordt vastgelegd en in de wachtrij gezet. De verwerker bouwt het document met de punten en de fotorapportage erin; dat duurt een minuut of wat, afhankelijk van het aantal foto’s.'}
             </p>
           </>
         )}
@@ -318,8 +318,8 @@ function Rapportagestand({
           Aangevraagd op {formatDatum(rapportage.aangevraagd_op)}
         </div>
         <div className="text-xs text-gray-500 dark:text-white/50 mt-0.5">
-          De aanvraag staat in de wachtrij. Het document wordt gebouwd zodra de
-          rapportgenerator draait — die is er nog niet, dus dit blijft even staan.
+          De aanvraag staat in de wachtrij. De verwerker draait elke minuut en
+          bouwt het document met de punten en de foto’s erin.
         </div>
       </div>
     </div>

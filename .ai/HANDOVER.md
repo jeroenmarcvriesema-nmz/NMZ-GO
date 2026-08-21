@@ -430,7 +430,7 @@ pagina's):
 
 - **P0** Geen enkele foto ooit gemaakt — de hele fotoketen is onbewezen.
 - **P0** Geen zwamsaneerder heeft ooit ingelogd.
-- **P0** PDF-generatie van het opleverrapport bestaat niet.
+- ~~**P0** PDF-generatie van het opleverrapport bestaat niet.~~ Opgelost: `rapportage.genereren` heeft een handler (`supabase/functions/verwerker/rapport.ts`), het sjabloon staat in `rapportsjabloon.ts` en is getest. Het rapport is A4-HTML; de PDF komt uit Afdrukken → Bewaar als PDF. **Openstaand:** de twee vaste alinea's uit het papieren sjabloon (de juridische alinea en de alinea over uitgevoerde werkzaamheden) zijn bewust niet verzonnen — die moeten woordelijk uit het echte document komen en zijn nog niet aangeleverd. Zolang ze leeg zijn blijven die kopjes weg.
 - **P1** ClickUp-terugkoppeling (status + opmerking) is nooit live
   uitgevoerd, alleen in droogloop.
 - **P1** ClickUp attachment-upload bestaat niet.

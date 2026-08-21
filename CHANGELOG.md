@@ -1,5 +1,16 @@
 # NMZ GO — Changelog
 
+## Het opleverrapport wordt eindelijk gemaakt
+
+- **[FEATURE]** **De rapportgenerator bestaat.** De aanvraagknop stond sinds migratie 025 live en maakte netjes een rij en een wachtrijtaak aan, maar de taaksoort `rapportage.genereren` had geen handler — elke aanvraag bleef eeuwig op "wachtend" staan. De verwerker bouwt het document nu zelf.
+- **Drie A4-bladen**, zoals afgesproken en zoals het papieren document: titelblad met adres, opleverdatum, opdrachtgever en de ploeg; projectgegevens met de uitgevoerde punten en de drie tekstvelden; en de fotorapportage. De kwaliteitschecklist zit er bewust niet in. Het projectnummer staat er alleen als het is ingevuld.
+- **Een punt dat niet is afgerond staat er als niet afgerond.** Dat is precies het verschil waar een discussie over meerwerk op uitkomt, en het hoort niet weggepoetst te worden op een document dat naar de opdrachtgever gaat.
+- **De foto's staan per fase gegroepeerd** — voor aanvang, tijdens, na afronding — en zitten als data in het bestand zelf. Het rapport wordt daar groot van, maar het blijft wél één bestand: doorsturen per mail levert geen rapport op met lege vakken omdat de links verlopen zijn. Een foto die niet te lezen is houdt het rapport niet tegen; de rest gaat gewoon door.
+- **De PDF komt uit Afdrukken → Bewaar als PDF.** Het document is opgemaakt op A4 met zijn eigen paginaovergangen, dus dat levert het rapport op zoals het bedoeld is. Bewust geen PDF-bibliotheek en geen headless browser: het eerste kost een dependency om hetzelfde resultaat te benaderen, het tweede draait niet in een Edge Function.
+- **16 tests op het sjabloon**, onder andere: een adres met opmaak erin wordt ontmanteld, een leeg tekstveld levert geen lege kop op, een lege datum wordt geen "Invalid Date" op een document bij de klant, en een foto met een onbekende fase valt niet stilzwijgend uit het rapport.
+- **[FIX]** Het scherm beloofde niets meer dat niet waar is: "de rapportgenerator draait — die is er nog niet" stond er letterlijk, en dat klopt niet meer.
+- **Nog nodig:** de twee vaste alinea's uit het papieren sjabloon (de juridische alinea en die over de uitgevoerde werkzaamheden). Die zijn bewust niet verzonnen — het is tekst die naar een opdrachtgever gaat en die hoort woordelijk uit het echte document te komen. Zolang ze niet zijn aangeleverd blijven die kopjes weg.
+
 ## Het opleverrapport openen zonder broncode
 
 - **[FIX]** **Een klaarstaand opleverrapport is nu te openen vanuit de klus.** Bij "Rapport klaar" stond alleen een groen vinkje en verder niets — er zat geen knop op. Wie het rapport wilde zien moest het buiten de app om uit Storage vissen, en kreeg dan de broncode van het document te zien in plaats van het document.

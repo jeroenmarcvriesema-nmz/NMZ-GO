@@ -25,6 +25,7 @@ import {
   werkbonBijwerken,
 } from './clickup.ts'
 import { fotosOpruimen } from './opruimen.ts'
+import { rapportGenereren } from './rapport.ts'
 
 // Een fout die niet opnieuw geprobeerd moet worden.
 class OnverwerkbaarError extends Error {
@@ -202,6 +203,24 @@ const HANDLERS: Record<string, Handler> = {
       throw new OnverwerkbaarError(`onbekende soort statuswijziging: ${soort}`)
     }
     return await statusBijwerken(db, tenantId, werkbonId, soort)
+  },
+
+  // Het opleverrapport bouwen en in de bucket zetten.
+  //
+  // Via de wachtrij omdat het te lang duurt om iemand op te laten
+  // wachten: de foto's gaan als data-URI het document in, en dat zijn
+  // er bij een grote klus tientallen. Idempotent via een vast pad per
+  // rapportage, dus opnieuw draaien overschrijft in plaats van te
+  // stapelen.
+  'rapportage.genereren': async (taak, db) => {
+    const tenantId = String(taak.payload.tenant_id ?? '')
+    const werkbonId = String(taak.payload.werkbon_id ?? '')
+    const rapportageId = String(taak.payload.rapportage_id ?? '')
+
+    if (!tenantId || !werkbonId || !rapportageId) {
+      throw new OnverwerkbaarError('tenant_id, werkbon_id en rapportage_id zijn alle drie nodig')
+    }
+    return await rapportGenereren(db, tenantId, werkbonId, rapportageId)
   },
 }
 
