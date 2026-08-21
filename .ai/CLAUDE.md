@@ -69,6 +69,7 @@ Nooit toegestaan zonder expliciete, voorafgaande bevestiging van de gebruiker:
 - Een RLS-policy die zichzelf-referentieert via een `EXISTS`-subquery op dezelfde tabel — veroorzaakte eerder `42P17 infinite recursion`.
 - Een policy met `or true` of andere overbroad-condities, ook niet "tijdelijk om te debuggen".
 - Een bestaande, al uitgevoerde migratie wijzigen — altijd een nieuwe migratie toevoegen.
+- Een nieuwe waarde in een kolom schrijven zonder de check-constraint op die kolom **in dezelfde migratie** mee te laten groeien. Dit heeft zeven handelingen stilzwijgend gesloopt (zie migratie 039): de insert in `werkbon_gebeurtenissen` is de laatste stap ín een functie, en een functie is één transactie — een afgekeurde logregel rolt de héle handeling terug. De gebruiker ziet dan een foutmelding over een constraint terwijl wat er werkelijk misging is dat de ploeg niet gewijzigd werd. `tests/migraties.test.ts` bewaakt dit nu; die test uitzetten of omzeilen is geen optie.
 - De `service_role`-key gebruiken of blootstellen in client-code.
 - Nieuwe dependencies toevoegen aan `package.json` zonder expliciete goedkeuring.
 - `git push --force` naar `main`, `git reset --hard`, `git clean -f`, branches verwijderen zonder expliciete bevestiging.
@@ -93,6 +94,7 @@ Een wijziging is pas "klaar" als:
 4. Mobiel én desktop zijn gecontroleerd op responsiveness.
 5. Geen console errors/warnings die aan de wijziging zelf te wijten zijn.
 6. RLS-policies kloppen als de database is aangeraakt: geen recursieve policies, geen overbroad-condities, idempotente migratie.
+6a. Is er een migratie bij, dan is `npm run controle` gedraaid — daar zit `tests/migraties.test.ts` in, die de check-constraints naast de inserts legt. Een nieuwe waarde in een gecontroleerde kolom hoort in dezelfde migratie in de check te staan.
 7. Elke nieuwe Supabase-call heeft foutafhandeling — geen onbehandelde promise, geen oneindige loading state.
 8. Routing en imports zijn gecontroleerd: geen dode routes, geen ongebruikte/gebroken imports.
 9. `CHANGELOG.md` is bijgewerkt bij een zichtbare of functionele wijziging.
