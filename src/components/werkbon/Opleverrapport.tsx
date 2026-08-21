@@ -64,6 +64,7 @@ export function Opleverrapport({ werkbon, onKlaar }: Props) {
   })
   const [opslaan, setOpslaan] = useState(false)
   const [aanvragen, setAanvragen] = useState(false)
+  const [openen, setOpenen] = useState(false)
   const [rapportage, setRapportage] = useState<Rapportage | null>(null)
 
   // De laatste aanvraag ophalen. Een select is genoeg: aanmaken kan
@@ -84,6 +85,49 @@ export function Opleverrapport({ werkbon, onKlaar }: Props) {
     haal()
     return () => { levend = false }
   }, [werkbon.id])
+
+
+  /**
+   * Het klaarstaande rapport openen.
+   *
+   * Niet door de signed URL rechtstreeks in een tabblad te gooien, en
+   * dat is de hele fix: Storage serveert geüploade HTML als platte
+   * tekst. Dat is daar een bewuste maatregel — anders kan iedereen met
+   * uploadrechten een phishingpagina op een supabase.co-domein hangen.
+   * Het gevolg hier was dat kantoor de broncode van het rapport te
+   * zien kreeg in plaats van het rapport, met verhaspelde tekens
+   * erbij omdat er in dat antwoord ook geen charset meezit.
+   *
+   * Dus: het bestand ophalen en er lokaal een blob van maken met het
+   * juiste type én de codering erbij. Dan rendert de browser het wel.
+   * Vanaf daar is het Afdrukken → Bewaar als PDF; het rapport staat al
+   * op A4 met zijn eigen paginaovergangen.
+   */
+  const openRapport = async () => {
+    if (!rapportage?.bestandspad) return
+    setOpenen(true)
+    // Tabblad eerst openen, dan pas wachten — anders ziet een telefoon
+    // het als een pop-up en blokkeert hij hem. Zelfde reden als bij de
+    // documenten op de klusinfo.
+    const tab = window.open('', '_blank')
+    const { data, error } = await supabase.storage
+      .from('werkbon-documenten')
+      .download(rapportage.bestandspad)
+    setOpenen(false)
+
+    if (error || !data) {
+      tab?.close()
+      toast.fout('Het rapport kon niet worden geopend. Controleer je verbinding.')
+      return
+    }
+
+    const url = URL.createObjectURL(new Blob([data], { type: 'text/html;charset=utf-8' }))
+    if (tab) tab.location.href = url
+    else window.location.href = url
+    // Ruim opruimen, maar niet zo snel dat het tabblad hem kwijt is
+    // voordat hij geladen heeft. Het rapport is een paar megabyte.
+    setTimeout(() => URL.revokeObjectURL(url), 60_000)
+  }
 
   if (!magWerkBeheren) return null
 
@@ -182,7 +226,7 @@ export function Opleverrapport({ werkbon, onKlaar }: Props) {
         </div>
 
         {rapportage ? (
-          <Rapportagestand rapportage={rapportage} />
+          <Rapportagestand rapportage={rapportage} onOpenen={openRapport} bezig={openen} />
         ) : (
           <>
             <Button
@@ -209,7 +253,15 @@ export function Opleverrapport({ werkbon, onKlaar }: Props) {
 }
 
 /** Wat er met een lopende aanvraag gebeurd is, zonder mooier voor te stellen dan het is. */
-function Rapportagestand({ rapportage }: { rapportage: Rapportage }) {
+function Rapportagestand({
+  rapportage,
+  onOpenen,
+  bezig,
+}: {
+  rapportage: Rapportage
+  onOpenen: () => void
+  bezig: boolean
+}) {
   if (rapportage.status === 'mislukt') {
     return (
       <div className="flex items-start gap-2 p-3 rounded-sm bg-brand-red-light dark:bg-brand-red/10 border border-brand-red">
@@ -236,6 +288,23 @@ function Rapportagestand({ rapportage }: { rapportage: Rapportage }) {
             Gemaakt op {formatDatum(rapportage.gegenereerd_op ?? rapportage.aangevraagd_op)}
             {rapportage.clickup_geupload_op && ' · staat in ClickUp'}
           </div>
+          {rapportage.bestandspad && (
+            <>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={onOpenen}
+                loading={bezig}
+                className="mt-2.5"
+              >
+                <IconFileText className="w-4 h-4" /> Rapport openen
+              </Button>
+              <div className="text-xs text-green-700 dark:text-green-200/70 mt-2">
+                Opslaan als PDF: open het rapport en kies Afdrukken → Bewaar als PDF.
+                Het staat al op A4 met de paginaovergangen erin.
+              </div>
+            </>
+          )}
         </div>
       </div>
     )

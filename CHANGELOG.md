@@ -1,5 +1,13 @@
 # NMZ GO — Changelog
 
+## Het opleverrapport openen zonder broncode
+
+- **[FIX]** **Een klaarstaand opleverrapport is nu te openen vanuit de klus.** Bij "Rapport klaar" stond alleen een groen vinkje en verder niets — er zat geen knop op. Wie het rapport wilde zien moest het buiten de app om uit Storage vissen, en kreeg dan de broncode van het document te zien in plaats van het document.
+- De oorzaak van die broncode zit in Storage zelf: geüploade HTML wordt daar niet als HTML teruggegeven. Dat is een bewuste maatregel — anders kan iedereen met uploadrechten een phishingpagina op een supabase.co-domein zetten. Dezelfde reden waarom er ook geen codering meekomt, en waarom de streepjes en accenten verhaspeld op het scherm stonden.
+- De knop haalt het bestand daarom op en zet het lokaal opnieuw in een blob mét het juiste type en de codering erbij. Dan rendert de browser het gewoon als het document dat het is.
+- **Opslaan als PDF** staat als hint bij de knop: openen, Afdrukken, Bewaar als PDF. Het rapport is al opgemaakt op A4 met zijn eigen paginaovergangen, dus daar komt het document uit zoals het bedoeld is.
+- Het tabblad gaat open vóór het ophalen en niet erna. Andersom ziet een telefoon het als een pop-up en blokkeert hij hem — hetzelfde patroon als bij de documenten op de klusinfo.
+
 ## Vier knoppen die stilletjes niets deden
 
 - **[FIX]** **De ploeg wijzigen, de planning verzetten, een punt toevoegen of weghalen, en een container of dixi afvinken werkten geen van alle.** Ze gaven `violates check constraint "werkbon_gebeurtenissen_soort_check"` en lieten de klus achter zoals hij was. Migratie 034 zet het recht.
