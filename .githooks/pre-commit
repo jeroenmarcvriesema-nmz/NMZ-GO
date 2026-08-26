@@ -1,0 +1,19 @@
+#!/bin/sh
+# ============================================================
+# NMZ GO — pre-commit
+# ============================================================
+# Draait vóór elke commit. Houdt het bewust bij controles die in een
+# seconde klaar zijn: een hook die traag is, wordt overgeslagen, en
+# een hook die wordt overgeslagen beschermt niets.
+#
+# Aanzetten (eenmalig per kloon, ook op een verse container):
+#
+#   git config core.hooksPath .githooks
+#
+# `--no-verify` gebruiken om hier langs te komen is niet toegestaan,
+# zie .ai/CLAUDE.md → Verboden acties.
+# ============================================================
+
+set -e
+
+node scripts/controleer-migraties.mjs

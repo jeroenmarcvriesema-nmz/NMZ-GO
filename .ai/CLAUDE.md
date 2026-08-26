@@ -63,6 +63,38 @@ Verplichte werkwijze voor elke AI-sessie (zoals Claude Code) op dit project:
 
 ---
 
+## 2b. Gereedschap en vaste procedures
+
+Voor de handelingen die hier het vaakst zijn misgegaan bestaan vaste procedures. Gebruik ze; ze zijn geschreven ná de fout, niet ervoor.
+
+| Wanneer | Wat |
+|---|---|
+| Databasewijziging (schema, RLS, functie, cron) | Skill **`migratie-toevoegen`** |
+| Iets gewijzigd in `supabase/functions/verwerker/` | Skill **`verwerker-uitrollen`** |
+| Volgend vrij migratienummer opzoeken | `npm run migraties` |
+| Migraties + typecheck + tests in één | `npm run controle` |
+| Weten hoe het project ervoor staat | `supabase/stand.sql` draaien |
+
+Een `pre-commit`-hook in `.githooks/` weigert een commit met een dubbel migratienummer. Die wordt automatisch aangezet bij het starten van een sessie (`.claude/settings.json`); handmatig is het `git config core.hooksPath .githooks`.
+
+### Geen cijfers in documentatie
+
+**Een getal in een document is een momentopname die zich voordoet als een feit.** Dat is hier echt misgegaan: `HANDOVER.md` meldde "0 foto's" terwijl er 67 in de database stonden, en een sessie heeft daar verkeerde conclusies uit getrokken.
+
+Daarom geldt: documentatie bevat **regels, besluiten en waarschuwingen** — dingen die je nergens uit kunt afleiden. Aantallen, standen en "op dit moment zijn er N" horen niet in `.ai/`. Wil je weten hoe het ervoor staat, meet het dan met `supabase/stand.sql`.
+
+Moet er tóch een cijfer in een document (bijvoorbeeld om een probleem te illustreren), zet er dan de **meetdatum** bij en schrijf het in de verleden tijd.
+
+### Documentatie bijwerken hoort bij de taak
+
+Documentatie veroudert niet vanzelf bij — er is geen achtergrondproces dat dit doet. Het gebeurt alleen als de sessie die de wijziging maakt, het ook opschrijft. Concreet, aan het eind van je taak:
+
+- Heb je een **regel of besluit** gewijzigd (hoe iets werkt, wat wel/niet mag)? Werk het betreffende document in `.ai/` bij.
+- Heb je iets **functioneels** gewijzigd? `CHANGELOG.md`.
+- Laat je iets achter voor de volgende sessie? Hoofdstuk 0 van `HANDOVER.md` — **door het te herschrijven, niet door er een hoofdstuk onder te hangen.** Zo werd dat document ooit 1053 regels waarin de bovenste en de onderste laag elkaar tegenspraken.
+
+---
+
 ## 3. Verboden acties
 
 Nooit toegestaan zonder expliciete, voorafgaande bevestiging van de gebruiker:

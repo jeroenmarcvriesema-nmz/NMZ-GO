@@ -6,7 +6,7 @@ Dit document is de operationele checklist voor het valideren van werk aan NMZ GO
 
 ## Geautomatiseerde tests
 
-Sinds de audit is er een testrunner: **Vitest**, met `npm test` (of `npm run controle` voor typecheck + tests in één). Stand op 14 augustus 2026: **198 tests in 14 bestanden, allemaal groen.** De tests staan in `tests/` en draaien in Node — er zit bewust geen enkele test in die een browser of een database nodig heeft.
+Sinds de audit is er een testrunner: **Vitest**, met `npm test` (of `npm run controle` voor migratiecontrole + typecheck + tests in één). De tests staan in `tests/` en draaien in Node — er zit bewust geen enkele test in die een browser of een database nodig heeft.
 
 Wat er getest wordt is niet willekeurig gekozen. Het is de pure logica op de plekken waar aantoonbaar fouten zaten:
 

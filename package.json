@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "controle": "tsc -p tsconfig.test.json --noEmit && vitest run"
+    "controle": "node scripts/controleer-migraties.mjs && tsc -p tsconfig.test.json --noEmit && vitest run",
+    "migraties": "node scripts/controleer-migraties.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",

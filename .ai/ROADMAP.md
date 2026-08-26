@@ -26,7 +26,7 @@ Dingen die bewust **nog niet** gebouwd zijn, maar wel op de horizon staan. Bouw 
 
 Deze punten stonden lang op deze lijst en zijn inmiddels gebouwd. Ze staan hier zodat een volgende sessie ze niet opnieuw als openstaand leest:
 
-- **Geautomatiseerde tests.** Er zijn er 198, in 14 bestanden onder `tests/`, met Vitest. CI draait ze bij elke push. Zie `TESTING.md`.
+- **Geautomatiseerde tests.** Een Vitest-suite onder `tests/`, die bij elke push door de CI wordt gedraaid. Zie `TESTING.md`.
 - **Dark mode.** Volledig uitgerold: `themeStore` met opgeslagen voorkeur, `class`-strategie, no-flash-script in `index.html`, toggle in `Sidebar` en `Topbar`. Light is het standaardthema.
 - **Serverlaag.** Drie edge functions plus een verwerkingswachtrij in Postgres, aangedreven door vier pg_cron-jobs. De architectuur is daarmee niet langer client-only; zie `ARCHITECTURE.md`.
 

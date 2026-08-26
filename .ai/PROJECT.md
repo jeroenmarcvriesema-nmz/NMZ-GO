@@ -62,25 +62,17 @@ Elke UI- en UX-beslissing wordt getoetst aan: "kan een monteur dit met één dui
 
 ---
 
-## Huidige status — 14 augustus 2026
+## Huidige status
 
-De app draait in productie en wordt door echte monteurs op echte klussen gebruikt. Onderstaande cijfers komen uit de database, niet uit een eerdere versie van dit document.
+De app draait in productie en wordt door echte monteurs op echte klussen gebruikt.
 
-| | |
-|---|---|
-| Werkbonnen | 46, waarvan vrijwel alle automatisch uit ClickUp |
-| Punten | 634, waarvan 41 afgevinkt |
-| Foto's | 67, verdeeld over 4 werkbonnen |
-| Wie uploadt | Jeffrey (26), Danny (19), Justin (14), Mario (4) |
-| Accounts | 9 — 1 eigenaar, 1 planner, 1 uitvoerder, 6 medewerkers |
-| Opgeleverd | **0** |
-| Opleverrapporten | **0** |
+> **Wil je de cijfers? Meet ze.** Draai `supabase/stand.sql` — werkbonnen, punten, foto's, opleveringen, wie er in het veld uploadt. Hier staan ze bewust niet: dit document heeft maandenlang getallen bevat die verouderden zonder dat iemand het merkte, en een sessie heeft daar verkeerde conclusies uit getrokken. Zie `CLAUDE.md` → Geen cijfers in documentatie.
 
-Wat dat betekent: **de veldtest loopt echt en werkt**, tot aan de opleverknop. Alles daarachter — foto's als bijlage naar ClickUp, status terug naar `opgeleverd`, de bucket opruimen, het opleverrapport als PDF — is nog nooit één keer echt gelopen. Dat is het grootste onbewezen stuk van de app; zie `ROADMAP.md`.
+De verhouding die er op dit moment toe doet, en die niet uit een telling blijkt: **de veldtest loopt tot aan de opleverknop, en niet verder.** Monteurs vinken af en uploaden foto's op echte adressen. Maar er is nog geen enkele klus opgeleverd, en dus is alles daarachter — foto's als bijlage naar ClickUp, status terug naar `opgeleverd`, de bucket opruimen, het opleverrapport als PDF — nog nooit één keer echt gelopen. Dat is het grootste onbewezen stuk van de app; zie `ROADMAP.md` en `FEATURE_BACKLOG.md`.
 
 Wat wél bevestigd werkend is:
 
 - Auth (login, sessieherstel, logout, rolgebaseerde redirect) en RLS over zes rollen, met een herbruikbare rollentest in `supabase/tests/rollentest.sql`.
 - De ClickUp-synchronisatie in beide richtingen: werk met status `volgende week` stroomt binnen inclusief werkopdracht, de punten worden er met een deterministische parser uitgelezen, en ploeg/planning/status schrijven direct terug.
 - De werkdagflow op de telefoon: starten, punten afvinken met foto, werktijden, afronden.
-- 198 geautomatiseerde tests, en CI die bij elke push typecheckt, test en bouwt.
+- Een geautomatiseerde testsuite (Vitest), en CI die bij elke push typecheckt, test en bouwt.

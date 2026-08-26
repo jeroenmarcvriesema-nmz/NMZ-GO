@@ -11,7 +11,7 @@ Het komt regelmatig voor dat er twee of drie sessies naast elkaar aan dit projec
 
 - **Eerst `git pull`, elke keer.** Ook als je denkt dat je de enige bent.
 - **Verdeel per map, niet per taak.** Bijvoorbeeld: de ene sessie in `supabase/functions/` en migraties, de andere in `src/`. Spreek dat expliciet af voordat je begint.
-- **Migratienummers: kijk eerst wat er ligt.** Pak het eerstvolgende vrije nummer en hergebruik er nooit een. Dit is al twee keer misgegaan — bij `027` en opnieuw bij `030`/`031`, die allebei dubbel bestaan doordat twee sessies tegelijk hetzelfde nummer pakten. De inhoud verschilde, dus de database klopt, maar de map is er misleidend van geworden.
+- **Migratienummers: draai `npm run migraties`.** Die print het eerstvolgende vrije nummer. Tel niet met de hand en verzin er geen. Dit is inmiddels **drie keer** misgegaan — `027`, daarna `030`/`031`, daarna `039` — telkens doordat twee sessies tegelijk hetzelfde nummer pakten. De inhoud verschilde, dus de database klopt, maar de map is er misleidend van geworden en de volgorde is niet meer aan de naam af te lezen. Een `pre-commit`-hook weigert dit nu; die staat in `.githooks/` en wordt bij het starten van een sessie automatisch aangezet.
 - **Documentatie in `.ai/` is gedeeld terrein.** Werk je die bij, doe het dan in één afgebakende commit en push meteen, zodat het venster waarin een andere sessie erop kan botsen zo klein mogelijk is.
 - **Commit messages:** kort, imperatief, beschrijf het *waarom*, niet alleen het *wat*. Gebruik prefixen waar zinvol: `fix:`, `feat:`, `refactor:`, `chore:`, `docs:`. Kritieke fixes (auth, RLS, data-integriteit) worden duidelijk gemarkeerd, zoals `[CRITICAL FIX]` in `CHANGELOG.md`.
 - **Nooit** `--force` pushen naar `main`, nooit `--no-verify`, nooit destructieve git-commando's (`reset --hard`, `clean -f`, branch-verwijdering) zonder expliciete bevestiging van de gebruiker.
@@ -34,7 +34,7 @@ Het komt regelmatig voor dat er twee of drie sessies naast elkaar aan dit projec
 
 ## Testprocedure
 
-Er is **wél een geautomatiseerde testsuite**: Vitest, 198 tests in 14 bestanden onder `tests/`. Draai `npm test`, of `npm run controle` voor typecheck én tests in één. `.github/workflows/controle.yml` doet hetzelfde bij elke push.
+Er is **wél een geautomatiseerde testsuite**: Vitest, in `tests/`. Draai `npm test`, of `npm run controle` voor typecheck én tests in één. `.github/workflows/controle.yml` doet hetzelfde bij elke push.
 
 Let op het verschil: `npm run build` typecheckt bewust alleen `src/`; `npm run controle` en de CI doen ook `tests/`. Een fout in een test hoort geen uitrol tegen te houden.
 

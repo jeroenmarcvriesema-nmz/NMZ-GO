@@ -164,7 +164,7 @@ nmzgo/
 │   │                      #   versie.ts, utils.ts
 │   ├── store/             # authStore.ts, themeStore.ts, toastStore.ts
 │   └── types/             # index.ts — gedeelde interfaces/types
-├── tests/                 # 14 Vitest-bestanden, 198 tests, draaien in Node
+├── tests/                 # Vitest, draait in Node — geen browser, geen database
 └── supabase/
     ├── functions/         # verwerker/ (7 bestanden), opdracht-lezen/, ploeg-bijwerken/
     ├── migrations/        # Oplopend genummerde SQL-migraties (001_initial.sql, ...)
