@@ -1,5 +1,11 @@
 # NMZ GO — Changelog
 
+## Repo en database lopen weer gelijk
+
+- **[FIX]** De **geocodeerronde** stond in de productiedatabase uit de planner, maar in de repo stond hij er nog in. Wie de database opnieuw zou opbouwen uit deze migraties kreeg `nmzgo-geocoderen` er elke tien minuten ongevraagd bij terug — precies de ronde die bewust geparkeerd is tot de grondslag voor de afstandsmeting rond is. Migratie 042 legt de werkelijkheid vast.
+- De functies blijven staan: `geocode_hartslag`, `afstand_meters`, `locaties_opruimen` en `meld_afstand_bij_aanmelden` doen niets zolang niemand ze aanroept, en weggooien zou betekenen dat een latere proefronde opnieuw gebouwd moet worden. De opruimcron blijft ook draaien — die beschermt, en doet niets zolang er niets staat.
+- Aanzetten is en blijft drie handelingen met opzet: de ronde inplannen, de vlag in de app omzetten, en de verwerker uitrollen. Dat staat nu ook als commentaar op de functie in de database zelf.
+
 ## Waar je geklokt staat, daar ben je
 
 - **[FIX]** De klus waarop je **geklokt staat** blijft nu bovenaan het scherm Vandaag staan, ook als de planning inmiddels iets anders zegt. Klokte iemand 's ochtends in op de weekklus en drukte kantoor er om tien uur een spoedje tussen, dan sprong de bovenste kaart naar dat spoedje terwijl zijn werkdag nog op de weekklus liep — met het risico dat hij punten afvinkte op het verkeerde adres.
