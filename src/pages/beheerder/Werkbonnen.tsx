@@ -73,7 +73,14 @@ export default function Werkbonnen() {
   // beantwoorden zonder scrollen en rekenen. Twee standen dus: per week
   // om te plannen, en de volledige lijst om te zoeken — want zoeken op
   // een adres van vorige maand moet ook kunnen.
-  const [perWeek, setPerWeek] = useState(true)
+  //
+  // Behalve wanneer je hier vanaf een tegel binnenkomt. Die tegels
+  // tellen over álle klussen — dat is het hele punt van de
+  // werkvoorraad — en landden op een lijst die alleen deze week toont.
+  // "Bezig 3" bracht je dan naar twee klussen, want de derde liep vorige
+  // week. Een tegel die een getal belooft hoort dat getal ook te laten
+  // zien; wie daarna op een week wil filteren zet de knop zelf om.
+  const [perWeek, setPerWeek] = useState(() => !zoekParams.get('stand'))
   const [week, setWeek] = useState(0)
   const maandag = maandagVerschoven(week)
 
@@ -211,7 +218,13 @@ export default function Werkbonnen() {
           }
         />
       ) : inHuidigeWeek ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        /* Twee kolommen pas vanaf lg, niet vanaf md. Op md verschijnt
+           óók de zijbalk van 240 px, en samen met de paginamarge bleef
+           er per kaart 216 px over — smaller dan op een telefoon. Daar
+           liep het adres achter de statusbadge langs en brak "wk 33–34"
+           over drie regels. Vanaf lg is een kaart 344 px; op een tablet
+           staat hij nu op de volle breedte. */
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {gefilterd.map((w) => <WerkbonKaart key={w.id} werkbon={w} />)}
         </div>
       ) : (
@@ -222,7 +235,7 @@ export default function Werkbonnen() {
           {groepeerPerWeek(gefilterd).map((blok) => (
             <div key={blok.maandag.toISOString()}>
               <Weekkop maandag={blok.maandag} nummer={blok.nummer} aantal={blok.items.length} />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-3">
                 {blok.items.map(({ bon, begintHier }) => (
                   <WerkbonKaart key={bon.id} werkbon={bon} looptDoor={!begintHier} />
                 ))}

@@ -1,0 +1,96 @@
+name: Uitrollen
+
+# Een Edge Function uitrollen vanuit de repo.
+#
+# Waarom deze workflow bestaat: uitrollen ging tot nu toe met de hand,
+# bestand voor bestand, via een MCP-aanroep waarin de inhoud werd
+# meegestuurd. Dat is precies waar HANDOVER voor waarschuwt — "eén keer
+# half uitrollen heeft de verwerker plat gelegd" — want in die functie
+# zit ook de ClickUp-synchronisatie en het bijwerken van statussen.
+#
+# Hier wordt niets overgetypt. De CLI leest de map van schijf en stuurt
+# hem in zijn geheel. Half uitrollen kan dus niet meer.
+#
+# Alleen met de hand te starten. De controle-workflow blijft
+# sleutelloos, zoals daar staat: er gaat niets automatisch naar
+# Supabase, en zeker niet bij elke push.
+
+on:
+  workflow_dispatch:
+    inputs:
+      functie:
+        description: 'Welke Edge Function'
+        required: true
+        default: 'verwerker'
+        type: choice
+        options: [verwerker, opdracht-lezen, ploeg-bijwerken]
+
+jobs:
+  uitrollen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Afhankelijkheden installeren
+        run: npm ci
+
+      - name: Types controleren
+        run: npx tsc -p tsconfig.test.json --noEmit
+
+      - name: Tests draaien
+        run: npm test
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      # De poortwachter. Dit haalt elke import op — ook die naar
+      # deno.land en jsr — en faalt als er een niet bestaat. Een kapotte
+      # import die pas in productie blijkt is hoe je de hele wachtrij
+      # stillegt; hier kost het een rood vinkje.
+      #
+      # `cache` en niet `check`: het gaat om de vraag of alles laadt,
+      # niet om een typecheck die deze bestanden nooit gehad hebben.
+      #
+      # `--node-modules-dir=none` omdat de stap hierboven `npm ci` heeft
+      # gedraaid. Deno ziet die node_modules staan, schakelt over naar
+      # Node-modus en zoekt de npm-afhankelijkheden van supabase-js daar
+      # — waar ze niet in staan, want dit is een frontend-map. De edge
+      # runtime van Supabase lost `npm:`-verwijzingen zelf op; deze vlag
+      # laat Deno hetzelfde doen in plaats van in de verkeerde map te
+      # kijken.
+      - name: Imports controleren
+        run: deno cache --node-modules-dir=none supabase/functions/${{ inputs.functie }}/index.ts
+
+      - name: Uitrollen
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          # De project-ref is geen geheim: hij staat in elke aanroep die
+          # de app doet en dus in de uitgeleverde frontend. Hem als
+          # secret eisen kostte een handeling zonder dat het iets
+          # beschermde — en een vergeten secret las als een storing.
+          # Het secret mag hem nog overschrijven, voor een tweede
+          # omgeving.
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF || 'ijjlbbbtzzznfngslnss' }}
+        run: |
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then
+            echo "::error::SUPABASE_ACCESS_TOKEN ontbreekt in de repository secrets."
+            exit 1
+          fi
+          # De verwerker draait zonder JWT-controle: pg_cron roept hem
+          # aan zonder token. De CLI zet die controle standaard aan, en
+          # dan krijgt elke cron-aanroep een 401 en staat de hele
+          # wachtrij stil zonder dat er iets in het log verschijnt.
+          # Deze vlag hoort dus bij de functie en niet bij de smaak van
+          # degene die uitrolt.
+          case "${{ inputs.functie }}" in
+            verwerker) VLAG="--no-verify-jwt" ;;
+            *)         VLAG="" ;;
+          esac
+          npx supabase functions deploy "${{ inputs.functie }}" \
+            --project-ref "$PROJECT_REF" $VLAG

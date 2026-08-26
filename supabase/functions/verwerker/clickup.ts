@@ -31,6 +31,7 @@
 import { SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 import { leesPdf, ontleed } from './werkopdracht.ts'
 import { statusUitReden, type Statussen } from './statusregels.ts'
+import { datumInWerkzone } from './datums.ts'
 import { veldOpties, werkRegisterBij } from './register.ts'
 
 export { statusUitReden }
@@ -116,12 +117,10 @@ function veld(taak: any, id: string | null): any {
   return v?.value ?? null
 }
 
-function datum(ms: unknown): string | null {
-  if (!ms) return null
-  const n = Number(ms)
-  if (!Number.isFinite(n)) return null
-  return new Date(n).toISOString().split('T')[0]
-}
+// Zie datums.ts: afkappen in UTC leverde systematisch een dag te vroeg
+// op, want ClickUp bewaart een datumveld op middernacht Amsterdamse
+// tijd — 22:00 UTC de dag ervóór.
+const datum = datumInWerkzone
 
 /** Labels zijn option-id's; die vertalen we terug naar namen. */
 function labelNamen(taak: any, id: string | null): string[] {

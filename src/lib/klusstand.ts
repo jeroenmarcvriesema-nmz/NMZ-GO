@@ -56,6 +56,12 @@ export interface Klusfeiten {
   taken?: { voltooid: boolean }[] | null
   puntenKlaar?: number | null
   punten?: number | null
+  /**
+   * Er staat nu iemand op deze klus: een werkdag gestart en nog niet
+   * gestopt. Optioneel — alleen schermen die `werkdag_logs` ophalen
+   * weten dit, en zonder dat veld blijft de uitkomst wat hij was.
+   */
+  looptNu?: boolean | null
 }
 
 /**
@@ -76,6 +82,14 @@ export interface Klusfeiten {
  * Een afgevinkt punt is bewijs dat iemand daar is geweest. Dát is wat
  * "bezig" betekent, en daar hoeft niemand een knop voor te vinden.
  *
+ * Een lopende werkdag is hetzelfde bewijs, en het komt eerder. Een
+ * monteur klokt in als hij aankomt en vinkt zijn eerste punt pas af als
+ * er iets áf is — daar zit een gat van soms uren in. In dat gat stond
+ * de klus op "Nog niet gestart", inclusief de melding "Nog niet
+ * gestart" op het dashboard, terwijl de man al op de steiger stond.
+ * Iemand die geklokt heeft is bezig; dat hoeft niet op een vinkje te
+ * wachten.
+ *
  * Tussen bezig en afgerond zit `af_te_ronden`: alles is afgevinkt maar
  * niemand heeft de bon dichtgedaan. Groen zou daar te vroeg zijn — er
  * moet nog iemand op een knop drukken voordat kantoor kan opleveren —
@@ -94,7 +108,7 @@ export function klusstand(k: Klusfeiten): Klusstand {
   // Nul van nul is geen voltooide bon maar een bon zonder punten — een
   // verse klus uit ClickUp waarvan de werkopdracht nog niet is ontleed.
   if (totaal > 0 && klaar >= totaal) return 'af_te_ronden'
-  if (k.status === 'bezig' || klaar > 0) return 'bezig'
+  if (k.status === 'bezig' || klaar > 0 || k.looptNu) return 'bezig'
 
   return 'niet_gestart'
 }

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
-  isoDatum, maandagVan, weekDagen, kiesVandaag, looptOp, dagenUitloop,
+  isoDatum, maandagVan, weekDagen, kiesVandaag, looptVandaag, looptOp, dagenUitloop, uitgelopenWerk,
+  dagInKlus, duurLabel,
   weeknummer, weekLabel, maandagVerschoven, inWeek,
   maandagVanWerkweek, groepeerPerWeek,
 } from '@/lib/planning'
@@ -114,6 +115,47 @@ describe('kiesVandaag', () => {
     expect(kiesVandaag(lijst, '2026-08-13')?.id).toBe('lopend')
   })
 
+  // Dit is de klacht uit de uitvoering: iemand staat vijf dagen op een
+  // klus en er komt één dag een klusje tussendoor. Op begindatum
+  // sorteren gaf altijd de meerdaagse klus, en de tussendoorklus stond
+  // nergens — terwijl dat de enige is die vandáág af moet.
+  it('kiest de klus die vandaag af moet boven de klus die de hele week loopt', () => {
+    const lijst = [
+      bon({ id: 'weekklus',    geplande_start: '2026-08-24', geplande_eind: '2026-08-28' }),
+      bon({ id: 'tussendoor', geplande_start: '2026-08-26', geplande_eind: '2026-08-26' }),
+    ]
+    expect(kiesVandaag(lijst, '2026-08-26')?.id).toBe('tussendoor')
+  })
+
+  // Waar je geklokt staat ben je, en dat weegt zwaarder dan wat de
+  // planning zegt. Kantoor drukt om tien uur een spoedje ertussen; dan
+  // hoort de kaart onder de man niet weg te springen terwijl zijn
+  // werkdag op de andere klus loopt.
+  it('houdt de klus waarop je geklokt staat bovenaan', () => {
+    const lijst = [
+      bon({ id: 'weekklus', geplande_start: '2026-09-01', geplande_eind: '2026-09-10' }),
+      bon({ id: 'spoedje',  geplande_start: '2026-09-02', geplande_eind: '2026-09-02' }),
+    ]
+    // Zonder klok wint het spoedje: dat moet vandaag af.
+    expect(kiesVandaag(lijst, '2026-09-02')?.id).toBe('spoedje')
+    // Geklokt op de weekklus: dan blijft die de klus van vandaag.
+    expect(kiesVandaag(lijst, '2026-09-02', 'weekklus')?.id).toBe('weekklus')
+  })
+
+  it('valt terug op de planning als de klok naar een afgeronde klus wijst', () => {
+    const lijst = [
+      bon({ id: 'af',      geplande_start: '2026-09-01', geplande_eind: '2026-09-02', status: 'voltooid' }),
+      bon({ id: 'spoedje', geplande_start: '2026-09-02', geplande_eind: '2026-09-02' }),
+    ]
+    expect(kiesVandaag(lijst, '2026-09-02', 'af')?.id).toBe('spoedje')
+  })
+
+  it('valt terug op de planning bij een onbekende klok', () => {
+    const lijst = [bon({ id: 'spoedje', geplande_start: '2026-09-02', geplande_eind: '2026-09-02' })]
+    expect(kiesVandaag(lijst, '2026-09-02', 'bestaat-niet')?.id).toBe('spoedje')
+    expect(kiesVandaag(lijst, '2026-09-02', null)?.id).toBe('spoedje')
+  })
+
   it('kijkt vooruit als er vandaag niets loopt', () => {
     const lijst = [
       bon({ id: 'ver',      geplande_start: '2026-08-24' }),
@@ -131,6 +173,133 @@ describe('kiesVandaag', () => {
       bon({ id: 'recent', geplande_start: '2026-08-03', geplande_eind: '2026-08-07' }),
     ]
     expect(kiesVandaag(lijst, '2026-08-12')?.id).toBe('recent')
+  })
+
+  it('laat werk dat gisteren niet af kwam voorgaan op werk van volgende week', () => {
+    // Dit leverde de meeste vragen op van de hele app. Een klus liep
+    // uit, en 's ochtends stond er de volgende klus op het scherm van
+    // de ploeg — of niets. Ze stonden nog op de steiger van gisteren.
+    const lijst = [
+      bon({ id: 'volgende-week', geplande_start: '2026-08-24', geplande_eind: '2026-08-28' }),
+      bon({ id: 'niet-af',       geplande_start: '2026-08-10', geplande_eind: '2026-08-11' }),
+    ]
+    expect(kiesVandaag(lijst, '2026-08-12')?.id).toBe('niet-af')
+  })
+
+  it('laat een klus die vandaag loopt wel voorgaan op uitgelopen werk', () => {
+    // Uitgelopen werk weegt zwaar, maar niet zwaarder dan de klus waar
+    // hij vandaag daadwerkelijk staat ingepland.
+    const lijst = [
+      bon({ id: 'niet-af', geplande_start: '2026-08-10', geplande_eind: '2026-08-11' }),
+      bon({ id: 'vandaag', geplande_start: '2026-08-12', geplande_eind: '2026-08-14' }),
+    ]
+    expect(kiesVandaag(lijst, '2026-08-12')?.id).toBe('vandaag')
+  })
+})
+
+describe('dagInKlus en duurLabel', () => {
+  // Het scenario uit de uitvoering: een klus van 1 t/m 10 september met
+  // een spoedje van twee dagen ertussendoor. Op de tweede september
+  // moet een zwamsaneerder in één oogopslag zien welke van de twee die
+  // dag af moet.
+  const lang = bon({ id: 'lang', geplande_start: '2026-09-01', geplande_eind: '2026-09-10' })
+  const spoed = bon({ id: 'spoed', geplande_start: '2026-09-02', geplande_eind: '2026-09-03' })
+
+  it('telt de dag binnen de klus', () => {
+    expect(dagInKlus(lang, '2026-09-02')).toEqual({ dag: 2, totaal: 10 })
+    expect(dagInKlus(spoed, '2026-09-02')).toEqual({ dag: 1, totaal: 2 })
+  })
+
+  it('zet de lange klus en het spoedje uit elkaar op dezelfde dag', () => {
+    expect(duurLabel(lang, '2026-09-02')).toBe('dag 2 van 10')
+    expect(duurLabel(spoed, '2026-09-02')).toBe('dag 1 van 2')
+  })
+
+  // Eendaags is het sterkste signaal: hier is één dag voor.
+  it('noemt een klus van één dag "alleen vandaag"', () => {
+    const kort = bon({ id: 'kort', geplande_start: '2026-09-02', geplande_eind: '2026-09-02' })
+    expect(duurLabel(kort, '2026-09-02')).toBe('alleen vandaag')
+  })
+
+  it('noemt de laatste dag ook zo', () => {
+    expect(duurLabel(spoed, '2026-09-03')).toBe('laatste dag van 2')
+    expect(duurLabel(lang, '2026-09-10')).toBe('laatste dag van 10')
+  })
+
+  // Een klus die uitloopt heeft zijn eigen blok op het scherm; daar
+  // hoort geen "dag 12 van 10" bij te staan.
+  it('klemt buiten de periode in plaats van door te tellen', () => {
+    expect(dagInKlus(lang, '2026-09-20')).toEqual({ dag: 10, totaal: 10 })
+    expect(dagInKlus(lang, '2026-08-20')).toEqual({ dag: 1, totaal: 10 })
+  })
+
+  // Een bon zonder einddatum is een klus van één dag, niet een klus van
+  // nul dagen die nergens op staat.
+  it('valt terug op de startdatum als er geen einddatum is', () => {
+    const los = bon({ id: 'los', geplande_start: '2026-09-02', geplande_eind: null })
+    expect(duurLabel(los, '2026-09-02')).toBe('alleen vandaag')
+  })
+})
+
+describe('looptVandaag', () => {
+  // De ploeg moet alles zien wat vandaag voor ze staat, niet alleen de
+  // klus die het scherm bovenaan zet. Eén klus onzichtbaar is één klus
+  // die niet gedaan wordt.
+  it('geeft alle klussen die vandaag lopen, wat vandaag af moet eerst', () => {
+    const lijst = [
+      bon({ id: 'weekklus',   geplande_start: '2026-08-24', geplande_eind: '2026-08-28' }),
+      bon({ id: 'tussendoor', geplande_start: '2026-08-26', geplande_eind: '2026-08-26' }),
+      bon({ id: 'morgen',     geplande_start: '2026-08-27', geplande_eind: '2026-08-27' }),
+    ]
+    expect(looptVandaag(lijst, '2026-08-26').map((w) => w.id)).toEqual([
+      'tussendoor',
+      'weekklus',
+    ])
+  })
+
+  it('laat afgeronde en opgeleverde klussen weg', () => {
+    const lijst = [
+      bon({ id: 'af',  geplande_start: '2026-08-26', geplande_eind: '2026-08-26', status: 'voltooid' }),
+      bon({ id: 'op',  geplande_start: '2026-08-26', geplande_eind: '2026-08-26', opgeleverd_op: '2026-08-26' }),
+      bon({ id: 'nog', geplande_start: '2026-08-26', geplande_eind: '2026-08-26' }),
+    ]
+    expect(looptVandaag(lijst, '2026-08-26').map((w) => w.id)).toEqual(['nog'])
+  })
+
+  // Bij een gelijke einddatum wint de klus die het langst loopt: daar
+  // staat de ploeg al, en die hoort niet ineens tweede te worden.
+  it('zet bij dezelfde einddatum de langstlopende vooraan', () => {
+    const lijst = [
+      bon({ id: 'kort', geplande_start: '2026-08-26', geplande_eind: '2026-08-26' }),
+      bon({ id: 'lang', geplande_start: '2026-08-20', geplande_eind: '2026-08-26' }),
+    ]
+    expect(looptVandaag(lijst, '2026-08-26').map((w) => w.id)).toEqual(['lang', 'kort'])
+  })
+
+  it('geeft niets terug als er vandaag niets loopt', () => {
+    const lijst = [bon({ id: 'later', geplande_start: '2026-09-01', geplande_eind: '2026-09-03' })]
+    expect(looptVandaag(lijst, '2026-08-26')).toEqual([])
+  })
+})
+
+describe('uitgelopenWerk', () => {
+  it('geeft alles wat niet af is en over zijn datum heen', () => {
+    const lijst = [
+      bon({ id: 'vandaag', geplande_start: '2026-08-12', geplande_eind: '2026-08-14' }),
+      bon({ id: 'oud',     geplande_start: '2026-07-01', geplande_eind: '2026-07-03' }),
+      bon({ id: 'gisteren', geplande_start: '2026-08-10', geplande_eind: '2026-08-11' }),
+    ]
+    // Nieuwste eind eerst: wat gisteren afliep vóór wat in juli afliep.
+    expect(uitgelopenWerk(lijst, '2026-08-12').map((b) => b.id)).toEqual(['gisteren', 'oud'])
+  })
+
+  it('telt afgerond en opgeleverd werk niet mee', () => {
+    const lijst = [
+      bon({ id: 'af',         geplande_eind: '2026-08-01', status: 'voltooid' }),
+      bon({ id: 'opgeleverd', geplande_eind: '2026-08-01', opgeleverd_op: '2026-08-02' }),
+      bon({ id: 'open',       geplande_eind: '2026-08-01' }),
+    ]
+    expect(uitgelopenWerk(lijst, '2026-08-12').map((b) => b.id)).toEqual(['open'])
   })
 })
 

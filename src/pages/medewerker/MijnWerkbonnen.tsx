@@ -1,6 +1,8 @@
+import { useNavigate } from 'react-router-dom'
 import { useWerkbonnen, useWerkbon } from '@/hooks/useWerkbonnen'
 import { useAuth } from '@/hooks/useAuth'
 import { useWerkdag, formatTijd, geefUren } from '@/hooks/useWerkdag'
+import { useLopendeWerkdag } from '@/hooks/useLopendeWerkdag'
 import { useMijnPrestaties } from '@/hooks/useMijnPrestaties'
 import { usePlanningDoorkijk } from '@/hooks/usePlanningDoorkijk'
 import { PageWrapper } from '@/components/layout/PageWrapper'
@@ -11,12 +13,13 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Avatar } from '@/components/ui/Avatar'
 import { Voortgangsring } from '@/components/ui/Voortgangsring'
 import { berekenVoortgang, cn } from '@/lib/utils'
-import { kiesVandaag, isoDatum } from '@/lib/planning'
+import { kiesVandaag, looptVandaag, uitgelopenWerk, duurLabel, isoDatum } from '@/lib/planning'
 import { klusstand, STANDEN, type Klusstand } from '@/lib/klusstand'
+import { LOCATIE_AAN } from '@/lib/locatie'
 import {
   IconCalendar, IconPlayerPlay, IconPlayerStop,
   IconPhoto, IconClock, IconTrophy,
-  IconUsers, IconCircleCheck,
+  IconUsers, IconCircleCheck, IconAlertTriangle, IconChevronRight, IconCalendarEvent, IconMapPin,
 } from '@tabler/icons-react'
 
 function groet(): string {
@@ -73,7 +76,28 @@ export default function MijnWerkbonnen() {
   const { werkbonnen, loading, refetch: refetchLijst } = useWerkbonnen()
 
   const voornaam = (profile?.naam ?? '').split(' ')[0]
-  const gekozen = kiesVandaag(werkbonnen)
+
+  // Sta je geklokt, dan is dat de klus van vandaag — ook als de
+  // planning inmiddels iets anders zegt. Kantoor kan er om tien uur een
+  // spoedje tussen drukken; dan hoort de kaart onder de man niet weg te
+  // springen terwijl zijn werkdag loopt. Het spoedje staat eronder in
+  // de lijst, dus hij ziet het wel.
+  const { werkbonId: geklokOp } = useLopendeWerkdag()
+  const gekozen = kiesVandaag(werkbonnen, isoDatum(), geklokOp)
+
+  // Werk van eerdere dagen dat nog niet af is, behalve de klus die
+  // hierboven al gekozen is. Staat er vandaag een nieuwe klus gepland,
+  // dan pakt `kiesVandaag` die — en dan is het werk van gisteren nog
+  // steeds nergens te zien. Daar gingen de meeste vragen over.
+  const navigate = useNavigate()
+  const blijftLiggen = uitgelopenWerk(werkbonnen).filter((w) => w.id !== gekozen?.id)
+
+  // De andere klussen die vandaag óók lopen. Iemand staat vijf dagen op
+  // een klus en er komt één dag een klusje tussendoor: dan lopen er
+  // twee, en hierboven kan er maar één de klus van vandaag zijn. De
+  // rest stond daarmee nergens — precies de klus die niet vergeten mag
+  // worden, want er is één dag om hem te doen.
+  const ookVandaag = looptVandaag(werkbonnen).filter((w) => w.id !== gekozen?.id)
 
   /**
    * De lijst hierboven komt zonder foto's binnen — met dertig bonnen
@@ -163,12 +187,84 @@ export default function MijnWerkbonnen() {
           </div>
         )}
 
+        {/* Wat er van eerdere dagen nog openstaat. Bewust bóven de klus
+            van vandaag: wie hier komt kijken omdat hij gisteren niet
+            klaar kwam, moet het meteen zien en niet eerst langs een
+            ander adres scrollen. */}
+        {ookVandaag.length > 0 && (
+          <div className="bg-blue-50/70 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-2.5">
+              <IconCalendarEvent className="w-4 h-4 flex-shrink-0 text-blue-700 dark:text-blue-400" />
+              <span className="text-sm font-bold text-blue-900 dark:text-blue-200">
+                {ookVandaag.length === 1
+                  ? 'Staat vandaag ook voor je ingepland'
+                  : `Nog ${ookVandaag.length} klussen vandaag ingepland`}
+              </span>
+            </div>
+            <div className="space-y-1.5">
+              {ookVandaag.map((w) => (
+                <button
+                  key={w.id}
+                  onClick={() => navigate(`/werkbon/${w.id}`)}
+                  className="w-full min-h-[44px] flex items-center gap-2 text-left px-3 py-2 rounded-sm bg-white dark:bg-surface-dark-2 border border-blue-100 dark:border-blue-500/20 hover:border-blue-400 transition-colors"
+                >
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-sm font-semibold text-gray-900 dark:text-white break-words">
+                      {w.adres}
+                    </span>
+                    {/* Welke van de twee is de spoedklus en welke loopt
+                        de hele week? Twee adressen onder elkaar zeggen
+                        dat niet; deze regel wel. */}
+                    <span className="block text-xs text-blue-700 dark:text-blue-400 mt-0.5">
+                      {duurLabel(w)}
+                    </span>
+                  </span>
+                  <span className="text-xs text-blue-700 dark:text-blue-400 tabular-nums whitespace-nowrap">
+                    {berekenVoortgang(w.taken ?? [])}%
+                  </span>
+                  <IconChevronRight className="w-4 h-4 flex-shrink-0 text-gray-400 dark:text-white/40" />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {blijftLiggen.length > 0 && (
+          <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/25 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-2.5">
+              <IconAlertTriangle className="w-4 h-4 flex-shrink-0 text-amber-700 dark:text-amber-400" />
+              <span className="text-sm font-bold text-amber-900 dark:text-amber-200">
+                {blijftLiggen.length === 1
+                  ? 'Nog niet afgerond van een eerdere dag'
+                  : `${blijftLiggen.length} klussen nog niet afgerond`}
+              </span>
+            </div>
+            <div className="space-y-1.5">
+              {blijftLiggen.map((w) => (
+                <button
+                  key={w.id}
+                  onClick={() => navigate(`/werkbon/${w.id}`)}
+                  className="w-full min-h-[44px] flex items-center gap-2 text-left px-3 py-2 rounded-sm bg-white dark:bg-surface-dark-2 border border-amber-200 dark:border-amber-500/25 hover:border-amber-400 transition-colors"
+                >
+                  <span className="flex-1 min-w-0 text-sm font-semibold text-gray-900 dark:text-white break-words">
+                    {w.adres}
+                  </span>
+                  <span className="text-xs text-amber-700 dark:text-amber-400 tabular-nums whitespace-nowrap">
+                    {berekenVoortgang(w.taken ?? [])}%
+                  </span>
+                  <IconChevronRight className="w-4 h-4 flex-shrink-0 text-gray-400 dark:text-white/40" />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Hetzelfde blok als op /werkbon/:id. Eén opbouw, één plek om
             te onderhouden, en geen knop meer naar een mooiere versie
             van ditzelfde scherm. */}
         <Klusuitvoering
           werkbon={vandaag}
-          kopje="Vandaag werk je aan"
+          kopje={`Vandaag werk je aan · ${duurLabel(vandaag)}`}
           // De ring bovenaan toont de voortgang al.
           zonderVoortgang
           laden={bonLaadt}
@@ -250,6 +346,23 @@ function Werkdagbalk({ fase, bezig, onStart, onStop, onHervat }: {
           {knop.icon}
           {bezig ? 'BEZIG…' : knop.label}
         </button>
+
+        {/* De informatieplicht, op de plek waar het gebeurt.
+            Bij het aanmelden wordt eenmalig de locatie opgevraagd om de
+            afstand tot de klus te bepalen. Dat mag alleen als degene om
+            wie het gaat het weet — stil meten is niet toegestaan, hoe
+            onschuldig het doel ook is. Eén regel hier, de uitleg staat
+            in het personeelsreglement.
+            Alleen vóór het starten: daarna is er niets meer op te
+            vragen en zou het een waarschuwing zijn zonder aanleiding. */}
+        {LOCATIE_AAN && fase === 'voor_start' && (
+          <p className="flex items-start gap-1.5 text-[11px] leading-snug text-gray-400 dark:text-white/40 mt-2 max-w-prose">
+            <IconMapPin className="w-3 h-3 flex-shrink-0 mt-0.5" />
+            Bij het aanmelden wordt je locatie eenmalig opgevraagd om de afstand
+            tot het werkadres te bepalen. Je positie wordt niet bewaard en je
+            wordt niet gevolgd tijdens de dag.
+          </p>
+        )}
       </div>
     </div>
   )

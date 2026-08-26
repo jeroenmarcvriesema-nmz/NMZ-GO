@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { klusstand, vergelijkStand, type Klusstand } from '@/lib/klusstand'
+import { klusstand, STANDVOLGORDE, type Klusstand } from '@/lib/klusstand'
+import { looptOp } from '@/lib/planning'
 
 // ── Dashboard ──────────────────────────────────────────────────
 // Draaide tot nu toe op mock data. Nu op de echte tabellen:
@@ -143,8 +144,15 @@ const UREN_VOOR_VOORTGANG = 2
 /** Minder dan dit deel van de taken klaar na bovenstaande tijd = achter. */
 const VOORTGANG_DREMPEL = 0.5
 
+// `stilgelegd_op` en `opgeleverd_op` stonden hier niet in, terwijl
+// `klusstand()` ze als eerste twee vragen stelt. Een klus die stilligt
+// kwam op het dashboard dus als "Bezig" te staan — de enige stand die
+// een telefoontje vraagt, en juist die was hier onzichtbaar.
+// `geplande_start` ontbrak net zo goed, waardoor de tweede sortering
+// altijd op `datum` terugviel.
 const SELECT = `
   id, projectnaam, adres, status, datum, updated_at,
+  geplande_start, geplande_eind, stilgelegd_op, opgeleverd_op,
   taken ( id, voltooid ),
   fotos!fotos_werkbon_id_fkey ( id, created_at ),
   werkbon_medewerkers ( persoon:personen ( id, naam ) )
@@ -172,28 +180,23 @@ export function useDashboard(): { data: DashboardData; loading: boolean; error: 
     setLoading(true)
     const vandaag = new Date().toISOString().split('T')[0]
 
-    const [bonnenRes, logsRes, voorraadRes] = await Promise.all([
-      supabase.from('werkbonnen').select(SELECT).eq('datum', vandaag),
+    const [logsRes, voorraadRes] = await Promise.all([
       supabase.from('werkdag_logs')
         .select('werkbon_id, start_tijd, stop_tijd, medewerker:profiles ( naam )')
         .eq('datum', vandaag),
       // Alles, maar smal: alleen wat nodig is om de stand te bepalen.
-      // Eenendertig rijen met per punt een id en een vinkje — een
-      // fractie van de zware select hierboven, en het enige antwoord op
+      // Tweeënvijftig rijen met per punt een id en een vinkje — een
+      // fractie van de zware select hieronder, en het enige antwoord op
       // "hoeveel klussen lopen er nu".
       supabase.from('werkbonnen').select(VOORRAAD_SELECT),
     ])
 
-    if (bonnenRes.error || logsRes.error || voorraadRes.error) {
-      setError(
-        bonnenRes.error?.message ?? logsRes.error?.message
-        ?? voorraadRes.error?.message ?? 'Onbekende fout'
-      )
+    if (logsRes.error || voorraadRes.error) {
+      setError(logsRes.error?.message ?? voorraadRes.error?.message ?? 'Onbekende fout')
       setLoading(false)
       return
     }
 
-    const bonnen: any[] = bonnenRes.data || []
     const logs: any[] = logsRes.data || []
 
     // Vroegste start per werkbon: als twee monteurs op dezelfde bon
@@ -215,6 +218,47 @@ export function useDashboard(): { data: DashboardData; loading: boolean; error: 
         if (!laatste || l.stop_tijd > laatste) stopPerBon.set(l.werkbon_id, l.stop_tijd)
       }
     })
+
+    // ── Welke klussen horen vandaag op het bord? ─────────────────
+    // Dit was `datum = vandaag`, en dat is vier van de tweeënvijftig
+    // bonnen. Van de zes monteurs die vanochtend inklokten stond er
+    // precies één op zo'n bon: de andere vijf werkten op klussen die
+    // vorige week begonnen of morgen gepland staan, en die kwamen
+    // nergens op het dashboard voorbij. Kantoor keek naar een lijst van
+    // vier terwijl er tien klussen liepen.
+    //
+    // `datum` is bovendien niet de dag waarop gewerkt wordt maar de dag
+    // waarop de bon is ingepland; bij een meerdaagse klus staat hij op
+    // dag één en verschuift nooit meer. Dezelfde regel als de planning
+    // en het Lopend-scherm hanteren is `looptOp()`: vandaag valt tussen
+    // start en oplevering.
+    //
+    // Plus wie er daadwerkelijk geklokt heeft. Loopt iemand op een klus
+    // die buiten zijn eigen planning valt — uitgelopen, of een dag
+    // eerder begonnen — dan is dát het bericht, en dan hoort hij er
+    // juist bij te staan.
+    const relevant = new Set<string>()
+    for (const b of (voorraadRes.data ?? []) as any[]) {
+      const stand = klusstand({ ...b, looptNu: loopdtNog.has(b.id) })
+      if (stand === 'afgerond' || stand === 'opgeleverd') continue
+      if (looptOp(b, vandaag)) relevant.add(b.id)
+    }
+    logs.forEach((l) => { if (l.werkbon_id) relevant.add(l.werkbon_id) })
+
+    // Alleen de zware select ophalen voor wat er ook echt komt te
+    // staan. Zonder klussen geen ronde: `.in()` met een lege lijst is
+    // een query die gegarandeerd niets teruggeeft.
+    let bonnen: any[] = []
+    if (relevant.size > 0) {
+      const bonnenRes = await supabase
+        .from('werkbonnen').select(SELECT).in('id', [...relevant])
+      if (bonnenRes.error) {
+        setError(bonnenRes.error.message)
+        setLoading(false)
+        return
+      }
+      bonnen = bonnenRes.data || []
+    }
 
     const projecten: ProjectRegel[] = bonnen.map((b) => {
       const taken: any[] = b.taken || []
@@ -242,7 +286,7 @@ export function useDashboard(): { data: DashboardData; loading: boolean; error: 
         team: (b.werkbon_medewerkers || [])
           .map((wm: any) => wm.persoon?.naam)
           .filter(Boolean),
-        stand: klusstand(b),
+        stand: klusstand({ ...b, looptNu: loopdtNog.has(b.id) }),
         achter,
         start: b.geplande_start ?? b.datum ?? '',
         voortgang,
@@ -263,13 +307,15 @@ export function useDashboard(): { data: DashboardData; loading: boolean; error: 
     // Op stand gesorteerd, niet op de volgorde waarin de database ze
     // teruggaf. Wat stilligt of op afronden wacht staat bovenaan; bij
     // gelijke stand het werk dat het langst loopt.
-    projecten.sort((a, b) => vergelijkStand(a, b, (p) => ({
-      status: p.stand === 'afgerond' ? 'voltooid' : 'open',
-      stilgelegd_op: p.stand === 'stilgelegd' ? 'ja' : null,
-      opgeleverd_op: p.stand === 'opgeleverd' ? 'ja' : null,
-      puntenKlaar: p.aantalTakenKlaar,
-      punten: p.aantalTaken,
-    }), (p) => p.start))
+    // De stand staat al op de regel; hem uit losse velden terugrekenen
+    // — zoals hier gebeurde — verloor precies de standen die niet uit
+    // de punten volgen. Een klus die bezig is omdat er iemand geklokt
+    // heeft heeft nul afgevinkte punten, en belandde in die omweg dus
+    // weer bij "nog niet gestart".
+    projecten.sort((a, b) => {
+      const verschil = STANDVOLGORDE[a.stand] - STANDVOLGORDE[b.stand]
+      return verschil !== 0 ? verschil : a.start.localeCompare(b.start)
+    })
 
     // ── Meldingen ────────────────────────────────────────────────
     const meldingen: Melding[] = []
@@ -357,7 +403,7 @@ export function useDashboard(): { data: DashboardData; loading: boolean; error: 
     let uitgelopen = 0
 
     for (const b of (voorraadRes.data ?? []) as any[]) {
-      const stand = klusstand(b)
+      const stand = klusstand({ ...b, looptNu: loopdtNog.has(b.id) })
       werkvoorraad[stand] += 1
 
       // Uitgelopen: de opleverdatum is voorbij en de klus is niet af.
@@ -391,11 +437,9 @@ export function useDashboard(): { data: DashboardData; loading: boolean; error: 
       let aantal = 0
 
       for (const b of (voorraadRes.data ?? []) as any[]) {
-        const stand = klusstand(b)
+        const stand = klusstand({ ...b, looptNu: loopdtNog.has(b.id) })
         if (stand === 'afgerond' || stand === 'opgeleverd') continue
-        const van = b.geplande_start ?? b.datum
-        const tot = b.geplande_eind ?? b.geplande_start ?? b.datum
-        if (!van || van > dagStr || (tot ?? van) < dagStr) continue
+        if (!looptOp(b, dagStr)) continue
         verdeling[stand] += 1
         aantal += 1
       }

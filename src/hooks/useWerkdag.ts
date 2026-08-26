@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { toast } from '@/store/toastStore'
+import { haalPositie, LOCATIE_AAN } from '@/lib/locatie'
 
 // Tabel: werkdag_logs (migratie 006). Eén rij per monteur per
 // werkbon per dag; start zet de rij, stop vult stop_tijd.
@@ -67,6 +68,40 @@ export function useWerkdag(werkbonId: string | null) {
     return () => { afgebroken = true }
   }, [profile?.id, werkbonId])
 
+  /**
+   * Vastleggen waar iemand stond bij het aanmelden.
+   *
+   * Losgekoppeld en zonder await: het aanmelden is op dat moment al
+   * gelukt en mag nergens meer op wachten. Een telefoon die twintig
+   * seconden over zijn positie doet, of er helemaal niet uitkomt, hoort
+   * niemand tegen te houden — dat is de hele afspraak (migratie 040).
+   *
+   * Geen `.select()` achter de insert. De ploeg mag hier schrijven maar
+   * niet lezen: de afstand is voor kantoor. Met een select erachter zou
+   * de policy de hele insert afkeuren.
+   */
+  const legLocatieVast = (werkdagLogId: string) => {
+    if (!LOCATIE_AAN) return
+    if (!profile?.id || !profile?.tenant_id || !werkbonId) return
+
+    void haalPositie().then(async (pos) => {
+      if (!pos) return
+      await supabase.from('werkdag_locaties').insert({
+        tenant_id: profile.tenant_id,
+        werkdag_log_id: werkdagLogId,
+        werkbon_id: werkbonId,
+        medewerker_id: profile.id,
+        latitude: pos.lat,
+        longitude: pos.lon,
+        nauwkeurigheid_m: pos.nauwkeurigheid,
+      })
+    }).catch(() => {
+      // Stil. Dit is een signaal voor kantoor, geen onderdeel van het
+      // werk van de monteur; een foutmelding hierover zou hem alleen
+      // laten denken dat zijn aanmelding niet is gelukt.
+    })
+  }
+
   const startWerkdag = async () => {
     if (!profile || !werkbonId || bezig) return
     setBezig(true)
@@ -93,6 +128,7 @@ export function useWerkdag(werkbonId: string | null) {
     // dan is de werkdag al gestart en halen we de bestaande op.
     if (data) {
       setState(naarState(data))
+      legLocatieVast(data.id)
       return
     }
 

@@ -1,5 +1,40 @@
 # NMZ GO — Changelog
 
+## Waar je geklokt staat, daar ben je
+
+- **[FIX]** De klus waarop je **geklokt staat** blijft nu bovenaan het scherm Vandaag staan, ook als de planning inmiddels iets anders zegt. Klokte iemand 's ochtends in op de weekklus en drukte kantoor er om tien uur een spoedje tussen, dan sprong de bovenste kaart naar dat spoedje terwijl zijn werkdag nog op de weekklus liep — met het risico dat hij punten afvinkte op het verkeerde adres.
+- Geklokt zijn is geen voorspelling maar een feit, en dat weegt zwaarder dan de planning. Het spoedje verdwijnt niet: dat staat eronder in de lijst met de andere klussen van vandaag, met "alleen vandaag" erbij.
+- Valt de klok naar een klus die al is afgerond of die niet meer bestaat, dan telt gewoon de planning weer. Drie tests dekken die terugval af.
+
+## Een spoedje ertussendoor is te zien én te herkennen
+
+- **[FEATURE]** Bij elke klus op het scherm van de ploeg staat nu **waar in de klus die dag zit**: "dag 2 van 10", "laatste dag van 2", of "alleen vandaag". Twee adressen onder elkaar zeiden niet welke de klus van tien dagen was en welke het spoedje dat er tussendoor is gedrukt — precies het verschil dat bepaalt wat er die dag af moet.
+- "Alleen vandaag" is bewust het sterkste geval: dat is de klus waar één dag voor is. "Laatste dag" komt daarna, want dat is de dag waarop je nog even doorzet in plaats van het naar morgen te schuiven.
+- Het staat op **Vandaag** — bij de klus zelf én bij de andere klussen van die dag — en op **Mijn week**, waar het per dag meetelt: de klus van 1 t/m 10 september staat op de 2e als "dag 2 van 10" en het spoedje ernaast als "dag 1 van 2".
+- Zes tests erbij, gebouwd op precies dat scenario, inclusief de randgevallen: een bon zonder einddatum telt als één dag, en een klus die uitloopt krijgt geen "dag 12 van 10" maar blijft op zijn laatste dag staan — die heeft zijn eigen blok op het scherm.
+
+## Geklokt is bezig, en een tussendoorklus verdwijnt niet meer
+
+### Justin stond geklokt en toch bij "nog niet gestart"
+- **[FIX]** Op het scherm **Lopend** telde een lopende werkdag niet mee voor de stand van een klus. Justin klokte om 11:13 in op Het Sander 10 in Enschede en de klus stond er als **Nog niet gestart** — onderaan de lijst, tussen het werk waar nog niemand naar had omgekeken. De klus zat wél in de lijst; hij stond alleen in het verkeerde blok, want de lijst sorteert op stand.
+- De oorzaak is een half toegepaste regel. `klusstand` weet allang dat een lopende werkdag hetzelfde bewijs is als een afgevinkt punt — een monteur klokt in als hij aankomt en vinkt zijn eerste punt pas uren later af. Het dashboard geeft dat gegeven ook netjes mee, op vier plekken. `useLopend` berekende het, zette het in de uitvoer, en gaf het niet door aan `klusstand`. Dat gebeurt nu wel.
+- Het verschil is zichtbaar zodra iemand nog niets heeft afgevinkt. Danny en Martijn stonden wél goed op Bezig, maar alleen omdat ze toevallig al twee punten af hadden — niet omdat de app wist dat ze aan het werk waren.
+
+### Een klusje tussendoor stond nergens
+- **[FIX]** **De ploeg ziet nu álle klussen die vandaag voor ze staan.** Wie vijf dagen op één klus staat en er één dag een klusje tussendoor krijgt, zag dat tweede nergens: het scherm Vandaag koos één klus, en dat werd altijd de meerdaagse. De tussendoorklus is nu juist degene die vandáág af moet — er is één dag om hem te doen.
+- **De volgorde gaat op einddatum in plaats van begindatum.** Wat vandaag eindigt gaat voor wat pas donderdag eindigt. Bij een gelijke einddatum wint de klus die het langst loopt: daar staat de ploeg al, en die hoort niet ineens tweede te worden.
+- Daarnaast staan de andere klussen van vandaag als lijstje op het scherm, in dezelfde vorm als het blok "nog niet afgerond van een eerdere dag" dat er al stond. Eén klus onzichtbaar is één klus die niet gedaan wordt, en welke van de twee bovenaan komt hoort dat niet te bepalen.
+- Zes tests erbij op `looptVandaag` en `kiesVandaag`, waaronder het geval uit de uitvoering zelf: een weekklus van 24 t/m 28 augustus met een tussendoorklus op de 26e.
+
+## Zeven knoppen die stilletjes niets deden
+
+- **[FIX]** **De ploeg wijzigen, de planning verzetten, een punt toevoegen of weghalen, een container of dixi afvinken, en vervolgwerk melden of afronden werkten geen van alle.** Ze gaven `violates check constraint "werkbon_gebeurtenissen_soort_check"` en lieten de klus achter zoals hij was. Migratie 039 zet het recht.
+- De oorzaak zat in het logboek, niet in de knoppen. `werkbon_gebeurtenissen` kende sinds migratie 015 drie soorten — stilgelegd, hervat, opgeleverd — en elke handeling die er daarna bij kwam schrijft een eigen soort in dat logboek zonder dat de controle daarop is meegegroeid.
+- Waarom dat de hele handeling sloopt en niet alleen de regel eronder: die insert is de laatste stap ín de functie, en een functie is één transactie. De afgekeurde logregel rolt alles terug wat ervoor gebeurde. Kantoor zette dus een nieuwe ploeg op de bon, kreeg een foutmelding, en de oude ploeg stond er nog. Dat is het vervelendste soort fout — de foutmelding gaat over iets anders dan wat er misging.
+- **[FIX]** En zodat dit niet nog eens maanden onopgemerkt blijft: `tests/migraties.test.ts` leest de migraties zoals Postgres ze zou toepassen, houdt per kolom bij welke waarden de laatste check nog toestaat, en legt daar elke waarde naast die ergens in een insert wordt geschreven. Draait mee in de CI op elke push. De test vond zelf twee van de zeven overtredingen die met de hand over het hoofd waren gezien.
+- Zonder migratie 039 valt hij om met alle zeven, mét de naam van het bestand en de waarde die ontbreekt — een build-fout in plaats van een telefoontje. De regel staat nu ook bij de verboden acties in `.ai/CLAUDE.md`.
+- Bestaande gegevens blijven ongemoeid. Er stonden alleen soorten in die al waren toegestaan — de rest is nooit binnengekomen.
+
 ## "Nog spuiten/isoleren" is geen stilgelegde klus
 
 - **[FIX]** Er staan vier knoppen op de werkbon en alle vier riepen `werkbon_stilleggen()` aan. Voor **stilleggen** en **asbest** klopt dat — daar staat het werk stil. Voor **nog spuiten/isoleren** en **opnieuw inplannen/later** niet: dat zijn statussen op het bord in ClickUp, en de klus loopt gewoon door. Toch zetten ze `stilgelegd_op`, en omdat `klusstand()` die kolom als eerste leest ging de héle app erin mee — het kaartje werd rood met "Ligt stil", op de planning, op het dashboard, in de containerlijst en in de telling van wat er vastzit.

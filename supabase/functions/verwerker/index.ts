@@ -25,6 +25,8 @@ import {
   werkbonBijwerken,
 } from './clickup.ts'
 import { fotosOpruimen } from './opruimen.ts'
+import { bouwOpleverrapport, meldRapportMislukt } from './rapport.ts'
+import { geocodeerRonde } from './geocode.ts'
 
 // Een fout die niet opnieuw geprobeerd moet worden.
 class OnverwerkbaarError extends Error {
@@ -32,6 +34,21 @@ class OnverwerkbaarError extends Error {
     super(message)
     this.name = 'OnverwerkbaarError'
   }
+}
+
+/**
+ * Is dit een blijvende fout?
+ *
+ * Op naam en niet op klasse. Een handler in een eigen bestand kan deze
+ * klasse niet importeren zonder een kringverwijzing te maken, dus die
+ * gooien een eigen fout met dezelfde naam. Met alleen `instanceof` zou
+ * zo'n fout stilletjes als tijdelijk gelden en vijf keer opnieuw
+ * worden geprobeerd — vijf keer hetzelfde antwoord, en pas daarna de
+ * conclusie die er meteen al was.
+ */
+function isBlijvend(e: unknown): boolean {
+  return e instanceof OnverwerkbaarError
+    || (e instanceof Error && e.name === 'OnverwerkbaarError')
 }
 
 interface Taak {
@@ -206,7 +223,64 @@ const HANDLERS: Record<string, Handler> = {
     }
     return await statusBijwerken(db, tenantId, werkbonId, soort as typeof bekend[number])
   },
+
+  // Het opleverrapport bouwen: het enige document dat NMZ GO naar
+  // buiten stuurt.
+  //
+  // De knop die dit aanvraagt staat sinds migratie 025 live, maar deze
+  // taaksoort had geen handler — elke aanvraag liep zijn pogingen leeg
+  // en werd onverwerkbaar. Kantoor drukte op een knop die niets deed.
+  //
+  // Wie een rapport mág maken is op dit moment al beslist door
+  // `rapportage_aanvragen()`: uitvoerder of hoger, en minstens één
+  // foto. Hier wordt alleen nog uitgevoerd wat daar is goedgekeurd.
+  // Adressen omzetten naar een punt op de kaart. Nodig om te kunnen
+  // zeggen hoe ver iemand van de klus stond toen hij zich aanmeldde;
+  // de werkbon heeft alleen een adres als tekst.
+  //
+  // Als losse ronde en niet in de synchronisatie: dat is een aanroep
+  // naar een dienst van iemand anders, en die hoort de invoer van
+  // nieuwe klussen niet op te houden als hij traag is.
+  'onderhoud.geocoderen': async (taak, db) => {
+    const tenantId = String(taak.payload.tenant_id ?? '')
+    if (!tenantId) {
+      throw new OnverwerkbaarError('tenant_id ontbreekt in de payload')
+    }
+    return await geocodeerRonde(db, tenantId, Number(taak.payload.aantal ?? 10))
+  },
+
+  'rapportage.genereren': async (taak, db) => {
+    const tenantId = String(taak.payload.tenant_id ?? '')
+    const werkbonId = String(taak.payload.werkbon_id ?? '')
+    const rapportageId = String(taak.payload.rapportage_id ?? '')
+
+    if (!tenantId || !werkbonId || !rapportageId) {
+      throw new OnverwerkbaarError('tenant_id, werkbon_id en rapportage_id zijn alle drie nodig')
+    }
+
+    try {
+      return await bouwOpleverrapport(db, tenantId, werkbonId, rapportageId)
+    } catch (e) {
+      // De aanvraag pas op mislukt zetten als er niets meer volgt.
+      // Bij een tijdelijke storing komt er nog een poging, en dan is
+      // "mislukt" op het scherm een leugen die vanzelf weer klopt —
+      // maar kantoor heeft hem intussen wel gelezen.
+      const reden = e instanceof Error ? e.message : String(e)
+      const laatste = isBlijvend(e) || taak.pogingen >= LAATSTE_POGING
+      if (laatste) await meldRapportMislukt(db, rapportageId, reden)
+      throw e
+    }
+  },
 }
+
+/**
+ * Vanaf deze poging volgt er niets meer.
+ *
+ * `verwerkingstaken.max_pogingen` staat standaard op vijf (migratie
+ * 004) en `pogingen` telt de mislukte rondes. Zit hij op vier, dan is
+ * de ronde die nu draait de laatste.
+ */
+const LAATSTE_POGING = 4
 
 // ── De lus ───────────────────────────────────────────────────
 
@@ -243,6 +317,17 @@ Deno.serve(async (req) => {
   let rondeFout: string | null = null
 
   try {
+    // Eerst opruimen wat is blijven hangen. Een handler die door de
+    // runtime wordt afgekapt — te veel processortijd, een herstart —
+    // laat zijn taak op 'bezig' staan, en `claim_verwerkingstaken`
+    // kijkt daar niet naar. Zonder deze stap is zo'n taak voorgoed
+    // onzichtbaar: geen fout, geen herhaling, geen spoor. Zie migratie
+    // 036; de rapportgenerator was de eerste die er zwaar genoeg voor was.
+    const { data: teruggezet } = await db.rpc('taken_terugzetten', {
+      p_ouder_dan: '10 minutes',
+    })
+    if (teruggezet) console.log(`${teruggezet} vastgelopen taken teruggezet`)
+
     const { data: taken, error } = await db.rpc('claim_verwerkingstaken', { aantal: BATCH })
     if (error) throw new Error(`claimen mislukt: ${error.message}`)
 
@@ -274,7 +359,7 @@ Deno.serve(async (req) => {
         geslaagd++
       } catch (e) {
         const reden = e instanceof Error ? e.message : String(e)
-        const rpc = e instanceof OnverwerkbaarError ? 'taak_onverwerkbaar' : 'taak_mislukt'
+        const rpc = isBlijvend(e) ? 'taak_onverwerkbaar' : 'taak_mislukt'
         await db.rpc(rpc, { taak_id: taak.id, reden })
         mislukt++
       }

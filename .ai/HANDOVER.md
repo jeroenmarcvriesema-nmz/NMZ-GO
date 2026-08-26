@@ -80,10 +80,28 @@ blijven staan.
 4. **Dan pas de PDF-generatie** van het opleverrapport, want die leest
    dezelfde foto's.
 
-**Waarschuwing uit ervaring:** de Edge Function moet in zijn geheel
-opnieuw worden uitgerold — alle vijf bestanden in één
-`deploy_edge_function`-aanroep. Eén keer half uitrollen heeft de
-verwerker plat gelegd. Rol nooit één bestand uit.
+**Uitrollen gaat via de workflow, niet met de hand.** Actions →
+*Uitrollen* → functie kiezen → Run. Die leest de map van schijf en
+stuurt hem in zijn geheel; er wordt niets overgetypt en half uitrollen
+kan niet meer. Vereist één repository secret: `SUPABASE_ACCESS_TOKEN`.
+De project-ref zit in de workflow zelf — die staat toch al in de
+uitgeleverde frontend en is dus geen geheim; `SUPABASE_PROJECT_REF` mag
+hem overschrijven voor een tweede omgeving.
+
+De workflow draait eerst typecheck en tests, en daarna `deno cache` op
+de functie — dat haalt elke import op en faalt als er een niet bestaat.
+Een kapotte import die pas in productie blijkt legt de hele wachtrij
+stil; hier kost het een rood vinkje.
+
+Twee dingen die daarin zitten en die je met de hand vergeet:
+
+- **`--no-verify-jwt` voor de verwerker.** pg_cron roept hem aan zonder
+  token. De CLI zet JWT-controle standaard aan, en dan krijgt elke
+  cron-aanroep een 401 en staat de wachtrij stil zonder dat er iets in
+  het log verschijnt. De andere twee functies staan wél op `true`.
+- **Alles of niets.** De oude weg was een `deploy_edge_function`-aanroep
+  met de inhoud van elk bestand erin. Eén keer half uitrollen heeft de
+  verwerker plat gelegd; dat is de reden dat deze workflow bestaat.
 
 ### Twee sessies naast elkaar — wie waar aan zit
 

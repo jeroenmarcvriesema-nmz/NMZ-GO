@@ -183,27 +183,106 @@ export function looptOp(w: Ingepland, dag: string): boolean {
  * ochtends het verkeerde adres te zien.
  *
  * De volgorde die klopt:
- *   1. Een klus die vandaag loopt (vandaag valt binnen start en eind).
- *   2. Anders de eerstvolgende die nog moet beginnen.
- *   3. Anders de laatste die nog niet af is — dan is hij uitgelopen en
- *      moet hij juist bovenaan staan.
+ *   1. De klus waarop je geklokt staat. Je bent er al.
+ *   2. Een klus die vandaag loopt. Lopen er meerdere, dan die het
+ *      eerst af moet — zie `looptVandaag`.
+ *   3. Anders werk dat nog niet af is en waarvan de datum voorbij is.
+ *   4. Anders de eerstvolgende die nog moet beginnen.
+ *
+ * Punt 3 stond hier eerst onderaan, ná "de eerstvolgende die nog moet
+ * beginnen". Dat was verkeerd om, en het leverde de meeste vragen op
+ * van de hele app: een klus die uitliep verdween 's ochtends van het
+ * scherm van de ploeg. Ze stonden er nog, maar de app liet hun
+ * volgende klus zien — of, als die er niet was, niets.
+ *
+ * Wat gisteren niet af kwam is vandaag het eerste dat af moet. Dat
+ * weegt zwaarder dan werk dat pas volgende week begint, en zwaarder
+ * dan een leeg scherm.
  */
-export function kiesVandaag<T extends Ingepland>(bonnen: T[], nu: string = isoDatum()): T | null {
+/**
+ * Alles wat vandaag loopt, in de volgorde waarin het af moet.
+ *
+ * Er staat lang niet altijd één klus op een dag. Iemand staat vijf
+ * dagen op een klus en er komt één dag een klusje tussendoor: dan
+ * lopen er twee, en de tussendoorklus is degene die vandáág af moet.
+ *
+ * Vandaar de volgorde op einddatum en niet op begindatum. Wat vandaag
+ * eindigt gaat voor wat pas donderdag eindigt — er is maar één dag om
+ * het te doen. Bij een gelijke einddatum wint de klus die het langst
+ * loopt, want daar staat de ploeg al.
+ *
+ * Op begindatum sorteren gaf hier het verkeerde antwoord: dan wint de
+ * meerdaagse klus altijd, en stond de tussendoorklus nergens op het
+ * scherm van de ploeg. Precies de klus die niet vergeten mag worden.
+ */
+export function looptVandaag<T extends Ingepland>(
+  bonnen: T[],
+  nu: string = isoDatum(),
+): T[] {
+  return bonnen
+    .filter((w) => w.status !== 'voltooid' && !w.opgeleverd_op && looptOp(w, nu))
+    .sort((a, b) => {
+      const eind = eindVan(a).localeCompare(eindVan(b))
+      return eind !== 0 ? eind : startVan(a).localeCompare(startVan(b))
+    })
+}
+
+export function kiesVandaag<T extends Ingepland & { id?: string }>(
+  bonnen: T[],
+  nu: string = isoDatum(),
+  geklokOp?: string | null,
+): T | null {
   const open = bonnen.filter((w) => w.status !== 'voltooid' && !w.opgeleverd_op)
   if (open.length === 0) return null
 
-  const loopt = open
-    .filter((w) => looptOp(w, nu))
-    .sort((a, b) => startVan(a).localeCompare(startVan(b)))
+  // Sta je geklokt, dan is dat de klus. Geen planning die daar
+  // overheen gaat: je bent er, dat is geen voorspelling maar een feit.
+  //
+  // Dit is het geval waar de planning het mis heeft en de man niet.
+  // Iemand klokt 's ochtends in op de weekklus, kantoor drukt er om
+  // tien uur een spoedje tussen — zonder dit springt de bovenste kaart
+  // naar dat spoedje terwijl zijn werkdag nog op de weekklus loopt, en
+  // vinkt hij punten af op het verkeerde adres.
+  if (geklokOp) {
+    const bezig = open.find((w) => w.id === geklokOp)
+    if (bezig) return bezig
+  }
+
+  const loopt = looptVandaag(open, nu)
   if (loopt.length > 0) return loopt[0]
+
+  // Uitgelopen werk. De klus die het kortst geleden had moeten
+  // eindigen staat vooraan: daar stond de ploeg gisteren, en dat is de
+  // klus waar ze vanochtend over bellen.
+  const uitgelopen = uitgelopenWerk(open, nu)
+  if (uitgelopen.length > 0) return uitgelopen[0]
 
   const komt = open
     .filter((w) => startVan(w) > nu)
     .sort((a, b) => startVan(a).localeCompare(startVan(b)))
   if (komt.length > 0) return komt[0]
 
-  // Alles ligt in het verleden en is niet af: uitgelopen werk.
   return [...open].sort((a, b) => eindVan(b).localeCompare(eindVan(a)))[0]
+}
+
+/**
+ * Alles wat niet af is en waarvan de einddatum voorbij is.
+ *
+ * `kiesVandaag` pakt hier de eerste uit, maar het scherm heeft de hele
+ * lijst nodig: staat er vandaag óók een nieuwe klus gepland, dan kiest
+ * `kiesVandaag` die, en moet het werk van gisteren er alsnog naast
+ * staan. Anders is het precies zo onzichtbaar als het was.
+ *
+ * Nieuwste eind eerst — wat gisteren afliep vóór wat vorige maand
+ * afliep.
+ */
+export function uitgelopenWerk<T extends Ingepland>(
+  bonnen: T[],
+  nu: string = isoDatum(),
+): T[] {
+  return bonnen
+    .filter((w) => w.status !== 'voltooid' && !w.opgeleverd_op && eindVan(w) < nu)
+    .sort((a, b) => eindVan(b).localeCompare(eindVan(a)))
 }
 
 /**
@@ -272,6 +351,42 @@ export function groepeerPerWeek<T extends Ingepland>(bonnen: T[]): Weekblok<T>[]
       ...blok,
       items: blok.items.sort((a, b) => startVan(a.bon).localeCompare(startVan(b.bon))),
     }))
+}
+
+/**
+ * Waar in de klus zit deze dag?
+ *
+ * Een zwamsaneerder staat soms tien dagen op één adres en krijgt er een
+ * spoedje van twee dagen tussendoor. Twee adressen onder elkaar zonder
+ * meer zegt dan niets: welke is de lange, welke moet vandaag af, en hoe
+ * ver ben ik? Vandaar dag en totaal, in dagen zoals de planning ze
+ * telt.
+ *
+ * Buiten de periode wordt geklemd. Een klus die uitloopt heeft zijn
+ * eigen blok op het scherm; hier hoort geen "dag 12 van 10" te staan.
+ */
+export function dagInKlus(w: Ingepland, nu: string = isoDatum()): { dag: number; totaal: number } {
+  const dagen = (van: string, tot: string) =>
+    Math.round((Date.parse(`${tot}T00:00:00Z`) - Date.parse(`${van}T00:00:00Z`)) / 86_400_000)
+
+  const totaal = Math.max(1, dagen(startVan(w), eindVan(w)) + 1)
+  const dag = Math.min(totaal, Math.max(1, dagen(startVan(w), nu) + 1))
+  return { dag, totaal }
+}
+
+/**
+ * Hetzelfde in één regel, zoals het op het scherm van de ploeg staat.
+ *
+ * "Alleen vandaag" is het belangrijkste geval: dat is het spoedje dat
+ * er tussendoor is gedrukt en waar één dag voor is. "Laatste dag" komt
+ * daarna — dat is de dag waarop iemand nog even doorzet in plaats van
+ * het naar morgen te schuiven.
+ */
+export function duurLabel(w: Ingepland, nu: string = isoDatum()): string {
+  const { dag, totaal } = dagInKlus(w, nu)
+  if (totaal === 1) return 'alleen vandaag'
+  if (dag === totaal) return `laatste dag van ${totaal}`
+  return `dag ${dag} van ${totaal}`
 }
 
 /**
