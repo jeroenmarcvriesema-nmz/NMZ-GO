@@ -1,5 +1,18 @@
 # NMZ GO — Changelog
 
+## Geklokt is bezig, en een tussendoorklus verdwijnt niet meer
+
+### Justin stond geklokt en toch bij "nog niet gestart"
+- **[FIX]** Op het scherm **Lopend** telde een lopende werkdag niet mee voor de stand van een klus. Justin klokte om 11:13 in op Het Sander 10 in Enschede en de klus stond er als **Nog niet gestart** — onderaan de lijst, tussen het werk waar nog niemand naar had omgekeken. De klus zat wél in de lijst; hij stond alleen in het verkeerde blok, want de lijst sorteert op stand.
+- De oorzaak is een half toegepaste regel. `klusstand` weet allang dat een lopende werkdag hetzelfde bewijs is als een afgevinkt punt — een monteur klokt in als hij aankomt en vinkt zijn eerste punt pas uren later af. Het dashboard geeft dat gegeven ook netjes mee, op vier plekken. `useLopend` berekende het, zette het in de uitvoer, en gaf het niet door aan `klusstand`. Dat gebeurt nu wel.
+- Het verschil is zichtbaar zodra iemand nog niets heeft afgevinkt. Danny en Martijn stonden wél goed op Bezig, maar alleen omdat ze toevallig al twee punten af hadden — niet omdat de app wist dat ze aan het werk waren.
+
+### Een klusje tussendoor stond nergens
+- **[FIX]** **De ploeg ziet nu álle klussen die vandaag voor ze staan.** Wie vijf dagen op één klus staat en er één dag een klusje tussendoor krijgt, zag dat tweede nergens: het scherm Vandaag koos één klus, en dat werd altijd de meerdaagse. De tussendoorklus is nu juist degene die vandáág af moet — er is één dag om hem te doen.
+- **De volgorde gaat op einddatum in plaats van begindatum.** Wat vandaag eindigt gaat voor wat pas donderdag eindigt. Bij een gelijke einddatum wint de klus die het langst loopt: daar staat de ploeg al, en die hoort niet ineens tweede te worden.
+- Daarnaast staan de andere klussen van vandaag als lijstje op het scherm, in dezelfde vorm als het blok "nog niet afgerond van een eerdere dag" dat er al stond. Eén klus onzichtbaar is één klus die niet gedaan wordt, en welke van de twee bovenaan komt hoort dat niet te bepalen.
+- Zes tests erbij op `looptVandaag` en `kiesVandaag`, waaronder het geval uit de uitvoering zelf: een weekklus van 24 t/m 28 augustus met een tussendoorklus op de 26e.
+
 ## Zeven knoppen die stilletjes niets deden
 
 - **[FIX]** **De ploeg wijzigen, de planning verzetten, een punt toevoegen of weghalen, een container of dixi afvinken, en vervolgwerk melden of afronden werkten geen van alle.** Ze gaven `violates check constraint "werkbon_gebeurtenissen_soort_check"` en lieten de klus achter zoals hij was. Migratie 039 zet het recht.

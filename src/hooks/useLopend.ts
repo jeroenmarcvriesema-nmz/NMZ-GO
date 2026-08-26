@@ -112,11 +112,18 @@ export function useLopend() {
       logsPerBon.set(l.werkbon_id, lijst)
     }
 
+    // Staat er nu iemand op deze klus? Dat is bewijs dat hij bezig is,
+    // en het telt mee in `klusstand` — een monteur klokt in als hij
+    // aankomt en vinkt zijn eerste punt pas uren later af. Zonder dit
+    // stond zo'n klus als "Nog niet gestart" onderaan de lijst, tussen
+    // het werk waar nog niemand naar had omgekeken.
+    const looptNuOp = (id: string) => (logsPerBon.get(id) ?? []).some((d) => !d.stop)
+
     const rijen: LopendeKlus[] = ((bonnenRes.data ?? []) as any[])
       .filter((w) => {
         // De opleverdatum mag voorbij zijn: een klus die uitloopt loopt
         // nog steeds. Alleen wat af is valt af.
-        const stand = klusstand(w)
+        const stand = klusstand({ ...w, looptNu: looptNuOp(w.id) })
         return stand !== 'afgerond' && stand !== 'opgeleverd'
       })
       .map((w) => {
@@ -133,7 +140,7 @@ export function useLopend() {
           kluiscode: w.kluiscode ?? null,
           start: w.geplande_start ?? w.datum,
           eind: w.geplande_eind ?? w.geplande_start ?? w.datum,
-          stand: klusstand(w),
+          stand: klusstand({ ...w, looptNu: werkdagen.some((d) => !d.stop) }),
           stillegReden: w.stilleg_reden ?? null,
           vervolgSoort: w.vervolg_soort ?? null,
           vervolgReden: w.vervolg_reden ?? null,

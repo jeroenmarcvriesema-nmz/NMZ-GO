@@ -183,7 +183,8 @@ export function looptOp(w: Ingepland, dag: string): boolean {
  * ochtends het verkeerde adres te zien.
  *
  * De volgorde die klopt:
- *   1. Een klus die vandaag loopt (vandaag valt binnen start en eind).
+ *   1. Een klus die vandaag loopt. Lopen er meerdere, dan die het
+ *      eerst af moet — zie `looptVandaag`.
  *   2. Anders werk dat nog niet af is en waarvan de datum voorbij is.
  *   3. Anders de eerstvolgende die nog moet beginnen.
  *
@@ -197,13 +198,39 @@ export function looptOp(w: Ingepland, dag: string): boolean {
  * weegt zwaarder dan werk dat pas volgende week begint, en zwaarder
  * dan een leeg scherm.
  */
+/**
+ * Alles wat vandaag loopt, in de volgorde waarin het af moet.
+ *
+ * Er staat lang niet altijd één klus op een dag. Iemand staat vijf
+ * dagen op een klus en er komt één dag een klusje tussendoor: dan
+ * lopen er twee, en de tussendoorklus is degene die vandáág af moet.
+ *
+ * Vandaar de volgorde op einddatum en niet op begindatum. Wat vandaag
+ * eindigt gaat voor wat pas donderdag eindigt — er is maar één dag om
+ * het te doen. Bij een gelijke einddatum wint de klus die het langst
+ * loopt, want daar staat de ploeg al.
+ *
+ * Op begindatum sorteren gaf hier het verkeerde antwoord: dan wint de
+ * meerdaagse klus altijd, en stond de tussendoorklus nergens op het
+ * scherm van de ploeg. Precies de klus die niet vergeten mag worden.
+ */
+export function looptVandaag<T extends Ingepland>(
+  bonnen: T[],
+  nu: string = isoDatum(),
+): T[] {
+  return bonnen
+    .filter((w) => w.status !== 'voltooid' && !w.opgeleverd_op && looptOp(w, nu))
+    .sort((a, b) => {
+      const eind = eindVan(a).localeCompare(eindVan(b))
+      return eind !== 0 ? eind : startVan(a).localeCompare(startVan(b))
+    })
+}
+
 export function kiesVandaag<T extends Ingepland>(bonnen: T[], nu: string = isoDatum()): T | null {
   const open = bonnen.filter((w) => w.status !== 'voltooid' && !w.opgeleverd_op)
   if (open.length === 0) return null
 
-  const loopt = open
-    .filter((w) => looptOp(w, nu))
-    .sort((a, b) => startVan(a).localeCompare(startVan(b)))
+  const loopt = looptVandaag(open, nu)
   if (loopt.length > 0) return loopt[0]
 
   // Uitgelopen werk. De klus die het kortst geleden had moeten
