@@ -12,7 +12,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Avatar } from '@/components/ui/Avatar'
 import { Voortgangsring } from '@/components/ui/Voortgangsring'
 import { berekenVoortgang, cn } from '@/lib/utils'
-import { kiesVandaag, looptVandaag, uitgelopenWerk, isoDatum } from '@/lib/planning'
+import { kiesVandaag, looptVandaag, uitgelopenWerk, duurLabel, isoDatum } from '@/lib/planning'
 import { klusstand, STANDEN, type Klusstand } from '@/lib/klusstand'
 import {
   IconCalendar, IconPlayerPlay, IconPlayerStop,
@@ -199,8 +199,16 @@ export default function MijnWerkbonnen() {
                   onClick={() => navigate(`/werkbon/${w.id}`)}
                   className="w-full min-h-[44px] flex items-center gap-2 text-left px-3 py-2 rounded-sm bg-white dark:bg-surface-dark-2 border border-blue-100 dark:border-blue-500/20 hover:border-blue-400 transition-colors"
                 >
-                  <span className="flex-1 min-w-0 text-sm font-semibold text-gray-900 dark:text-white break-words">
-                    {w.adres}
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-sm font-semibold text-gray-900 dark:text-white break-words">
+                      {w.adres}
+                    </span>
+                    {/* Welke van de twee is de spoedklus en welke loopt
+                        de hele week? Twee adressen onder elkaar zeggen
+                        dat niet; deze regel wel. */}
+                    <span className="block text-xs text-blue-700 dark:text-blue-400 mt-0.5">
+                      {duurLabel(w)}
+                    </span>
                   </span>
                   <span className="text-xs text-blue-700 dark:text-blue-400 tabular-nums whitespace-nowrap">
                     {berekenVoortgang(w.taken ?? [])}%
@@ -247,7 +255,7 @@ export default function MijnWerkbonnen() {
             van ditzelfde scherm. */}
         <Klusuitvoering
           werkbon={vandaag}
-          kopje="Vandaag werk je aan"
+          kopje={`Vandaag werk je aan · ${duurLabel(vandaag)}`}
           // De ring bovenaan toont de voortgang al.
           zonderVoortgang
           laden={bonLaadt}

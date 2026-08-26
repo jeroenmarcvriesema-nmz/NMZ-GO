@@ -1,5 +1,12 @@
 # NMZ GO — Changelog
 
+## Een spoedje ertussendoor is te zien én te herkennen
+
+- **[FEATURE]** Bij elke klus op het scherm van de ploeg staat nu **waar in de klus die dag zit**: "dag 2 van 10", "laatste dag van 2", of "alleen vandaag". Twee adressen onder elkaar zeiden niet welke de klus van tien dagen was en welke het spoedje dat er tussendoor is gedrukt — precies het verschil dat bepaalt wat er die dag af moet.
+- "Alleen vandaag" is bewust het sterkste geval: dat is de klus waar één dag voor is. "Laatste dag" komt daarna, want dat is de dag waarop je nog even doorzet in plaats van het naar morgen te schuiven.
+- Het staat op **Vandaag** — bij de klus zelf én bij de andere klussen van die dag — en op **Mijn week**, waar het per dag meetelt: de klus van 1 t/m 10 september staat op de 2e als "dag 2 van 10" en het spoedje ernaast als "dag 1 van 2".
+- Zes tests erbij, gebouwd op precies dat scenario, inclusief de randgevallen: een bon zonder einddatum telt als één dag, en een klus die uitloopt krijgt geen "dag 12 van 10" maar blijft op zijn laatste dag staan — die heeft zijn eigen blok op het scherm.
+
 ## Geklokt is bezig, en een tussendoorklus verdwijnt niet meer
 
 ### Justin stond geklokt en toch bij "nog niet gestart"

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   isoDatum, maandagVan, weekDagen, kiesVandaag, looptVandaag, looptOp, dagenUitloop, uitgelopenWerk,
+  dagInKlus, duurLabel,
   weeknummer, weekLabel, maandagVerschoven, inWeek,
   maandagVanWerkweek, groepeerPerWeek,
 } from '@/lib/planning'
@@ -164,6 +165,50 @@ describe('kiesVandaag', () => {
       bon({ id: 'vandaag', geplande_start: '2026-08-12', geplande_eind: '2026-08-14' }),
     ]
     expect(kiesVandaag(lijst, '2026-08-12')?.id).toBe('vandaag')
+  })
+})
+
+describe('dagInKlus en duurLabel', () => {
+  // Het scenario uit de uitvoering: een klus van 1 t/m 10 september met
+  // een spoedje van twee dagen ertussendoor. Op de tweede september
+  // moet een zwamsaneerder in één oogopslag zien welke van de twee die
+  // dag af moet.
+  const lang = bon({ id: 'lang', geplande_start: '2026-09-01', geplande_eind: '2026-09-10' })
+  const spoed = bon({ id: 'spoed', geplande_start: '2026-09-02', geplande_eind: '2026-09-03' })
+
+  it('telt de dag binnen de klus', () => {
+    expect(dagInKlus(lang, '2026-09-02')).toEqual({ dag: 2, totaal: 10 })
+    expect(dagInKlus(spoed, '2026-09-02')).toEqual({ dag: 1, totaal: 2 })
+  })
+
+  it('zet de lange klus en het spoedje uit elkaar op dezelfde dag', () => {
+    expect(duurLabel(lang, '2026-09-02')).toBe('dag 2 van 10')
+    expect(duurLabel(spoed, '2026-09-02')).toBe('dag 1 van 2')
+  })
+
+  // Eendaags is het sterkste signaal: hier is één dag voor.
+  it('noemt een klus van één dag "alleen vandaag"', () => {
+    const kort = bon({ id: 'kort', geplande_start: '2026-09-02', geplande_eind: '2026-09-02' })
+    expect(duurLabel(kort, '2026-09-02')).toBe('alleen vandaag')
+  })
+
+  it('noemt de laatste dag ook zo', () => {
+    expect(duurLabel(spoed, '2026-09-03')).toBe('laatste dag van 2')
+    expect(duurLabel(lang, '2026-09-10')).toBe('laatste dag van 10')
+  })
+
+  // Een klus die uitloopt heeft zijn eigen blok op het scherm; daar
+  // hoort geen "dag 12 van 10" bij te staan.
+  it('klemt buiten de periode in plaats van door te tellen', () => {
+    expect(dagInKlus(lang, '2026-09-20')).toEqual({ dag: 10, totaal: 10 })
+    expect(dagInKlus(lang, '2026-08-20')).toEqual({ dag: 1, totaal: 10 })
+  })
+
+  // Een bon zonder einddatum is een klus van één dag, niet een klus van
+  // nul dagen die nergens op staat.
+  it('valt terug op de startdatum als er geen einddatum is', () => {
+    const los = bon({ id: 'los', geplande_start: '2026-09-02', geplande_eind: null })
+    expect(duurLabel(los, '2026-09-02')).toBe('alleen vandaag')
   })
 })
 

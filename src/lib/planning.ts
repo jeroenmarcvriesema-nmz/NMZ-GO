@@ -336,6 +336,42 @@ export function groepeerPerWeek<T extends Ingepland>(bonnen: T[]): Weekblok<T>[]
 }
 
 /**
+ * Waar in de klus zit deze dag?
+ *
+ * Een zwamsaneerder staat soms tien dagen op één adres en krijgt er een
+ * spoedje van twee dagen tussendoor. Twee adressen onder elkaar zonder
+ * meer zegt dan niets: welke is de lange, welke moet vandaag af, en hoe
+ * ver ben ik? Vandaar dag en totaal, in dagen zoals de planning ze
+ * telt.
+ *
+ * Buiten de periode wordt geklemd. Een klus die uitloopt heeft zijn
+ * eigen blok op het scherm; hier hoort geen "dag 12 van 10" te staan.
+ */
+export function dagInKlus(w: Ingepland, nu: string = isoDatum()): { dag: number; totaal: number } {
+  const dagen = (van: string, tot: string) =>
+    Math.round((Date.parse(`${tot}T00:00:00Z`) - Date.parse(`${van}T00:00:00Z`)) / 86_400_000)
+
+  const totaal = Math.max(1, dagen(startVan(w), eindVan(w)) + 1)
+  const dag = Math.min(totaal, Math.max(1, dagen(startVan(w), nu) + 1))
+  return { dag, totaal }
+}
+
+/**
+ * Hetzelfde in één regel, zoals het op het scherm van de ploeg staat.
+ *
+ * "Alleen vandaag" is het belangrijkste geval: dat is het spoedje dat
+ * er tussendoor is gedrukt en waar één dag voor is. "Laatste dag" komt
+ * daarna — dat is de dag waarop iemand nog even doorzet in plaats van
+ * het naar morgen te schuiven.
+ */
+export function duurLabel(w: Ingepland, nu: string = isoDatum()): string {
+  const { dag, totaal } = dagInKlus(w, nu)
+  if (totaal === 1) return 'alleen vandaag'
+  if (dag === totaal) return `laatste dag van ${totaal}`
+  return `dag ${dag} van ${totaal}`
+}
+
+/**
  * Hoeveel dagen loopt deze klus over zijn planning heen?
  *
  * Nul betekent op schema of nog bezig binnen de planning. Een negatief

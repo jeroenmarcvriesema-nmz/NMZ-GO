@@ -8,7 +8,7 @@ import { SectionHeading } from '@/components/ui/SectionHeading'
 import { useWerkbonnen } from '@/hooks/useWerkbonnen'
 import { berekenVoortgang, formatDatum, cn } from '@/lib/utils'
 import { standkleur, KLEURWAS } from '@/lib/klusstand'
-import { isoDatum, maandagVerschoven, weekDagen, looptOp, inWeek } from '@/lib/planning'
+import { isoDatum, maandagVerschoven, weekDagen, looptOp, inWeek, duurLabel } from '@/lib/planning'
 import { Weekkiezer } from '@/components/layout/Weekkiezer'
 import type { Werkbon } from '@/types'
 import {
@@ -117,7 +117,7 @@ export default function MijnWeek() {
                   </p>
                 ) : (
                   <div className="space-y-2">
-                    {bonnen.map((w) => <DagKaart key={w.id} werkbon={w} onOpen={() => navigate(`/werkbon/${w.id}`)} />)}
+                    {bonnen.map((w) => <DagKaart key={w.id} werkbon={w} dag={d} onOpen={() => navigate(`/werkbon/${w.id}`)} />)}
                   </div>
                 )}
               </div>
@@ -164,7 +164,7 @@ export default function MijnWeek() {
   )
 }
 
-function DagKaart({ werkbon, onOpen }: { werkbon: Werkbon; onOpen: () => void }) {
+function DagKaart({ werkbon, dag, onOpen }: { werkbon: Werkbon; dag: string; onOpen: () => void }) {
   const taken = werkbon.taken ?? []
   const voortgang = berekenVoortgang(taken)
   const stil = Boolean(werkbon.stilgelegd_op)
@@ -183,8 +183,16 @@ function DagKaart({ werkbon, onOpen }: { werkbon: Werkbon; onOpen: () => void })
     >
       <div className="flex items-start gap-1.5">
         <IconMapPin className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-gray-400 dark:text-white/40" />
-        <span className="text-sm font-semibold leading-snug text-gray-900 dark:text-white">
-          {werkbon.adres}
+        <span className="min-w-0">
+          <span className="block text-sm font-semibold leading-snug text-gray-900 dark:text-white">
+            {werkbon.adres}
+          </span>
+          {/* Waar in de klus deze dag zit. Zonder dit staan een klus van
+              tien dagen en een spoedje van twee er precies hetzelfde
+              bij, en is niet te zien welke van de twee die dag af moet. */}
+          <span className="block text-xs text-gray-500 dark:text-white/50 mt-0.5">
+            {duurLabel(werkbon, dag)}
+          </span>
         </span>
       </div>
 
