@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useWerkbonnen, useWerkbon } from '@/hooks/useWerkbonnen'
 import { useAuth } from '@/hooks/useAuth'
 import { useWerkdag, formatTijd, geefUren } from '@/hooks/useWerkdag'
+import { useLopendeWerkdag } from '@/hooks/useLopendeWerkdag'
 import { useMijnPrestaties } from '@/hooks/useMijnPrestaties'
 import { usePlanningDoorkijk } from '@/hooks/usePlanningDoorkijk'
 import { PageWrapper } from '@/components/layout/PageWrapper'
@@ -74,7 +75,14 @@ export default function MijnWerkbonnen() {
   const { werkbonnen, loading, refetch: refetchLijst } = useWerkbonnen()
 
   const voornaam = (profile?.naam ?? '').split(' ')[0]
-  const gekozen = kiesVandaag(werkbonnen)
+
+  // Sta je geklokt, dan is dat de klus van vandaag — ook als de
+  // planning inmiddels iets anders zegt. Kantoor kan er om tien uur een
+  // spoedje tussen drukken; dan hoort de kaart onder de man niet weg te
+  // springen terwijl zijn werkdag loopt. Het spoedje staat eronder in
+  // de lijst, dus hij ziet het wel.
+  const { werkbonId: geklokOp } = useLopendeWerkdag()
+  const gekozen = kiesVandaag(werkbonnen, isoDatum(), geklokOp)
 
   // Werk van eerdere dagen dat nog niet af is, behalve de klus die
   // hierboven al gekozen is. Staat er vandaag een nieuwe klus gepland,

@@ -127,6 +127,35 @@ describe('kiesVandaag', () => {
     expect(kiesVandaag(lijst, '2026-08-26')?.id).toBe('tussendoor')
   })
 
+  // Waar je geklokt staat ben je, en dat weegt zwaarder dan wat de
+  // planning zegt. Kantoor drukt om tien uur een spoedje ertussen; dan
+  // hoort de kaart onder de man niet weg te springen terwijl zijn
+  // werkdag op de andere klus loopt.
+  it('houdt de klus waarop je geklokt staat bovenaan', () => {
+    const lijst = [
+      bon({ id: 'weekklus', geplande_start: '2026-09-01', geplande_eind: '2026-09-10' }),
+      bon({ id: 'spoedje',  geplande_start: '2026-09-02', geplande_eind: '2026-09-02' }),
+    ]
+    // Zonder klok wint het spoedje: dat moet vandaag af.
+    expect(kiesVandaag(lijst, '2026-09-02')?.id).toBe('spoedje')
+    // Geklokt op de weekklus: dan blijft die de klus van vandaag.
+    expect(kiesVandaag(lijst, '2026-09-02', 'weekklus')?.id).toBe('weekklus')
+  })
+
+  it('valt terug op de planning als de klok naar een afgeronde klus wijst', () => {
+    const lijst = [
+      bon({ id: 'af',      geplande_start: '2026-09-01', geplande_eind: '2026-09-02', status: 'voltooid' }),
+      bon({ id: 'spoedje', geplande_start: '2026-09-02', geplande_eind: '2026-09-02' }),
+    ]
+    expect(kiesVandaag(lijst, '2026-09-02', 'af')?.id).toBe('spoedje')
+  })
+
+  it('valt terug op de planning bij een onbekende klok', () => {
+    const lijst = [bon({ id: 'spoedje', geplande_start: '2026-09-02', geplande_eind: '2026-09-02' })]
+    expect(kiesVandaag(lijst, '2026-09-02', 'bestaat-niet')?.id).toBe('spoedje')
+    expect(kiesVandaag(lijst, '2026-09-02', null)?.id).toBe('spoedje')
+  })
+
   it('kijkt vooruit als er vandaag niets loopt', () => {
     const lijst = [
       bon({ id: 'ver',      geplande_start: '2026-08-24' }),

@@ -183,12 +183,13 @@ export function looptOp(w: Ingepland, dag: string): boolean {
  * ochtends het verkeerde adres te zien.
  *
  * De volgorde die klopt:
- *   1. Een klus die vandaag loopt. Lopen er meerdere, dan die het
+ *   1. De klus waarop je geklokt staat. Je bent er al.
+ *   2. Een klus die vandaag loopt. Lopen er meerdere, dan die het
  *      eerst af moet — zie `looptVandaag`.
- *   2. Anders werk dat nog niet af is en waarvan de datum voorbij is.
- *   3. Anders de eerstvolgende die nog moet beginnen.
+ *   3. Anders werk dat nog niet af is en waarvan de datum voorbij is.
+ *   4. Anders de eerstvolgende die nog moet beginnen.
  *
- * Punt 2 stond hier eerst onderaan, ná "de eerstvolgende die nog moet
+ * Punt 3 stond hier eerst onderaan, ná "de eerstvolgende die nog moet
  * beginnen". Dat was verkeerd om, en het leverde de meeste vragen op
  * van de hele app: een klus die uitliep verdween 's ochtends van het
  * scherm van de ploeg. Ze stonden er nog, maar de app liet hun
@@ -226,9 +227,26 @@ export function looptVandaag<T extends Ingepland>(
     })
 }
 
-export function kiesVandaag<T extends Ingepland>(bonnen: T[], nu: string = isoDatum()): T | null {
+export function kiesVandaag<T extends Ingepland & { id?: string }>(
+  bonnen: T[],
+  nu: string = isoDatum(),
+  geklokOp?: string | null,
+): T | null {
   const open = bonnen.filter((w) => w.status !== 'voltooid' && !w.opgeleverd_op)
   if (open.length === 0) return null
+
+  // Sta je geklokt, dan is dat de klus. Geen planning die daar
+  // overheen gaat: je bent er, dat is geen voorspelling maar een feit.
+  //
+  // Dit is het geval waar de planning het mis heeft en de man niet.
+  // Iemand klokt 's ochtends in op de weekklus, kantoor drukt er om
+  // tien uur een spoedje tussen — zonder dit springt de bovenste kaart
+  // naar dat spoedje terwijl zijn werkdag nog op de weekklus loopt, en
+  // vinkt hij punten af op het verkeerde adres.
+  if (geklokOp) {
+    const bezig = open.find((w) => w.id === geklokOp)
+    if (bezig) return bezig
+  }
 
   const loopt = looptVandaag(open, nu)
   if (loopt.length > 0) return loopt[0]

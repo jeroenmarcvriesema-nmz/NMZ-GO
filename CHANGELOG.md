@@ -1,5 +1,11 @@
 # NMZ GO — Changelog
 
+## Waar je geklokt staat, daar ben je
+
+- **[FIX]** De klus waarop je **geklokt staat** blijft nu bovenaan het scherm Vandaag staan, ook als de planning inmiddels iets anders zegt. Klokte iemand 's ochtends in op de weekklus en drukte kantoor er om tien uur een spoedje tussen, dan sprong de bovenste kaart naar dat spoedje terwijl zijn werkdag nog op de weekklus liep — met het risico dat hij punten afvinkte op het verkeerde adres.
+- Geklokt zijn is geen voorspelling maar een feit, en dat weegt zwaarder dan de planning. Het spoedje verdwijnt niet: dat staat eronder in de lijst met de andere klussen van vandaag, met "alleen vandaag" erbij.
+- Valt de klok naar een klus die al is afgerond of die niet meer bestaat, dan telt gewoon de planning weer. Drie tests dekken die terugval af.
+
 ## Een spoedje ertussendoor is te zien én te herkennen
 
 - **[FEATURE]** Bij elke klus op het scherm van de ploeg staat nu **waar in de klus die dag zit**: "dag 2 van 10", "laatste dag van 2", of "alleen vandaag". Twee adressen onder elkaar zeiden niet welke de klus van tien dagen was en welke het spoedje dat er tussendoor is gedrukt — precies het verschil dat bepaalt wat er die dag af moet.
