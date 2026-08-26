@@ -17,7 +17,7 @@ import { klusstand, STANDEN, type Klusstand } from '@/lib/klusstand'
 import {
   IconCalendar, IconPlayerPlay, IconPlayerStop,
   IconPhoto, IconClock, IconTrophy,
-  IconUsers, IconCircleCheck, IconAlertTriangle, IconChevronRight, IconCalendarEvent,
+  IconUsers, IconCircleCheck, IconAlertTriangle, IconChevronRight, IconCalendarEvent, IconMapPin,
 } from '@tabler/icons-react'
 
 function groet(): string {
@@ -337,6 +337,23 @@ function Werkdagbalk({ fase, bezig, onStart, onStop, onHervat }: {
           {knop.icon}
           {bezig ? 'BEZIG…' : knop.label}
         </button>
+
+        {/* De informatieplicht, op de plek waar het gebeurt.
+            Bij het aanmelden wordt eenmalig de locatie opgevraagd om de
+            afstand tot de klus te bepalen. Dat mag alleen als degene om
+            wie het gaat het weet — stil meten is niet toegestaan, hoe
+            onschuldig het doel ook is. Eén regel hier, de uitleg staat
+            in het personeelsreglement.
+            Alleen vóór het starten: daarna is er niets meer op te
+            vragen en zou het een waarschuwing zijn zonder aanleiding. */}
+        {fase === 'voor_start' && (
+          <p className="flex items-start gap-1.5 text-[11px] leading-snug text-gray-400 dark:text-white/40 mt-2 max-w-prose">
+            <IconMapPin className="w-3 h-3 flex-shrink-0 mt-0.5" />
+            Bij het aanmelden wordt je locatie eenmalig opgevraagd om de afstand
+            tot het werkadres te bepalen. Je positie wordt niet bewaard en je
+            wordt niet gevolgd tijdens de dag.
+          </p>
+        )}
       </div>
     </div>
   )

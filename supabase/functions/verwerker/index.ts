@@ -26,6 +26,7 @@ import {
 } from './clickup.ts'
 import { fotosOpruimen } from './opruimen.ts'
 import { bouwOpleverrapport, meldRapportMislukt } from './rapport.ts'
+import { geocodeerRonde } from './geocode.ts'
 
 // Een fout die niet opnieuw geprobeerd moet worden.
 class OnverwerkbaarError extends Error {
@@ -233,6 +234,21 @@ const HANDLERS: Record<string, Handler> = {
   // Wie een rapport mág maken is op dit moment al beslist door
   // `rapportage_aanvragen()`: uitvoerder of hoger, en minstens één
   // foto. Hier wordt alleen nog uitgevoerd wat daar is goedgekeurd.
+  // Adressen omzetten naar een punt op de kaart. Nodig om te kunnen
+  // zeggen hoe ver iemand van de klus stond toen hij zich aanmeldde;
+  // de werkbon heeft alleen een adres als tekst.
+  //
+  // Als losse ronde en niet in de synchronisatie: dat is een aanroep
+  // naar een dienst van iemand anders, en die hoort de invoer van
+  // nieuwe klussen niet op te houden als hij traag is.
+  'onderhoud.geocoderen': async (taak, db) => {
+    const tenantId = String(taak.payload.tenant_id ?? '')
+    if (!tenantId) {
+      throw new OnverwerkbaarError('tenant_id ontbreekt in de payload')
+    }
+    return await geocodeerRonde(db, tenantId, Number(taak.payload.aantal ?? 10))
+  },
+
   'rapportage.genereren': async (taak, db) => {
     const tenantId = String(taak.payload.tenant_id ?? '')
     const werkbonId = String(taak.payload.werkbon_id ?? '')
