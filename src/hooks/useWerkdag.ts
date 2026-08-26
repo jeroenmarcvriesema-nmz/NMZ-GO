@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { toast } from '@/store/toastStore'
-import { haalPositie } from '@/lib/locatie'
+import { haalPositie, LOCATIE_AAN } from '@/lib/locatie'
 
 // Tabel: werkdag_logs (migratie 006). Eén rij per monteur per
 // werkbon per dag; start zet de rij, stop vult stop_tijd.
@@ -81,6 +81,7 @@ export function useWerkdag(werkbonId: string | null) {
    * de policy de hele insert afkeuren.
    */
   const legLocatieVast = (werkdagLogId: string) => {
+    if (!LOCATIE_AAN) return
     if (!profile?.id || !profile?.tenant_id || !werkbonId) return
 
     void haalPositie().then(async (pos) => {

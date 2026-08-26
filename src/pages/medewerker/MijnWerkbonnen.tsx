@@ -15,6 +15,7 @@ import { Voortgangsring } from '@/components/ui/Voortgangsring'
 import { berekenVoortgang, cn } from '@/lib/utils'
 import { kiesVandaag, looptVandaag, uitgelopenWerk, duurLabel, isoDatum } from '@/lib/planning'
 import { klusstand, STANDEN, type Klusstand } from '@/lib/klusstand'
+import { LOCATIE_AAN } from '@/lib/locatie'
 import {
   IconCalendar, IconPlayerPlay, IconPlayerStop,
   IconPhoto, IconClock, IconTrophy,
@@ -354,7 +355,7 @@ function Werkdagbalk({ fase, bezig, onStart, onStop, onHervat }: {
             in het personeelsreglement.
             Alleen vóór het starten: daarna is er niets meer op te
             vragen en zou het een waarschuwing zijn zonder aanleiding. */}
-        {fase === 'voor_start' && (
+        {LOCATIE_AAN && fase === 'voor_start' && (
           <p className="flex items-start gap-1.5 text-[11px] leading-snug text-gray-400 dark:text-white/40 mt-2 max-w-prose">
             <IconMapPin className="w-3 h-3 flex-shrink-0 mt-0.5" />
             Bij het aanmelden wordt je locatie eenmalig opgevraagd om de afstand

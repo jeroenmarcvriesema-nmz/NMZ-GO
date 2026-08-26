@@ -1,5 +1,15 @@
 # De afstandsmeting bij aanmelden — wat er is gebouwd en wat er nog moet
 
+> **Deze functie staat UIT.** `LOCATIE_AAN` in `src/lib/locatie.ts` staat
+> op `false`, en de geocodeerronde is uit de planner gehaald. Er wordt
+> niet om toestemming gevraagd, geen positie opgehaald en niets
+> weggeschreven. Er is ook nooit iets verzameld: op het moment van
+> uitzetten stonden er nul metingen en nul coördinaten.
+>
+> Aanzetten is die regel op `true` zetten, de geocodeerronde weer
+> inplannen, en uitrollen. Doe dat pas als de zes punten onderaan dit
+> document geregeld zijn — de techniek was het probleem niet.
+
 Dit document hoort bij migratie 040 en 041. Het legt vast wat het
 systeem doet met de locatie van een medewerker, zodat dat te
 verantwoorden is als er ooit naar gevraagd wordt.
