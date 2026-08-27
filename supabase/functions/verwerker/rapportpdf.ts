@@ -25,7 +25,13 @@ const MM = 2.8346
 const BREEDTE = 210 * MM
 const HOOGTE = 297 * MM
 const MARGE = 18 * MM
-const ONDER = 16 * MM
+// De voet draagt de logobalk plus het paginanummer, dus de tekst stopt
+// een stuk hoger dan bij een gewone marge. De balk is 1154 x 172 punt
+// aangeleverd — ruim zes keer zo breed als hoog — en op 120 mm breed is
+// hij ongeveer 18 mm hoog. Daarboven blijft het paginanummer vrij staan.
+const BALK_BREEDTE = 120 * MM
+const BALK_ONDER = 10 * MM
+const ONDER = 34 * MM
 const KOLOM = BREEDTE - 2 * MARGE
 
 const INKT = rgb(0.102, 0.094, 0.078)
@@ -33,6 +39,10 @@ const ZACHT = rgb(0.361, 0.337, 0.302)
 const LICHT = rgb(0.561, 0.533, 0.490)
 const LINIAAL = rgb(0.851, 0.831, 0.788)
 const GEEL = rgb(0.941, 0.706, 0.125)
+// De tweede huisstijlkleur (#BC2934), dezelfde als `brand-red` in de
+// app. Spaarzaam: geel draagt het merk, rood wijst aan wat aandacht
+// vraagt. Twee kleuren die allebei overal staan wijzen nergens meer op.
+const ROOD = rgb(0.737, 0.161, 0.204)
 
 interface Pen {
   doc: PDFDocument
@@ -213,6 +223,40 @@ async function fotos(pen: Pen, lijst: Rapportfoto[], onderschrift: string): Prom
   return geplaatst
 }
 
+/**
+ * De logobalk: het merk plus de keurmerken, zoals aangeleverd.
+ *
+ * Het bestand staat naast deze code en wordt met de functie meegestuurd.
+ * Rechtstreeks de PDF-pagina insluiten en niet de losse afbeeldingen
+ * uitpakken: dan blijft de balk exact zoals hij is aangeleverd — geen
+ * herschaalde keurmerken, geen kleur die net iets verschuift.
+ *
+ * Lukt het lezen niet, dan komt er geen balk en verder niets aan de
+ * hand. Een rapport zonder logo is vervelend; geen rapport omdat het
+ * logo ontbrak is erger.
+ */
+async function leesLogobalk(doc: PDFDocument) {
+  try {
+    const bytes = await Deno.readFile(new URL('./logobalk.pdf', import.meta.url))
+    const [pagina] = await doc.embedPdf(bytes)
+    return pagina
+  } catch {
+    return null
+  }
+}
+
+/** De balk onderaan een pagina, over de volle kolombreedte. */
+function zetLogobalk(pagina: PDFPage, balk: { width: number; height: number } | null): void {
+  if (!balk) return
+  // Gecentreerd, want hij draagt het merk en niet een kolom tekst.
+  pagina.drawPage(balk as never, {
+    x: (BREEDTE - BALK_BREEDTE) / 2,
+    y: BALK_ONDER,
+    width: BALK_BREEDTE,
+    height: (balk.height / balk.width) * BALK_BREEDTE,
+  })
+}
+
 /** Het hele opleverrapport als PDF-bytes. */
 export async function bouwRapportPdf(g: Rapportgegevens): Promise<Uint8Array> {
   const doc = await PDFDocument.create()
@@ -224,6 +268,7 @@ export async function bouwRapportPdf(g: Rapportgegevens): Promise<Uint8Array> {
   doc.setProducer('NMZ GO')
   doc.setCreator('NMZ GO')
 
+  const balk = await leesLogobalk(doc)
   const pen: Pen = { doc, pagina: doc.addPage([BREEDTE, HOOGTE]), y: HOOGTE - MARGE, gewoon, vet, adres }
 
   // ── Titelblad ──
@@ -232,6 +277,7 @@ export async function bouwRapportPdf(g: Rapportgegevens): Promise<Uint8Array> {
 
   pen.y = HOOGTE / 2 + 40 * MM
   pen.pagina.drawRectangle({ x: MARGE, y: pen.y, width: 26 * MM, height: 1.6 * MM, color: GEEL })
+  pen.pagina.drawRectangle({ x: MARGE + 28 * MM, y: pen.y, width: 8 * MM, height: 1.6 * MM, color: ROOD })
   pen.y -= 14 * MM
   pen.pagina.drawText('Opleverrapport', { x: MARGE, y: pen.y, size: 30, font: vet, color: INKT })
   pen.y -= 12 * MM
@@ -285,7 +331,7 @@ export async function bouwRapportPdf(g: Rapportgegevens): Promise<Uint8Array> {
 
       pen.pagina.drawCircle({
         x: MARGE + 1.5 * MM, y: pen.y + 1.2 * MM, size: 1.2 * MM,
-        color: punt.voltooid ? GEEL : LINIAAL,
+        color: punt.voltooid ? GEEL : ROOD,
       })
       regels.forEach((regel, i) => {
         pen.pagina.drawText(regel, {
@@ -297,7 +343,7 @@ export async function bouwRapportPdf(g: Rapportgegevens): Promise<Uint8Array> {
 
       if (!punt.voltooid) {
         pen.pagina.drawText('NIET AFGEROND', {
-          x: MARGE + 6 * MM, y: pen.y, size: 8, font: vet, color: LICHT,
+          x: MARGE + 6 * MM, y: pen.y, size: 8, font: vet, color: ROOD,
         })
         pen.y -= 5 * MM
       }
@@ -331,12 +377,15 @@ export async function bouwRapportPdf(g: Rapportgegevens): Promise<Uint8Array> {
   }
 
   // ── Paginanummers ──
+  // De balk en het paginanummer horen op élke pagina, dus pas hier —
+  // als vaststaat hoeveel bladen het er zijn geworden.
   const paginas = doc.getPages()
   paginas.forEach((p, i) => {
+    zetLogobalk(p, balk)
     const tekst = `${i + 1} / ${paginas.length}`
     p.drawText(tekst, {
       x: BREEDTE - MARGE - gewoon.widthOfTextAtSize(tekst, 8),
-      y: ONDER - 6 * MM, size: 8, font: gewoon, color: LICHT,
+      y: ONDER - 4 * MM, size: 8, font: gewoon, color: LICHT,
     })
   })
 

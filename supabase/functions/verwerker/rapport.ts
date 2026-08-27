@@ -53,7 +53,7 @@
 // ============================================================
 
 import { SupabaseClient } from 'jsr:@supabase/supabase-js@2'
-import { datumInWoorden, periodeInWoorden, type Rapportfoto, type Rapportpunt, type Rapportgegevens } from './rapportsjabloon.ts'
+import { datumInWoorden, periodeInWoorden, voornamen, type Rapportfoto, type Rapportpunt, type Rapportgegevens } from './rapportsjabloon.ts'
 import { bouwRapportPdf } from './rapportpdf.ts'
 
 /** Breedte waarop een foto het document in gaat. */
@@ -417,9 +417,11 @@ export async function bouwOpleverrapport(
       bon.geplande_start ?? bon.datum,
       bon.geplande_eind ?? bon.geplande_start ?? bon.datum,
     ),
-    ploeg: (bon.werkbon_medewerkers ?? [])
-      .map((wm: any) => wm.persoon?.naam)
-      .filter(Boolean),
+    // Alleen voornamen: het rapport gaat naar een opdrachtgever en die
+    // hoeft de achternamen van de ploeg niet te weten.
+    ploeg: voornamen(
+      (bon.werkbon_medewerkers ?? []).map((wm: any) => wm.persoon?.naam).filter(Boolean),
+    ),
     opmerkingenBewoners: bon.opmerkingen_bewoners ?? null,
     extraWerkzaamheden: bon.extra_werkzaamheden ?? null,
     bijzonderheden: bon.bijzonderheden ?? null,

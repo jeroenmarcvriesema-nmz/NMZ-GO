@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  voornamen,
   bouwRapport,
   datumInWoorden,
   ontsnap,
@@ -197,5 +198,34 @@ describe('bouwRapport', () => {
     const html = bouwRapport({ ...kaal, adres: 'Kerkstraat 3 <achter> & co' })
     expect(html).toContain('Kerkstraat 3 &lt;achter&gt; &amp; co')
     expect(html).not.toContain('<achter>')
+  })
+})
+
+
+describe('voornamen', () => {
+  // Het rapport gaat naar een opdrachtgever. Die hoeft niet te weten hoe
+  // de jongens voluit heten.
+  it('houdt alleen de voornaam over', () => {
+    expect(voornamen(['Danny Bakker', 'Martijn Hoekstra'])).toEqual(['Danny', 'Martijn'])
+  })
+
+  it('laat een enkele naam met rust', () => {
+    expect(voornamen(['Justin'])).toEqual(['Justin'])
+  })
+
+  // Bij dertig man zitten er twee Justins. "Justin, Justin" op een
+  // rapport leest als een fout, dus alleen dán komt er een letter bij.
+  it('haalt twee dezelfde voornamen uit elkaar', () => {
+    expect(voornamen(['Justin de Wit', 'Justin Bakker'])).toEqual(['Justin W.', 'Justin B.'])
+  })
+
+  it('raakt de namen die niet botsen niet aan', () => {
+    expect(voornamen(['Justin de Wit', 'Justin Bakker', 'Danny Bakker']))
+      .toEqual(['Justin W.', 'Justin B.', 'Danny'])
+  })
+
+  it('valt niet over lege of rommelige invoer', () => {
+    expect(voornamen([])).toEqual([])
+    expect(voornamen(['', '   ', 'Danny  Bakker'])).toEqual(['Danny'])
   })
 })

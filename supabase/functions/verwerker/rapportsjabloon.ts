@@ -63,6 +63,39 @@ export interface VasteTeksten {
   werkzaamheden?: string | null
 }
 
+/**
+ * Alleen de voornaam van de ploeg op het rapport.
+ *
+ * Dit document gaat naar een opdrachtgever. Die hoeft niet te weten hoe
+ * de jongens voluit heten; "Danny en Martijn zijn er geweest" is wat er
+ * toe doet. Achternamen van personeel op een extern stuk zetten is
+ * gegevens weggeven die niemand nodig heeft.
+ *
+ * Twee keer dezelfde voornaam is het geval waar een simpele regel
+ * stukgaat: bij dertig man zitten er twee Justins, en "Justin, Justin"
+ * op een rapport leest als een fout. Alleen dán komt de eerste letter
+ * van de achternaam erbij, en alleen bij de namen die botsen.
+ */
+export function voornamen(namen: string[]): string[] {
+  const gesplitst = namen
+    .map((naam) => String(naam ?? '').trim().split(/\s+/).filter(Boolean))
+    .filter((delen) => delen.length > 0)
+
+  const telling = new Map<string, number>()
+  for (const delen of gesplitst) {
+    const eerste = delen[0].toLowerCase()
+    telling.set(eerste, (telling.get(eerste) ?? 0) + 1)
+  }
+
+  return gesplitst.map((delen) => {
+    const eerste = delen[0]
+    if ((telling.get(eerste.toLowerCase()) ?? 0) < 2 || delen.length < 2) return eerste
+    // De eerste letter van het laatste naamdeel: "Justin de Wit" wordt
+    // "Justin W." en niet "Justin d.".
+    return `${eerste} ${delen[delen.length - 1][0].toUpperCase()}.`
+  })
+}
+
 export interface Rapportgegevens {
   bonnummer: string | null
   projectnaam: string | null
