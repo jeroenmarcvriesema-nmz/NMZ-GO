@@ -27,12 +27,20 @@ Gecontroleerd op verzoek van de eigenaar: lopen git, de database, de edge functi
 
 Aanzetten is en blijft drie handelingen met opzet: de ronde inplannen, de vlag omzetten, de verwerker uitrollen.
 
+**Besluit van de eigenaar, 26 augustus:** de geolocatie is in een andere sessie bewust uitgezet en blijft uit. Misschien gaat hij later aan, maar niet voordat het goed is uitgezocht. **Rol de verwerker dus niet uit** zolang dat niet is besloten — dat zou de geocode-code alsnog in productie zetten, ook al is hij inert.
+
 **Branches:**
 
-| Branch | Stand | Wat ermee moet |
+Geteld met `git rev-list --count origin/main..origin/<branch>` — het aantal commits dat `main` níet heeft.
+
+| Branch | Uniek t.o.v. `main` | Wat ermee moet |
 |---|---|---|
-| `main` | HEAD (`c48688e`) | — |
-| `claude/bugs-errors-92fxzf` | 4 vóór, 32 achter | **Achterhaald.** Bevat een tweede, dubbele rapportgenerator die is weggegooid toen bleek dat `main` er al een had — inhoudelijk beter en al uitgerold. Wat van die branch nog nodig was (migratie 039 en `tests/migraties.test.ts`) zit in `main`. Mag weg. |
+| `main` | — | HEAD |
+| `claude/bugs-errors-92fxzf` | — | **Verwijderd op 26 augustus**, op verzoek van de eigenaar. Bevatte een tweede, dubbele rapportgenerator die is weggegooid toen bleek dat `main` er al een had — inhoudelijk beter en al uitgerold. Wat er nog nodig van was (migratie 039 en `tests/migraties.test.ts`) zit in `main`. |
+| `claude/fotos-werkdagflow-bfro09` | 0 | Volledig in `main`. Mag weg. |
+| `claude/manual-add-file-upload-pdf-47c4q2` | 0 | Volledig in `main`. Mag weg. |
+| `claude/verification-roles-test-n5t4ec` | 0 | Volledig in `main`. Mag weg. |
+| `feature/dark-mode-redesign` | **9** | Losse geschiedenis van vóór de her-init, zonder gemeenschappelijke voorouder. De inhoud zit inhoudelijk allang in `main`. Niet mergen — dit is de enige branch die commits draagt die `main` niet heeft, dus niet blind weggooien. |
 
 ---
 
