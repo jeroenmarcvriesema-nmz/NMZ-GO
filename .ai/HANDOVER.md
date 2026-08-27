@@ -36,11 +36,13 @@ Geteld met `git rev-list --count origin/main..origin/<branch>` — het aantal co
 | Branch | Uniek t.o.v. `main` | Wat ermee moet |
 |---|---|---|
 | `main` | — | HEAD |
-| `claude/bugs-errors-92fxzf` | — | **Verwijderd op 26 augustus**, op verzoek van de eigenaar. Bevatte een tweede, dubbele rapportgenerator die is weggegooid toen bleek dat `main` er al een had — inhoudelijk beter en al uitgerold. Wat er nog nodig van was (migratie 039 en `tests/migraties.test.ts`) zit in `main`. |
+| `claude/bugs-errors-92fxzf` | 4 | **Achterhaald, mag weg.** Bevat een tweede, dubbele rapportgenerator die is weggegooid toen bleek dat `main` er al een had — inhoudelijk beter en al uitgerold. Wat er nog nodig van was (migratie 039 en `tests/migraties.test.ts`) zit in `main`; de vier commits die hier nog staan zijn de weggegooide versie. |
 | `claude/fotos-werkdagflow-bfro09` | 0 | Volledig in `main`. Mag weg. |
 | `claude/manual-add-file-upload-pdf-47c4q2` | 0 | Volledig in `main`. Mag weg. |
 | `claude/verification-roles-test-n5t4ec` | 0 | Volledig in `main`. Mag weg. |
 | `feature/dark-mode-redesign` | **9** | Losse geschiedenis van vóór de her-init, zonder gemeenschappelijke voorouder. De inhoud zit inhoudelijk allang in `main`. Niet mergen — dit is de enige branch die commits draagt die `main` niet heeft, dus niet blind weggooien. |
+
+**Opruimen kan niet vanuit een sessie.** De agent-proxy staat het pushen van commits toe maar weigert het verwijderen van refs met `HTTP 403`. De eigenaar wilde op 26 augustus de vier achterhaalde branches opruimen; dat moet dus met de hand, via de GitHub-webinterface (Branches → prullenbak) of lokaal met `git push origin --delete <branch>`. De vier met nul of achterhaalde commits zijn: `claude/bugs-errors-92fxzf`, `claude/fotos-werkdagflow-bfro09`, `claude/manual-add-file-upload-pdf-47c4q2` en `claude/verification-roles-test-n5t4ec`. `feature/dark-mode-redesign` blijft staan.
 
 ---
 
