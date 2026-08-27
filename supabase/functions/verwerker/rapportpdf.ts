@@ -272,8 +272,21 @@ export async function bouwRapportPdf(g: Rapportgegevens): Promise<Uint8Array> {
   const pen: Pen = { doc, pagina: doc.addPage([BREEDTE, HOOGTE]), y: HOOGTE - MARGE, gewoon, vet, adres }
 
   // ── Titelblad ──
-  pen.pagina.drawRectangle({ x: MARGE, y: pen.y - 7 * MM, width: 7 * MM, height: 7 * MM, color: GEEL })
-  pen.pagina.drawText('NMZ', { x: MARGE + 10 * MM, y: pen.y - 5.5 * MM, size: 13, font: vet, color: INKT })
+  // Het echte merk, uit het aangeleverde bestand. Hier groot en over de
+  // volle breedte: dit is de voorkant van een stuk dat de deur uit gaat.
+  // Er stond een nagemaakt geel vierkantje met "NMZ" — dat was een
+  // plaatsvervanger zolang het echte logo er niet was.
+  if (balk) {
+    pen.pagina.drawPage(balk as never, {
+      x: MARGE,
+      y: pen.y - (balk.height / balk.width) * KOLOM,
+      width: KOLOM,
+      height: (balk.height / balk.width) * KOLOM,
+    })
+  } else {
+    pen.pagina.drawRectangle({ x: MARGE, y: pen.y - 7 * MM, width: 7 * MM, height: 7 * MM, color: GEEL })
+    pen.pagina.drawText('NMZ', { x: MARGE + 10 * MM, y: pen.y - 5.5 * MM, size: 13, font: vet, color: INKT })
+  }
 
   pen.y = HOOGTE / 2 + 40 * MM
   pen.pagina.drawRectangle({ x: MARGE, y: pen.y, width: 26 * MM, height: 1.6 * MM, color: GEEL })
@@ -381,7 +394,9 @@ export async function bouwRapportPdf(g: Rapportgegevens): Promise<Uint8Array> {
   // als vaststaat hoeveel bladen het er zijn geworden.
   const paginas = doc.getPages()
   paginas.forEach((p, i) => {
-    zetLogobalk(p, balk)
+    // Niet op het titelblad: daar staat het merk al groot bovenaan, en
+    // twee keer hetzelfde op één vel leest als een opmaakfout.
+    if (i > 0) zetLogobalk(p, balk)
     const tekst = `${i + 1} / ${paginas.length}`
     p.drawText(tekst, {
       x: BREEDTE - MARGE - gewoon.widthOfTextAtSize(tekst, 8),
