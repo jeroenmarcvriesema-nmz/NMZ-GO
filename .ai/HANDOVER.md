@@ -2,11 +2,41 @@
 
 **Doel van dit document:** een volgende sessie moet dit project kunnen overnemen **zonder enig contextverlies**. Geen enkel feit hieronder is aangenomen; alles is geverifieerd tegen de daadwerkelijke codebase, database, git-historie en documentatie.
 
-Lees hoofdstuk 0 als eerste — dat is de actuele stand. De hoofdstukken daarna beschrijven de architectuur, de visie van de eigenaar en de geschiedenis; die blijven geldig, maar zijn geschreven vóór Epic 4.
+Lees hoofdstuk 0a als eerste — dat is de actuele stand; 0b is de vorige controle en blijft staan als historie. De hoofdstukken daarna beschrijven de architectuur, de visie van de eigenaar en de geschiedenis; die blijven geldig, maar zijn geschreven vóór Epic 4.
 
 ---
 
-# 0a. Synchroniciteitscontrole — 12 augustus 2026, 19:20
+# 0a. Synchroniciteitscontrole — 26 augustus 2026
+
+Gecontroleerd op verzoek van de eigenaar: lopen git, de database, de edge functions en Netlify gelijk, zodat elke sessie op dezelfde versie werkt? Alles hieronder is geverifieerd tegen de bron. **Eén ding liep uiteen; dat is rechtgezet met migratie 042. Eén ding wijkt bewust af en staat onderaan.**
+
+`main` staat op `c48688e`. Werkboom schoon, CI groen op elke commit van vandaag.
+
+| Onderdeel | Stand |
+|---|---|
+| Migratiebestanden ↔ database | **Gelijk.** 45 bestanden, 45 in `supabase_migrations`. `001` en `002` staan niet in dat logboek (van vóór het bestond). Drie historische naamsverschillen zonder gevolg: `013_clickup_token_uit_vault` heet daar `clickup_token_uitlezen`, en `019` en `027` tellen elk als twee regels. |
+| Edge function `opdracht-lezen` | v1, gelijk aan de repo. |
+| Edge function `ploeg-bijwerken` | v1, gelijk aan de repo. |
+| Edge function `verwerker` | v28, uitgerold 20 augustus 06:43:45 UTC. Loopt één commit achter op `main` — bewust, zie onderaan. Alle functiefixes t/m 20 augustus zitten erin; `6b27e1a` (planningsdatums een dag te vroeg) is 65 seconden vóór die uitrol gecommit en dus wél live. |
+| pg_cron | Zes jobs: `nmzgo-verwerker` (elke minuut), `nmzgo-clickup-hartslag` (\*/5 4–19), `nmzgo-werkdagen-afsluiten` (:05 elk uur), `nmzgo-fotos-opruimen` (03:15), `nmzgo-locaties-opruimen` (03:30), `klus-niet-gestart` (\*/15 5–9, ma t/m za). Géén `nmzgo-geocoderen` — zie hieronder. |
+| Netlify | Volgt `main` automatisch via zijn eigen Git-koppeling; er zit geen Netlify-stap in GitHub Actions. **Niet te verifiëren vanuit een sessie.** Controleer in het dashboard of de laatste build bij de HEAD van `main` hoort. |
+
+**Wat er uiteen liep: de geocodeerronde.** Migratie 040 zet `nmzgo-geocoderen` elke tien minuten in de cron. Toen de afstandsmeting werd geparkeerd is die ronde in de productiedatabase uit de planner gehaald, maar dat gebeurde als losse ingreep en niet als migratiebestand. Wie de database opnieuw zou opbouwen uit deze migraties kreeg de ronde er ongevraagd bij terug. **Migratie 042 legt de werkelijkheid vast** en is toegepast; hij is idempotent, dus hij draait ook op een database waar de taak nooit heeft gestaan.
+
+**Wat bewust afwijkt: de afstandsmeting.** `supabase/functions/verwerker/geocode.ts` en de bijbehorende wijziging in `index.ts` staan op `main` maar niet in productie (commit `266a5df`, 26 augustus). Dat is met opzet: `899c0ab` parkeerde de feature tot de grondslag rond is, en noemt uitrollen expliciet onderdeel van *aanzetten*. De code is inert — de ronde staat niet in de cron en `LOCATIE_AAN` staat in de app op `false`, dus er wordt niets opgehaald en niets weggeschreven. Er is nooit iets verzameld.
+
+Aanzetten is en blijft drie handelingen met opzet: de ronde inplannen, de vlag omzetten, de verwerker uitrollen.
+
+**Branches:**
+
+| Branch | Stand | Wat ermee moet |
+|---|---|---|
+| `main` | HEAD (`c48688e`) | — |
+| `claude/bugs-errors-92fxzf` | 4 vóór, 32 achter | **Achterhaald.** Bevat een tweede, dubbele rapportgenerator die is weggegooid toen bleek dat `main` er al een had — inhoudelijk beter en al uitgerold. Wat van die branch nog nodig was (migratie 039 en `tests/migraties.test.ts`) zit in `main`. Mag weg. |
+
+---
+
+# 0b. Synchroniciteitscontrole — 12 augustus 2026, 19:20
 
 Gecontroleerd op verzoek van de eigenaar: lopen git, GitHub, de database, de edge functions en Netlify gelijk? Alles hieronder is geverifieerd tegen de bron, niet aangenomen. **Eén ding klopt niet en staat onderaan.**
 
