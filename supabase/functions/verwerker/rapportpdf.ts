@@ -184,7 +184,11 @@ async function fotos(pen: Pen, lijst: Rapportfoto[], onderschrift: string): Prom
   let kolom = 0
 
   for (const foto of lijst) {
-    const rauw = uitDataUri(foto.bron)
+    // Ruwe bytes als ze er zijn; de data-URI is de terugval voor wie
+    // deze functie met alleen een URI aanroept.
+    const rauw = foto.bytes?.length
+      ? { bytes: foto.bytes, png: false }
+      : uitDataUri(foto.bron)
     if (!rauw) continue
 
     let beeld

@@ -39,8 +39,24 @@
 
 /** Eén foto, klaar om in het document te zetten. */
 export interface Rapportfoto {
-  /** Volledige `data:`-URI. Het document staat op zichzelf. */
-  bron: string
+  /**
+   * Volledige `data:`-URI, voor de HTML-weergave.
+   *
+   * Optioneel sinds het rapport een PDF is: die wil bytes en heeft aan
+   * een base64-string niets. Hem tóch bouwen kostte bij twintig foto's
+   * een paar megabyte aan strings die nergens werden gelezen.
+   */
+  bron?: string
+  /**
+   * Dezelfde foto als ruwe bytes, voor de PDF.
+   *
+   * De HTML-variant heeft een data-URI nodig; een PDF wil juist bytes.
+   * Zonder dit veld zou de generator elke foto naar base64 coderen en
+   * hem meteen daarna weer decoderen — bij twintig foto's is dat een
+   * paar megabyte heen en terug, en precies dat gaf een edge function
+   * die op zijn resource-limiet werd afgeschoten (HTTP 546).
+   */
+  bytes?: Uint8Array
   /** 'voor' of 'na', zoals op de foto vastgelegd. */
   fase?: string | null
 }

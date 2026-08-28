@@ -95,16 +95,6 @@ const MAX_BRONBYTES_PER_RONDE = 4_000_000
 const BUCKET_FOTOS = 'werkbon-fotos'
 const BUCKET_DOCUMENTEN = 'werkbon-documenten'
 
-function base64(bytes: Uint8Array): string {
-  // Per blok, want `String.fromCharCode(...bytes)` in één keer legt de
-  // aanroepstapel om bij een bestand van een paar honderd kilobyte.
-  let ruw = ''
-  const blok = 0x8000
-  for (let i = 0; i < bytes.length; i += blok) {
-    ruw += String.fromCharCode(...bytes.subarray(i, i + blok))
-  }
-  return btoa(ruw)
-}
 
 /**
  * Zoveel bytes aan foto's gaat er hooguit in één rapport.
@@ -376,7 +366,11 @@ export async function bouwOpleverrapport(
 
     if (beeldBytes + bytes.length > MAX_BEELD_BYTES) break
     beeldBytes += bytes.length
-    beeldPerFoto.set(f.id, { bron: `data:image/jpeg;base64,${base64(bytes)}`, fase: f.fase })
+    // Alleen de bytes. De data-URI was er voor de HTML-weergave; het
+    // rapport is een PDF en die leest bytes. Hem toch bouwen kostte bij
+    // twintig foto's megabytes aan base64 die niemand las — en dat was
+    // genoeg om de edge function op zijn resource-limiet af te schieten.
+    beeldPerFoto.set(f.id, { bytes, fase: f.fase })
   }
 
   // ── Alles op zijn plaats ──
