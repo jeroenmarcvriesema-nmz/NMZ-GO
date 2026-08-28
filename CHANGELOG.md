@@ -1,5 +1,12 @@
 # NMZ GO — Changelog
 
+## Zelf kiezen op welke klus je start
+
+- **[FIX]** **De ploeg kan nu een klus aantikken en daar de werkdag starten.** Sinds de klussen van vandaag allemaal op het scherm staan, zagen Danny en Martijn er twee — maar de startknop hoorde altijd bij de klus die de app had gekozen. Op de andere klus konden ze niet klokken. Aantikken verplaatst je werkdag nu naar dat adres, en dat staat er ook bij: "Tik een klus aan om daar je werkdag te starten."
+- Ook het werk van een eerdere dag dat nog niet af is, is aan te tikken. Wie gisteren niet klaar kwam en er vandaag op terugkomt, klokt gewoon op dat adres.
+- De automatische keuze blijft gelden zolang niemand kiest — bij één klus per dag is dat altijd de goede, en dan verandert er niets aan het scherm.
+- **Een waarschuwing tegen dubbel klokken.** Sta je geklokt op de ene klus en kies je de andere, dan verschijnt er een amber blok: *je werkdag loopt nog op X, stop die eerst*. Met een knop om er meteen naartoe te springen. Bewust geen blokkade — soms verkas je echt en dan moet het gewoon kunnen — maar niemand hoort er per ongeluk in te rollen en aan het eind van de week twee werkdagen op één dag te vinden.
+
 ## Repo en database lopen weer gelijk
 
 - **[FIX]** De **geocodeerronde** stond in de productiedatabase uit de planner, maar in de repo stond hij er nog in. Wie de database opnieuw zou opbouwen uit deze migraties kreeg `nmzgo-geocoderen` er elke tien minuten ongevraagd bij terug — precies de ronde die bewust geparkeerd is tot de grondslag voor de afstandsmeting rond is. Migratie 042 legt de werkelijkheid vast.

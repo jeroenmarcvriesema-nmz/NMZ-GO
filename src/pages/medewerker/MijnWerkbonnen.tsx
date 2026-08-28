@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 import { useWerkbonnen, useWerkbon } from '@/hooks/useWerkbonnen'
 import { useAuth } from '@/hooks/useAuth'
 import { useWerkdag, formatTijd, geefUren } from '@/hooks/useWerkdag'
@@ -83,13 +83,22 @@ export default function MijnWerkbonnen() {
   // springen terwijl zijn werkdag loopt. Het spoedje staat eronder in
   // de lijst, dus hij ziet het wel.
   const { werkbonId: geklokOp } = useLopendeWerkdag()
-  const gekozen = kiesVandaag(werkbonnen, isoDatum(), geklokOp)
+
+  // De app kiest een klus, maar de man in het veld heeft het laatste
+  // woord. Staan er twee klussen voor vandaag, dan tikt hij aan waar hij
+  // is en start hij dáár zijn werkdag. Zonder dit kon hij de tweede klus
+  // wel zien maar er niet op klokken — precies de klacht.
+  //
+  // Leeg tot iemand kiest: dan blijft de automatische keuze gelden, en
+  // die is bij één klus per dag altijd de goede.
+  const [gekozenId, setGekozenId] = useState<string | null>(null)
+  const automatisch = kiesVandaag(werkbonnen, isoDatum(), geklokOp)
+  const gekozen = (gekozenId ? werkbonnen.find((w) => w.id === gekozenId) : null) ?? automatisch
 
   // Werk van eerdere dagen dat nog niet af is, behalve de klus die
   // hierboven al gekozen is. Staat er vandaag een nieuwe klus gepland,
   // dan pakt `kiesVandaag` die — en dan is het werk van gisteren nog
   // steeds nergens te zien. Daar gingen de meeste vragen over.
-  const navigate = useNavigate()
   const blijftLiggen = uitgelopenWerk(werkbonnen).filter((w) => w.id !== gekozen?.id)
 
   // De andere klussen die vandaag óók lopen. Iemand staat vijf dagen op
@@ -191,6 +200,34 @@ export default function MijnWerkbonnen() {
             van vandaag: wie hier komt kijken omdat hij gisteren niet
             klaar kwam, moet het meteen zien en niet eerst langs een
             ander adres scrollen. */}
+        {/* Je staat geklokt op de ene klus en hebt de andere gekozen.
+            Nu starten geeft twee lopende werkdagen op één dag, en dan
+            klopt de urenregistratie van allebei niet meer. Bewust geen
+            blokkade: soms verkas je echt en dan moet het gewoon kunnen —
+            maar niemand hoort er per ongeluk in te rollen. */}
+        {geklokOp && gekozen && geklokOp !== gekozen.id && (
+          <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/25 rounded-lg p-4">
+            <div className="flex items-start gap-2">
+              <IconAlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-700 dark:text-amber-400" />
+              <div className="min-w-0">
+                <div className="text-sm font-bold text-amber-900 dark:text-amber-200">
+                  Je werkdag loopt nog op een andere klus
+                </div>
+                <div className="text-sm text-amber-800/80 dark:text-amber-200/70 mt-0.5 break-words">
+                  {werkbonnen.find((w) => w.id === geklokOp)?.adres ?? 'Een andere klus'} —
+                  stop die eerst, anders lopen er twee werkdagen tegelijk.
+                </div>
+                <button
+                  onClick={() => setGekozenId(geklokOp)}
+                  className="mt-2 min-h-[44px] inline-flex items-center gap-1.5 text-sm font-semibold text-amber-900 dark:text-amber-200 underline underline-offset-2"
+                >
+                  Terug naar die klus
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {ookVandaag.length > 0 && (
           <div className="bg-blue-50/70 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-2.5">
@@ -201,11 +238,17 @@ export default function MijnWerkbonnen() {
                   : `Nog ${ookVandaag.length} klussen vandaag ingepland`}
               </span>
             </div>
+            {/* Zonder deze regel is een rij een lijstje en geen knop.
+                Aantikken verplaatst je werkdag naar dat adres, en dat
+                hoort er te staan voordat je erop drukt. */}
+            <p className="text-xs text-blue-800/80 dark:text-blue-200/60 -mt-1 mb-2.5">
+              Tik een klus aan om daar je werkdag te starten.
+            </p>
             <div className="space-y-1.5">
               {ookVandaag.map((w) => (
                 <button
                   key={w.id}
-                  onClick={() => navigate(`/werkbon/${w.id}`)}
+                  onClick={() => setGekozenId(w.id)}
                   className="w-full min-h-[44px] flex items-center gap-2 text-left px-3 py-2 rounded-sm bg-white dark:bg-surface-dark-2 border border-blue-100 dark:border-blue-500/20 hover:border-blue-400 transition-colors"
                 >
                   <span className="flex-1 min-w-0">
@@ -243,7 +286,7 @@ export default function MijnWerkbonnen() {
               {blijftLiggen.map((w) => (
                 <button
                   key={w.id}
-                  onClick={() => navigate(`/werkbon/${w.id}`)}
+                  onClick={() => setGekozenId(w.id)}
                   className="w-full min-h-[44px] flex items-center gap-2 text-left px-3 py-2 rounded-sm bg-white dark:bg-surface-dark-2 border border-amber-200 dark:border-amber-500/25 hover:border-amber-400 transition-colors"
                 >
                   <span className="flex-1 min-w-0 text-sm font-semibold text-gray-900 dark:text-white break-words">
