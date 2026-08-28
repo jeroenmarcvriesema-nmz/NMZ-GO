@@ -1,0 +1,1412 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Van bon tot afgerond</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* ============================================================
+   NMZ GO — Veldhandleiding
+   Kleuren volgen het bestaande merk (tailwind.config.ts):
+   geel #F0B420, rood #BC2934, vlak #ECEAE4, donker #0d1117.
+   ============================================================ */
+
+:root {
+  --paper:        #F2EFE8;
+  --paper-2:      #E7E3D9;
+  --card:         #FFFFFF;
+  --ink:          #17150F;
+  --ink-2:        #57534A;
+  --ink-3:        #8A857A;
+  --lijn:         #DCD7CB;
+  --lijn-zacht:   #EBE7DD;
+
+  --geel:         #F0B420;
+  --geel-diep:    #A8790A;
+  --geel-was:     #FEF3CC;
+  --rood:         #BC2934;
+  --rood-was:     #FAEAEA;
+
+  --blauw:        #1D4ED8;
+  --blauw-was:    #E8EEFC;
+  --violet:       #6D28D9;
+  --violet-was:   #F0EAFD;
+  --groen:        #15803D;
+  --groen-was:    #E6F4EA;
+  --amber:        #B45309;
+  --amber-was:    #FDF0DC;
+  --oranje:       #C2410C;
+  --grijs:        #9C968A;
+
+  --op-geel:      #17150F;
+  --stap-bg:      #17150F;
+  --stap-tekst:   #F0B420;
+
+  --schaduw:      0 1px 2px rgba(23,21,15,.05), 0 8px 24px rgba(23,21,15,.06);
+  --schaduw-diep: 0 20px 48px rgba(23,21,15,.13);
+  --stapel:       clamp(2.75rem, 6vw, 4.5rem);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper:      #0d1117;
+    --paper-2:    #11161d;
+    --card:       #161b22;
+    --ink:        #F4F2EC;
+    --ink-2:      #A8AEB8;
+    --ink-3:      #767D88;
+    --lijn:       #262C36;
+    --lijn-zacht: #1E242C;
+
+    --geel-diep:  #F0B420;
+    --geel-was:   #2A2211;
+    --rood:       #F08A92;
+    --rood-was:   #2B1517;
+
+    --blauw:      #7EA8FF;
+    --blauw-was:  #131C2C;
+    --violet:     #B79BF5;
+    --violet-was: #1C1730;
+    --groen:      #6CD08D;
+    --groen-was:  #10231A;
+    --amber:      #E9A94A;
+    --amber-was:  #2A2011;
+    --oranje:     #F09154;
+    --grijs:      #6B7280;
+
+    --stap-bg:    #F0B420;
+    --stap-tekst: #17150F;
+
+    --schaduw:      0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+    --schaduw-diep: 0 20px 48px rgba(0,0,0,.5);
+  }
+}
+
+:root[data-theme="dark"] {
+  --paper:      #0d1117;
+  --paper-2:    #11161d;
+  --card:       #161b22;
+  --ink:        #F4F2EC;
+  --ink-2:      #A8AEB8;
+  --ink-3:      #767D88;
+  --lijn:       #262C36;
+  --lijn-zacht: #1E242C;
+
+  --geel-diep:  #F0B420;
+  --geel-was:   #2A2211;
+  --rood:       #F08A92;
+  --rood-was:   #2B1517;
+
+  --blauw:      #7EA8FF;
+  --blauw-was:  #131C2C;
+  --violet:     #B79BF5;
+  --violet-was: #1C1730;
+  --groen:      #6CD08D;
+  --groen-was:  #10231A;
+  --amber:      #E9A94A;
+  --amber-was:  #2A2011;
+  --oranje:     #F09154;
+  --grijs:      #6B7280;
+
+  --stap-bg:    #F0B420;
+  --stap-tekst: #17150F;
+
+  --schaduw:      0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+  --schaduw-diep: 0 20px 48px rgba(0,0,0,.5);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  overflow-wrap: break-word;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 17px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, .display {
+  font-family: Archivo, Inter, system-ui, sans-serif;
+  text-wrap: balance;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+p { margin: 0; }
+a { color: var(--geel-diep); }
+
+.wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 clamp(1.1rem, 4vw, 2.5rem);
+}
+
+/* ── Gevarenband: het enige echte sieraad op deze pagina ───── */
+.band {
+  height: 12px;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--geel) 0 14px,
+    var(--ink) 14px 28px
+  );
+}
+
+/* ── Kop ──────────────────────────────────────────────────── */
+.kop {
+  padding: clamp(2.5rem, 7vw, 4.5rem) 0 clamp(2rem, 5vw, 3rem);
+  border-bottom: 1px solid var(--lijn);
+}
+.eyebrow {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--geel-diep);
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+}
+.eyebrow::before {
+  content: "";
+  width: 26px;
+  height: 4px;
+  background: var(--geel);
+  flex: none;
+}
+.kop h1 {
+  font-size: clamp(2.6rem, 9vw, 5rem);
+  font-weight: 800;
+  line-height: .95;
+  margin: 1.1rem 0 0;
+  text-transform: uppercase;
+}
+.kop .lead {
+  margin-top: 1.25rem;
+  max-width: 58ch;
+  font-size: clamp(1.02rem, 2.4vw, 1.18rem);
+  color: var(--ink-2);
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-top: 1.75rem;
+}
+.chip {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: .7rem;
+  font-weight: 500;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  background: var(--card);
+  border: 1px solid var(--lijn);
+  border-radius: 999px;
+  padding: .42rem .85rem;
+}
+
+/* ── Secties ──────────────────────────────────────────────── */
+section { padding: var(--stapel) 0; }
+section + section { border-top: 1px solid var(--lijn-zacht); }
+
+.sectiekop { margin-bottom: 2rem; }
+.sectiekop h2 {
+  font-size: clamp(1.6rem, 4.5vw, 2.35rem);
+  font-weight: 800;
+  line-height: 1.08;
+  margin-top: .7rem;
+}
+.sectiekop p {
+  margin-top: .7rem;
+  max-width: 62ch;
+  color: var(--ink-2);
+}
+
+/* ── Kaarten ──────────────────────────────────────────────── */
+.kaart {
+  background: var(--card);
+  border: 1px solid var(--lijn);
+  border-radius: 14px;
+  box-shadow: var(--schaduw);
+  padding: clamp(1.25rem, 3vw, 1.9rem);
+}
+
+.regels {
+  display: grid;
+  gap: 1px;
+  background: var(--lijn-zacht);
+  border: 1px solid var(--lijn);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--schaduw);
+}
+.regel {
+  display: grid;
+  grid-template-columns: 2.4rem 1fr;
+  gap: 1rem;
+  align-items: start;
+  background: var(--card);
+  padding: 1.15rem clamp(1rem, 3vw, 1.6rem);
+}
+.regel .nr {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: .95rem;
+  font-weight: 700;
+  color: var(--op-geel);
+  background: var(--geel);
+  width: 2.2rem;
+  height: 2.2rem;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+}
+.regel b { font-weight: 700; }
+.regel span { color: var(--ink-2); display: block; margin-top: .18rem; font-size: .95rem; }
+
+/* ── De route ─────────────────────────────────────────────── */
+.route { display: grid; gap: 0; }
+
+.stap {
+  display: grid;
+  grid-template-columns: 3.4rem 1fr;
+  gap: 0 1.4rem;
+  padding-bottom: 2.6rem;
+}
+.stap:last-child { padding-bottom: 0; }
+
+.spoor { display: grid; grid-template-rows: auto 1fr; justify-items: center; }
+.spoor .bol {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 1.05rem;
+  font-weight: 700;
+  width: 3rem;
+  height: 3rem;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--stap-bg);
+  color: var(--stap-tekst);
+  box-shadow: var(--schaduw);
+}
+.spoor .draad {
+  width: 2px;
+  background: var(--lijn);
+  margin: .6rem 0 -2.6rem;
+  min-height: 1rem;
+}
+.stap:last-child .draad { display: none; }
+
+.stapinhoud { min-width: 0; padding-top: .25rem; }
+.stap h3 {
+  font-size: clamp(1.25rem, 3.4vw, 1.6rem);
+  font-weight: 700;
+  line-height: 1.15;
+}
+.stap .wanneer {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  display: block;
+  margin-bottom: .45rem;
+}
+.stap p { margin-top: .8rem; max-width: 60ch; color: var(--ink-2); }
+.stap p strong { color: var(--ink); font-weight: 600; }
+
+/* Rastercellen mogen krimpen. Zonder dit bepaalt het langste woord in
+   een telefoonmockup ("Bodemafsluiterconstructie") de breedte van de
+   hele kolom, en schuift de pagina op een telefoon zijwaarts weg. */
+.duo > *, .regel > *, .standrij > *, .navkaart, .stapinhoud { min-width: 0; }
+
+.duo {
+  display: grid;
+  gap: 1.6rem;
+  margin-top: 1.4rem;
+  align-items: start;
+}
+@media (min-width: 880px) {
+  .duo { grid-template-columns: minmax(0, 1fr) minmax(0, 300px); gap: 2.4rem; }
+  .duo.breed { grid-template-columns: minmax(0, 1fr) minmax(0, 340px); }
+}
+
+ul.punten { margin: .9rem 0 0; padding: 0; list-style: none; display: grid; gap: .6rem; }
+ul.punten li {
+  position: relative;
+  padding-left: 1.5rem;
+  color: var(--ink-2);
+  font-size: .97rem;
+}
+ul.punten li::before {
+  content: "";
+  position: absolute;
+  left: 0; top: .58em;
+  width: .5rem; height: .5rem;
+  background: var(--geel);
+  border-radius: 2px;
+}
+ul.punten li strong { color: var(--ink); font-weight: 600; }
+
+/* ── Let op / waarschuwing ────────────────────────────────── */
+.letop {
+  margin-top: 1.3rem;
+  border: 1px solid var(--lijn);
+  border-left: 4px solid var(--geel);
+  background: var(--geel-was);
+  border-radius: 8px;
+  padding: .95rem 1.1rem;
+  font-size: .95rem;
+  color: var(--ink);
+}
+.letop b {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: .68rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--geel-diep);
+  display: block;
+  margin-bottom: .3rem;
+}
+.letop.rood { border-left-color: var(--rood); background: var(--rood-was); }
+.letop.rood b { color: var(--rood); }
+
+/* ── Telefoonmockups ──────────────────────────────────────── */
+.fon {
+  background: var(--ink);
+  border-radius: 26px;
+  padding: 9px;
+  box-shadow: var(--schaduw-diep);
+  max-width: 300px;
+  width: 100%;
+  margin-inline: auto;
+}
+.fon-scherm {
+  overflow-wrap: anywhere;
+  background: #ECEAE4;
+  border-radius: 19px;
+  overflow: hidden;
+  color: #17150F;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.fon-top {
+  background: #FFFFFF;
+  border-bottom: 1px solid #F0EDE6;
+  padding: 8px 12px 9px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.fon-top .merk {
+  font-family: Archivo, sans-serif;
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.fon-top .merk i {
+  display: inline-block;
+  width: 14px; height: 14px;
+  background: #F0B420;
+  border-radius: 4px;
+  vertical-align: -3px;
+  margin-right: 6px;
+}
+.fon-body { padding: 12px; display: grid; gap: 10px; }
+.fon-kaart {
+  background: #FFFFFF;
+  border: 1px solid #F0EDE6;
+  border-radius: 10px;
+  padding: 11px;
+}
+.fon-kaart.geel { border-top: 3px solid #F0B420; }
+.mini {
+  font-size: 9.5px;
+  color: #8A857A;
+  letter-spacing: .04em;
+}
+.fon h4 { margin: 0; font-size: 13.5px; font-weight: 800; letter-spacing: -.01em; font-family: Inter, sans-serif; }
+
+.ring { display: flex; align-items: center; gap: 12px; }
+.ring svg { flex: none; }
+.ring .naast { display: grid; gap: 7px; min-width: 0; }
+.stand {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+.stand i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
+.cijfers { display: flex; gap: 12px; }
+.cijfer b { display: block; font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.cijfer span { font-size: 9px; color: #8A857A; }
+
+.kluis {
+  display: flex; align-items: center; gap: 9px;
+  padding-bottom: 9px; margin-bottom: 9px;
+  border-bottom: 1px solid #F0EDE6;
+}
+.kluis .vak {
+  width: 30px; height: 30px; border-radius: 7px;
+  background: #FEF3CC; display: grid; place-items: center;
+  font-size: 14px; flex: none;
+}
+.kluis .code {
+  font-size: 17px; font-weight: 800; letter-spacing: .16em;
+  font-family: "JetBrains Mono", monospace;
+}
+.knopjes { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.knopje {
+  border: 1px solid #E4E0D7; border-radius: 6px;
+  padding: 7px 8px; font-size: 10.5px; font-weight: 600;
+  display: flex; align-items: center; gap: 5px;
+  background: #FFFFFF;
+}
+
+.taak { border: 1px solid #F0EDE6; border-radius: 10px; padding: 11px; background: #FFFFFF; }
+.taak.af { border-color: #CDEBD6; background: #F1FAF3; }
+.taak .rij { display: flex; gap: 8px; align-items: flex-start; }
+.vink {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: #E7E3D9; flex: none; display: grid; place-items: center;
+  font-size: 11px; color: #FFFFFF; font-weight: 700;
+}
+.vink.aan { background: #22A559; }
+.taak .titel { font-size: 11.5px; font-weight: 700; line-height: 1.3; }
+.taak .titel.door { text-decoration: line-through; color: #A19B8E; }
+.strook { display: flex; gap: 5px; margin: 9px 0 0 28px; flex-wrap: wrap; }
+.duim {
+  width: 38px; height: 38px; border-radius: 6px;
+  border: 1px solid #E4E0D7; flex: none;
+  background: linear-gradient(135deg, #C9C2B2 0%, #A79E8C 55%, #8E8574 100%);
+}
+.duim.leeg {
+  border: 2px dashed #DCD7CB;
+  background: #F5F3EE;
+  display: grid; place-items: center;
+  font-size: 13px; color: #A19B8E;
+}
+.acties { display: flex; gap: 7px; align-items: center; margin: 9px 0 0 28px; flex-wrap: wrap; }
+.mini-knop {
+  border-radius: 6px; padding: 6px 11px;
+  font-size: 10.5px; font-weight: 700;
+  background: #F0B420; color: #17150F;
+}
+.mini-knop.uit { background: #EFECE4; color: #B3ACA0; }
+.mini-knop.grijs { background: #FFFFFF; border: 1px solid #E4E0D7; color: #57534A; }
+.hint { font-size: 9.5px; color: #8A857A; font-style: italic; }
+
+.blok { border-radius: 9px; padding: 10px; font-size: 10.5px; }
+.blok b { display: block; font-size: 11px; margin-bottom: 4px; }
+.blok.blauw { background: #EAF1FD; border: 1px solid #CFDDF8; color: #1D4ED8; }
+.blok.amber { background: #FDF3E2; border: 1px solid #F5DFB4; color: #B45309; }
+.blok.geel  { background: #FEF3CC; border: 1px solid #F0B420; color: #17150F; }
+.blok.groen { background: #E9F6ED; border: 1px solid #C2E5CE; color: #15803D; }
+.blok .rijtje {
+  background: #FFFFFF; border: 1px solid currentColor; border-radius: 5px;
+  padding: 6px 8px; margin-top: 5px; color: #17150F;
+  display: flex; justify-content: space-between; gap: 8px;
+  font-size: 10px; font-weight: 600;
+}
+.blok .rijtje small { font-weight: 500; color: #8A857A; }
+
+.dagknop {
+  border-radius: 9px; padding: 12px;
+  text-align: center; font-weight: 800; font-size: 12px;
+  letter-spacing: .04em;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+}
+.dagknop.start { background: #16A34A; color: #FFFFFF; }
+.dagknop.stop  { background: #17150F; color: #FFFFFF; }
+.dagknop.hervat { background: #FFFFFF; color: #17150F; border: 2px solid #17150F; }
+
+.tabbalk {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  background: #FFFFFF; border-top: 1px solid #F0EDE6;
+  padding: 7px 4px 9px;
+}
+.tab { text-align: center; font-size: 8.5px; font-weight: 700; color: #A19B8E; }
+.tab i { display: block; font-size: 15px; font-style: normal; margin-bottom: 2px; }
+.tab.aan { color: #C8930D; }
+
+.bijschrift {
+  margin-top: .75rem;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: .68rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  text-align: center;
+}
+
+/* ── Standenlegenda ───────────────────────────────────────── */
+.standen { display: grid; gap: .75rem; }
+@media (min-width: 700px) { .standen { grid-template-columns: 1fr 1fr; } }
+.standrij {
+  display: grid;
+  grid-template-columns: 4px 1fr;
+  gap: 0 1rem;
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--lijn);
+  border-radius: 10px;
+  padding: .85rem 1rem;
+  box-shadow: var(--schaduw);
+}
+.standrij .streep { width: 4px; height: 100%; min-height: 2.4rem; border-radius: 2px; }
+.standrij b { font-size: .95rem; font-weight: 700; display: block; }
+.standrij span { font-size: .88rem; color: var(--ink-2); }
+
+/* ── Tabel storingen ──────────────────────────────────────── */
+.tabelbak { overflow-x: auto; border-radius: 14px; border: 1px solid var(--lijn); box-shadow: var(--schaduw); }
+table { border-collapse: collapse; width: 100%; min-width: 640px; background: var(--card); }
+th, td { text-align: left; padding: .9rem 1.1rem; border-bottom: 1px solid var(--lijn-zacht); vertical-align: top; font-size: .93rem; }
+th {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: .66rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: 700;
+  background: var(--paper-2);
+}
+tbody tr:last-child td { border-bottom: none; }
+td:first-child { font-weight: 600; color: var(--ink); }
+td:last-child { color: var(--ink-2); }
+
+/* ── Navigatiekaart ───────────────────────────────────────── */
+.navkaarten { display: grid; gap: 1rem; }
+@media (min-width: 760px) { .navkaarten { grid-template-columns: repeat(4, 1fr); } }
+.navkaart {
+  background: var(--card);
+  border: 1px solid var(--lijn);
+  border-top: 3px solid var(--geel);
+  border-radius: 12px;
+  padding: 1.1rem;
+  box-shadow: var(--schaduw);
+}
+.navkaart .icoon { font-size: 1.5rem; line-height: 1; }
+.navkaart b { display: block; margin-top: .6rem; font-size: 1rem; font-weight: 700; }
+.navkaart p { margin-top: .35rem; font-size: .9rem; color: var(--ink-2); }
+
+/* ── Voet ─────────────────────────────────────────────────── */
+footer {
+  border-top: 1px solid var(--lijn);
+  padding: 2.5rem 0 3.5rem;
+  color: var(--ink-2);
+  font-size: .9rem;
+}
+footer .voetkop {
+  font-family: Archivo, sans-serif;
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: var(--ink);
+  letter-spacing: -.01em;
+}
+footer .voetrij { display: flex; flex-wrap: wrap; gap: 1.5rem 2.5rem; margin-top: 1.2rem; }
+footer .voetrij div { min-width: 12rem; }
+footer .voetrij b { color: var(--ink); font-weight: 600; display: block; font-size: .88rem; }
+
+:focus-visible { outline: 3px solid var(--geel); outline-offset: 2px; border-radius: 4px; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+
+@media print {
+  body { background: #FFFFFF; }
+  .fon { box-shadow: none; }
+  section { break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+
+<div class="band"></div>
+
+<header class="kop">
+  <div class="wrap">
+    <div class="eyebrow">NMZ GO &middot; Veldhandleiding</div>
+    <h1>Van bon<br>tot afgerond</h1>
+    <p class="lead">
+      Alles wat je met NMZ GO op de klus doet, in de volgorde waarin je het doet.
+      Eén keer doorlezen, daarna alleen nog opzoeken als er iets niet gaat zoals je verwacht.
+    </p>
+    <div class="chips">
+      <span class="chip">Voor de ploeg</span>
+      <span class="chip">Op je telefoon</span>
+      <span class="chip">8 stappen</span>
+      <span class="chip">10 minuten lezen</span>
+    </div>
+  </div>
+</header>
+
+<!-- ══ De vijf regels ════════════════════════════════════════ -->
+<section>
+  <div class="wrap">
+    <div class="sectiekop">
+      <div class="eyebrow">Als je verder niets leest</div>
+      <h2>Vijf regels waar alles op neerkomt</h2>
+      <p>De rest van deze handleiding legt uit hoe. Dit is het wat.</p>
+    </div>
+
+    <div class="regels">
+      <div class="regel">
+        <span class="nr">1</span>
+        <div>
+          <b>Eerst starten, dan afvinken.</b>
+          <span>Zolang je werkdag niet loopt, kun je de bon wel lezen maar niets aanraken. De knoppen zijn dan grijs — de app is niet kapot.</span>
+        </div>
+      </div>
+      <div class="regel">
+        <span class="nr">2</span>
+        <div>
+          <b>Eerst de foto, dan het vinkje.</b>
+          <span>Een foto uploaden vinkt het punt niet af. Dat blijft een aparte tik, want jij bepaalt wanneer een punt echt klaar is.</span>
+        </div>
+      </div>
+      <div class="regel">
+        <span class="nr">3</span>
+        <div>
+          <b>Het adres is de klus.</b>
+          <span>Staan er twee klussen voor vandaag, tik dan eerst het adres aan waar je bent. Anders klok je op de verkeerde bon.</span>
+        </div>
+      </div>
+      <div class="regel">
+        <span class="nr">4</span>
+        <div>
+          <b>Alles afgevinkt? Druk op “Werkbon voltooien”.</b>
+          <span>Zonder die tik blijft de bon bij kantoor openstaan en kan er niet opgeleverd worden.</span>
+        </div>
+      </div>
+      <div class="regel">
+        <span class="nr">5</span>
+        <div>
+          <b>Aan het eind van de dag: stop je werkdag.</b>
+          <span>Daar komen je uren vandaan. Te vroeg gedrukt? Hervatten kan gewoon — er gaat niets verloren.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ Vooraf ════════════════════════════════════════════════ -->
+<section>
+  <div class="wrap">
+    <div class="sectiekop">
+      <div class="eyebrow">Eenmalig</div>
+      <h2>Je telefoon klaarzetten</h2>
+      <p>Dit doe je één keer. Daarna sta je elke ochtend meteen op je werk.</p>
+    </div>
+
+    <div class="duo">
+      <div>
+        <h3>Inloggen</h3>
+        <p>
+          Je krijgt van kantoor een link en een wachtwoord. Open de link in de browser
+          van je telefoon en log in met <strong>je eigen e-mailadres</strong> en dat wachtwoord.
+        </p>
+        <ul class="punten">
+          <li>Staat er <strong>“E-mail of wachtwoord onjuist”</strong>, dan klopt een van de twee niet. Tik onderaan op <em>Wachtwoord vergeten?</em> en je krijgt een herstelmail.</li>
+          <li>Staat er <strong>“Je e-mailadres is nog niet bevestigd”</strong>, kijk dan in je mailbox — ook in je spam.</li>
+          <li>Je blijft ingelogd. Je hoeft dit dus niet elke dag te doen.</li>
+        </ul>
+
+        <h3 style="margin-top:2rem">Zet ’m tussen je apps</h3>
+        <p>
+          Zo hoef je nooit meer een link te zoeken. Op een <strong>iPhone</strong>: deelknop
+          onderin → <em>Zet op beginscherm</em>. Op <strong>Android</strong>: de drie puntjes
+          rechtsboven → <em>Toevoegen aan startscherm</em>. NMZ GO staat daarna als knop
+          tussen je andere apps.
+        </p>
+
+        <h3 style="margin-top:2rem">Licht of donker</h3>
+        <p>
+          Onderin bij <strong>Meer</strong> wissel je tussen licht en donker. Je telefoon
+          onthoudt je keuze. In de zon leest licht bijna altijd beter.
+        </p>
+      </div>
+
+      <div>
+        <div class="fon">
+          <div class="fon-scherm">
+            <div class="fon-top"><span class="merk"><i></i>NMZ GO</span></div>
+            <div class="fon-body" style="gap:9px">
+              <div style="font-family:Archivo,sans-serif;font-weight:800;font-size:19px;letter-spacing:-.02em">Inloggen</div>
+              <div class="mini">Vul je e-mailadres en wachtwoord in</div>
+              <div>
+                <div class="mini" style="margin-bottom:3px">E-mailadres</div>
+                <div class="fon-kaart" style="padding:9px;color:#A19B8E">naam@bedrijf.nl</div>
+              </div>
+              <div>
+                <div class="mini" style="margin-bottom:3px">Wachtwoord</div>
+                <div class="fon-kaart" style="padding:9px;letter-spacing:.2em;color:#A19B8E">••••••••</div>
+              </div>
+              <div class="dagknop" style="background:#F0B420;color:#17150F">Inloggen</div>
+              <div class="mini" style="text-decoration:underline">Wachtwoord vergeten?</div>
+            </div>
+          </div>
+        </div>
+        <p class="bijschrift">Het eerste scherm</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ De route ══════════════════════════════════════════════ -->
+<section>
+  <div class="wrap">
+    <div class="sectiekop">
+      <div class="eyebrow">De werkdag, stap voor stap</div>
+      <h2>De route van je dag</h2>
+      <p>
+        Acht stappen, van het moment dat je je telefoon uit je zak haalt tot de bon
+        die dicht is. Elke stap staat hieronder met het scherm erbij zoals je het ziet.
+      </p>
+    </div>
+
+    <div class="route">
+
+      <!-- STAP 1 -->
+      <div class="stap">
+        <div class="spoor"><span class="bol">1</span><span class="draad"></span></div>
+        <div class="stapinhoud">
+          <span class="wanneer">’s Ochtends · thuis of in de bus</span>
+          <h3>Open “Vandaag” en kijk waar je heen moet</h3>
+          <p>
+            <strong>Vandaag</strong> is het scherm waar je op binnenkomt. Bovenaan staat
+            hoe je ervoor staat: de ring toont hoeveel punten er af zijn, daarnaast je
+            gewerkte tijd en het aantal foto’s. Daaronder de klus zelf, met het adres
+            als kop — want dat is de klus.
+          </p>
+          <ul class="punten">
+            <li>De app kiest zelf de klus van vandaag. Sta je al geklokt, dan blijft die klus bovenaan staan, ook als de planning ondertussen iets anders zegt.</li>
+            <li>Onder de kop staat waar je in de klus zit: <strong>“dag 2 van 10”</strong>, <strong>“laatste dag van 2”</strong> of <strong>“alleen vandaag”</strong>.</li>
+            <li>Wil je verder vooruit kijken? Ga naar <strong>Mijn week</strong> — maandag tot en met zaterdag, met de kluiscode er al bij.</li>
+          </ul>
+
+          <div class="duo">
+            <div>
+              <div class="letop">
+                <b>Staat er niets?</b>
+                Dan staat er niets voor je gepland. Kijk eerst bij <em>Mijn week</em>.
+                Verwacht je wél werk, bel dan je uitvoerder — de app verzint geen bonnen.
+              </div>
+            </div>
+            <div>
+              <div class="fon">
+                <div class="fon-scherm">
+                  <div class="fon-top">
+                    <span class="merk"><i></i>Vandaag</span>
+                    <span class="mini">08:12</span>
+                  </div>
+                  <div class="fon-body">
+                    <div>
+                      <div class="mini">donderdag 28 augustus</div>
+                      <div style="font-family:Archivo,sans-serif;font-weight:800;font-size:17px;letter-spacing:-.02em;margin-top:2px">Goedemorgen, Danny</div>
+                    </div>
+
+                    <div class="fon-kaart">
+                      <div class="ring">
+                        <svg width="76" height="76" viewBox="0 0 76 76" aria-hidden="true">
+                          <circle cx="38" cy="38" r="31" fill="none" stroke="#E7E3D9" stroke-width="8"></circle>
+                          <circle cx="38" cy="38" r="31" fill="none" stroke="#2563EB" stroke-width="8"
+                                  stroke-linecap="round" stroke-dasharray="195" stroke-dashoffset="117"
+                                  transform="rotate(-90 38 38)"></circle>
+                          <text x="38" y="36" text-anchor="middle" font-family="Inter, sans-serif"
+                                font-size="16" font-weight="800" fill="#17150F">32%</text>
+                          <text x="38" y="49" text-anchor="middle" font-family="Inter, sans-serif"
+                                font-size="9" fill="#8A857A">6/19</text>
+                        </svg>
+                        <div class="naast">
+                          <span class="stand" style="color:#1D4ED8"><i></i>Bezig</span>
+                          <div class="cijfers">
+                            <div class="cijfer"><b>2:41</b><span>gewerkt</span></div>
+                            <div class="cijfer"><b>11</b><span>foto’s</span></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="fon-kaart geel">
+                      <div class="mini" style="letter-spacing:.12em;text-transform:uppercase;font-weight:700">Vandaag werk je aan · dag 2 van 10</div>
+                      <h4 style="margin-top:6px">Kerkstraat 14 A, Enschede</h4>
+                      <div class="mini" style="margin-top:2px">Zwamsanering — VvE Kerkhof</div>
+                      <span class="stand" style="color:#1D4ED8;margin-top:6px"><i></i>Bezig</span>
+                    </div>
+                  </div>
+                  <div class="tabbalk">
+                    <div class="tab aan"><i>⌂</i>Vandaag</div>
+                    <div class="tab"><i>▤</i>Mijn week</div>
+                    <div class="tab"><i>☰</i>Mijn bonnen</div>
+                    <div class="tab"><i>⋯</i>Meer</div>
+                  </div>
+                </div>
+              </div>
+              <p class="bijschrift">Vandaag</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STAP 2 -->
+      <div class="stap">
+        <div class="spoor"><span class="bol">2</span><span class="draad"></span></div>
+        <div class="stapinhoud">
+          <span class="wanneer">Vóór de deur</span>
+          <h3>Kluiscode, route en werkopdracht staan er al</h3>
+          <p>
+            Boven de puntenlijst staat alles wat je nodig hebt vóór je begint. De kluiscode
+            staat groot, zodat je hem op een steiger of in een kruipruimte nog kunt lezen.
+            Alles wat je aantikt doet meteen iets — er hoeft niets overgetypt te worden.
+          </p>
+          <ul class="punten">
+            <li><strong>Route</strong> — opent het adres in je kaartapp.</li>
+            <li><strong>Bel …</strong> — belt de inspecteur van deze klus rechtstreeks.</li>
+            <li><strong>Werkopdracht</strong> en <strong>Tekening</strong> — openen de pdf in een nieuw tabblad.</li>
+            <li><strong>Werkvoorbereiding</strong> — klap je uit voor de notities van kantoor.</li>
+          </ul>
+          <div class="letop">
+            <b>Niet alles staat er altijd</b>
+            Wat kantoor niet heeft ingevuld, laat de app gewoon weg. Geen kluiscode in
+            beeld betekent dus: er is er geen doorgegeven. Bel dan even.
+          </div>
+
+          <div class="duo">
+            <div>
+              <p style="margin-top:1.2rem">
+                Documenten openen kost een paar tellen — de app haalt er eerst een
+                beveiligde link voor op. Lukt het niet, dan krijg je een melding onderin
+                je scherm en is het bijna altijd je verbinding.
+              </p>
+            </div>
+            <div>
+              <div class="fon">
+                <div class="fon-scherm">
+                  <div class="fon-body">
+                    <div class="fon-kaart">
+                      <div class="kluis">
+                        <span class="vak">🔑</span>
+                        <div>
+                          <div class="mini">Kluiscode</div>
+                          <div class="code">4821</div>
+                        </div>
+                      </div>
+                      <div class="knopjes">
+                        <div class="knopje">📍 Route</div>
+                        <div class="knopje">📞 Bel Peter</div>
+                        <div class="knopje">📄 Werkopdracht</div>
+                        <div class="knopje">🗺 Tekening</div>
+                      </div>
+                      <div class="knopje" style="margin-top:5px;justify-content:space-between">
+                        <span>📋 Werkvoorbereiding</span><span>⌄</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <p class="bijschrift">Klusinfo, boven de punten</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STAP 3 -->
+      <div class="stap">
+        <div class="spoor"><span class="bol">3</span><span class="draad"></span></div>
+        <div class="stapinhoud">
+          <span class="wanneer">Zodra je op locatie bent</span>
+          <h3>Start je werkdag</h3>
+          <p>
+            Onderin je scherm staat één grote knop, en die verandert mee met je dag.
+            Groen is <strong>start</strong>. Vanaf dat moment mag je afvinken en fotograferen,
+            en lopen je uren.
+          </p>
+          <ul class="punten">
+            <li>Twee keer op start drukken kan geen kwaad — je krijgt geen tweede werkdag.</li>
+            <li>Begin je op je telefoon en pak je later een andere door, dan staat je werkdag daar gewoon nog te lopen.</li>
+            <li>Vóór het starten kun je alles al <strong>lezen</strong>. Er staat dan bij: <em>“Lezen kan nu al — afvinken zodra je bent gestart.”</em></li>
+          </ul>
+
+          <div class="duo">
+            <div>
+              <div class="letop rood">
+                <b>Je werkdag loopt nog ergens anders</b>
+                Krijg je een amber blok met <em>“Je werkdag loopt nog op een andere klus”</em>,
+                stop die dan eerst. Anders lopen er twee werkdagen op één dag en klopt je
+                urenlijst aan het eind van de week niet. Met de knop in dat blok spring je
+                er meteen naartoe.
+              </div>
+            </div>
+            <div>
+              <div class="fon">
+                <div class="fon-scherm">
+                  <div class="fon-body" style="gap:8px">
+                    <div class="mini" style="text-align:center">vóór het starten</div>
+                    <div class="dagknop start">▶ START WERKDAG</div>
+                    <div class="mini" style="text-align:center;margin-top:6px">terwijl je bezig bent</div>
+                    <div class="dagknop stop">■ STOP WERKDAG</div>
+                    <div class="mini" style="text-align:center;margin-top:6px">na het stoppen</div>
+                    <div class="dagknop hervat">▶ WERKDAG HERVATTEN</div>
+                  </div>
+                  <div class="tabbalk">
+                    <div class="tab aan"><i>⌂</i>Vandaag</div>
+                    <div class="tab"><i>▤</i>Mijn week</div>
+                    <div class="tab"><i>☰</i>Mijn bonnen</div>
+                    <div class="tab"><i>⋯</i>Meer</div>
+                  </div>
+                </div>
+              </div>
+              <p class="bijschrift">Dezelfde plek, drie standen</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STAP 4 -->
+      <div class="stap">
+        <div class="spoor"><span class="bol">4</span><span class="draad"></span></div>
+        <div class="stapinhoud">
+          <span class="wanneer">Het werk zelf</span>
+          <h3>Punt voor punt: eerst de foto, dan het vinkje</h3>
+          <p>
+            Onder <strong>“Uit te voeren punten”</strong> staat de lijst uit de werkopdracht.
+            Bij de meeste punten hoort bewijs. Tik het cameravakje aan, maak je foto, en
+            vink daarna het punt af.
+          </p>
+          <ul class="punten">
+            <li>Er kunnen er <strong>meerdere</strong> op één punt — voor en na, of van twee kanten. Achter je foto’s staat een vakje met <em>“Nog een”</em>.</li>
+            <li>Tik een foto aan om hem groot te bekijken. Zo weet je meteen of hij goed is.</li>
+            <li>Staat er <strong>“Foto vereist”</strong> naast het punt, dan is de afvinkknop grijs tot er een foto op staat.</li>
+            <li>Kantoor kan de fotoplicht per punt uitzetten — bijvoorbeeld bij een regel uit de offerte waar niets van te fotograferen valt. Dan mag je meteen afvinken.</li>
+          </ul>
+
+          <div class="letop">
+            <b>Een foto uploaden is nog geen vinkje</b>
+            Dat is met opzet. Er kunnen nog foto’s bij komen, en alleen jij weet wanneer
+            het punt echt klaar is. Zolang het niet af is staat er:
+            <em>“2 foto’s · nog niet afgevinkt”</em>.
+          </div>
+
+          <div class="duo breed">
+            <div>
+              <h3 style="margin-top:1.8rem;font-size:1.15rem">Geen bereik in de kruipruimte?</h3>
+              <p>
+                Dan krijg je een rood blokje bij het punt. <strong>Je foto is niet kwijt</strong> —
+                de app houdt hem vast. Loop naar buiten en tik op
+                <em>“Foto opnieuw versturen”</em>; hij gaat er alsnog op, zonder dat je
+                terug naar binnen hoeft.
+              </p>
+              <p style="margin-top:.9rem">
+                Staat er <em>“De foto’s konden niet worden geladen — ze zijn wél opgeslagen”</em>,
+                dan lukt alleen het tónen niet. Er is niets misgegaan. Ga gewoon door.
+              </p>
+            </div>
+            <div>
+              <div class="fon">
+                <div class="fon-scherm">
+                  <div class="fon-body">
+                    <div class="taak">
+                      <div class="rij">
+                        <span class="vink"></span>
+                        <div>
+                          <div class="titel">Bodemafsluiterconstructie kruipruimte controleren en vrijmaken</div>
+                          <div class="mini" style="margin-top:3px">Voorzijde, onder de hal</div>
+                        </div>
+                      </div>
+                      <div class="strook">
+                        <span class="duim"></span>
+                        <span class="duim"></span>
+                        <span class="duim leeg">＋</span>
+                      </div>
+                      <div class="acties">
+                        <span class="mini-knop">☐ Afvinken</span>
+                        <span class="hint">2 foto’s · nog niet afgevinkt</span>
+                      </div>
+                    </div>
+
+                    <div class="taak">
+                      <div class="rij">
+                        <span class="vink"></span>
+                        <div><div class="titel">Zwamhaard achterwand behandelen</div></div>
+                      </div>
+                      <div class="strook"><span class="duim leeg">📷</span></div>
+                      <div class="acties">
+                        <span class="mini-knop uit">☐ Afvinken</span>
+                        <span class="hint">📷 Foto vereist</span>
+                      </div>
+                    </div>
+
+                    <div class="taak af">
+                      <div class="rij">
+                        <span class="vink aan">✓</span>
+                        <div><div class="titel door">Vloerdelen verwijderd en afgevoerd</div></div>
+                      </div>
+                      <div class="strook"><span class="duim"></span><span class="duim leeg">＋</span></div>
+                      <div class="acties"><span class="mini-knop grijs">✓ Afgevinkt</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <p class="bijschrift">Drie punten, drie standen</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STAP 5 -->
+      <div class="stap">
+        <div class="spoor"><span class="bol">5</span><span class="draad"></span></div>
+        <div class="stapinhoud">
+          <span class="wanneer">Als er iets te melden is</span>
+          <h3>Zet je opmerking bij het punt, niet in de app-chat</h3>
+          <p>
+            Onder elk punt zit <strong>“Opmerking plaatsen”</strong>. Wat je daar schrijft
+            hangt aan dát punt, dus kantoor ziet meteen waar het over gaat. Zij kunnen er
+            ook antwoorden — het is een gesprekje, geen briefje.
+          </p>
+          <ul class="punten">
+            <li>Gebruik het voor wat je ter plekke tegenkomt: meer aangetast dan gedacht, bewoner niet thuis, materiaal op.</li>
+            <li>Zolang er niets staat is het ingeklapt. Twintig punten met een leeg invoerveld eronder maakt van een werkbon een formulier.</li>
+            <li>Zodra de klus is opgeleverd gaat het gesprek dicht — dan is het rapport de deur uit.</li>
+          </ul>
+          <div class="letop rood">
+            <b>Asbest of iets onveiligs?</b>
+            Niet doorwerken en niet alleen een opmerking plaatsen. <strong>Bel je uitvoerder.</strong>
+            Kantoor legt de klus stil; je ziet dan bovenaan een oranje blok
+            <em>“Deze klus ligt stil”</em> met de reden erbij.
+          </div>
+        </div>
+      </div>
+
+      <!-- STAP 6 -->
+      <div class="stap">
+        <div class="spoor"><span class="bol">6</span><span class="draad"></span></div>
+        <div class="stapinhoud">
+          <span class="wanneer">Als er meer op je bord staat</span>
+          <h3>Twee klussen vandaag, of werk van gisteren</h3>
+          <p>
+            Staat er nog een klus voor vandaag, of ben je gisteren niet klaargekomen, dan
+            zie je dat op hetzelfde scherm — in een blauw en een amber blok.
+            <strong>Tik het adres aan waar je bent</strong>, dan verhuist je werkdag daarheen.
+          </p>
+
+          <div class="duo">
+            <div>
+              <ul class="punten">
+                <li><strong>Blauw</strong> — staat vandaag óók voor je ingepland. Let op het regeltje eronder: <em>“alleen vandaag”</em> is de klus waar één dag voor is.</li>
+                <li><strong>Amber</strong> — nog niet afgerond van een eerdere dag. Staat bewust bovenaan, want daar kwam je voor terug.</li>
+                <li>Wil je een klus van volgende week bekijken? Dat kan via <strong>Mijn week</strong> of <strong>Mijn bonnen</strong>. Starten kan alleen op de dag zelf.</li>
+              </ul>
+            </div>
+            <div>
+              <div class="fon">
+                <div class="fon-scherm">
+                  <div class="fon-body">
+                    <div class="blok blauw">
+                      <b>📅 Staat vandaag ook voor je ingepland</b>
+                      <span style="opacity:.85">Tik een klus aan om daar je werkdag te starten.</span>
+                      <div class="rijtje">
+                        <span>Havenweg 3, Hengelo<br><small>alleen vandaag</small></span>
+                        <span style="color:#1D4ED8">0% ›</span>
+                      </div>
+                    </div>
+                    <div class="blok amber">
+                      <b>⚠ Nog niet afgerond van een eerdere dag</b>
+                      <div class="rijtje">
+                        <span>Molenstraat 88, Almelo</span>
+                        <span style="color:#B45309">72% ›</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <p class="bijschrift">Blauw = ook vandaag. Amber = blijft liggen.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STAP 7 -->
+      <div class="stap">
+        <div class="spoor"><span class="bol">7</span><span class="draad"></span></div>
+        <div class="stapinhoud">
+          <span class="wanneer">Als de klus klaar is</span>
+          <h3>Rond de werkbon af</h3>
+          <p>
+            Zodra het laatste punt is afgevinkt verschijnt er een geel blok met
+            <strong>“Werkbon voltooien”</strong>. Eén tik, en de bon gaat naar kantoor
+            zodat het rapport gemaakt kan worden.
+          </p>
+          <ul class="punten">
+            <li>Zie je die knop niet, dan staat er nog een punt open. Scroll de lijst na op een punt zonder groen vinkje.</li>
+            <li>Afronden staat <strong>los van je werkdag</strong>. Je hoeft niet eerst te stoppen, en je uren staan al vast.</li>
+            <li>Meerdaagse klus? Rond pas af als hij <em>echt</em> af is, niet aan het eind van dag één.</li>
+          </ul>
+
+          <div class="duo">
+            <div>
+              <div class="letop rood">
+                <b>“Je staat niet meer op deze werkbon”</b>
+                Dan heeft kantoor je van de bon gehaald terwijl jij er nog op werkte.
+                Afronden lukt dan niet. Bel je uitvoerder en laat je opnieuw inplannen —
+                je afgevinkte punten en foto’s blijven gewoon staan.
+              </div>
+            </div>
+            <div>
+              <div class="fon">
+                <div class="fon-scherm">
+                  <div class="fon-body">
+                    <div class="blok geel">
+                      <b>✓ Alle punten afgevinkt</b>
+                      <span style="color:#57534A">Rond de werkbon af zodat de beheerder het rapport kan inzien.</span>
+                      <div class="dagknop" style="background:#F0B420;color:#17150F;margin-top:8px;padding:10px">✓ Werkbon voltooien</div>
+                    </div>
+                    <div class="blok groen" style="text-align:center">
+                      <b style="margin:0">✓ Werkbon voltooid</b>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <p class="bijschrift">Vóór en na de tik</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STAP 8 -->
+      <div class="stap">
+        <div class="spoor"><span class="bol">8</span></div>
+        <div class="stapinhoud">
+          <span class="wanneer">Eind van de dag</span>
+          <h3>Stop je werkdag</h3>
+          <p>
+            De knop onderin is inmiddels zwart: <strong>STOP WERKDAG</strong>. Daarna staat
+            er een kaartje met je begin- en eindtijd en het aantal uren. Dáár komen je
+            uren vandaan — kantoor ziet ze live.
+          </p>
+          <ul class="punten">
+            <li>Te vroeg gedrukt, of met een handschoen langs de knop geschoten? Tik op <strong>“Werkdag hervatten”</strong> en je kunt gewoon verder.</li>
+            <li>Vergeten te stoppen? De nachtronde sluit de dag af. Stop je hem later alsnog zelf, dan telt jouw tijd — dus doe dat even.</li>
+            <li>Na het stoppen kun je niet meer afvinken. De app zegt dan: <em>“Hervat je werkdag om weer af te vinken.”</em></li>
+          </ul>
+
+          <div class="duo">
+            <div>
+              <p style="margin-top:1.2rem">
+                Onderaan <strong>Vandaag</strong> staan nog twee dingen die niets met de bon
+                te maken hebben maar wel leuk zijn om te zien: <strong>Mijn cijfers</strong>
+                (bonnen af, werkdagen, foto’s) en <strong>Wie werkt waar vandaag</strong> —
+                handig als je even wilt weten waar de rest zit.
+              </p>
+            </div>
+            <div>
+              <div class="fon">
+                <div class="fon-scherm">
+                  <div class="fon-body">
+                    <div class="fon-kaart" style="text-align:center">
+                      <div style="width:30px;height:30px;border-radius:50%;background:#E9F6ED;display:grid;place-items:center;margin:0 auto 8px;color:#15803D">✓</div>
+                      <h4>Werkdag gestopt</h4>
+                      <div class="mini" style="margin-top:3px">07:45 — 16:20 · 8:35 uur</div>
+                    </div>
+                    <div class="dagknop hervat">▶ WERKDAG HERVATTEN</div>
+                  </div>
+                </div>
+              </div>
+              <p class="bijschrift">Klaar voor vandaag</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══ Navigatie ═════════════════════════════════════════════ -->
+<section>
+  <div class="wrap">
+    <div class="sectiekop">
+      <div class="eyebrow">De balk onderin</div>
+      <h2>Vier knoppen, meer is het niet</h2>
+      <p>Alles wat je dagelijks doet zit binnen duimbereik. De rest staat achter “Meer”.</p>
+    </div>
+
+    <div class="navkaarten">
+      <div class="navkaart">
+        <div class="icoon">⌂</div>
+        <b>Vandaag</b>
+        <p>Je dag: de klus van nu, je werkdagknop, je voortgang. Hier begin en eindig je.</p>
+      </div>
+      <div class="navkaart">
+        <div class="icoon">▤</div>
+        <b>Mijn week</b>
+        <p>Maandag t/m zaterdag naast elkaar, met kluiscode. Vooruit- en terugbladeren mag.</p>
+      </div>
+      <div class="navkaart">
+        <div class="icoon">☰</div>
+        <b>Mijn bonnen</b>
+        <p>Alles wat op je naam staat. Zoek op straat, plaats of bonnummer. Filter op “Loopt nog” of “Afgerond”.</p>
+      </div>
+      <div class="navkaart">
+        <div class="icoon">⋯</div>
+        <b>Meer</b>
+        <p>Licht of donker thema, en uitloggen. Dat is alles wat er voor jou achter zit.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ Kleurentaal ═══════════════════════════════════════════ -->
+<section>
+  <div class="wrap">
+    <div class="sectiekop">
+      <div class="eyebrow">Wat de kleuren betekenen</div>
+      <h2>Elke klus heeft een stand</h2>
+      <p>
+        De kleur zie je van een afstand, het woord staat er altijd bij — want in de zon
+        is elk kleurverschil twijfelachtig. Geel is geen stand: dat is gewoon NMZ.
+      </p>
+    </div>
+
+    <div class="standen">
+      <div class="standrij">
+        <span class="streep" style="background:var(--grijs)"></span>
+        <div><b>Nog niet gestart</b><span>Er is nog niets afgevinkt en niemand heeft geklokt.</span></div>
+      </div>
+      <div class="standrij">
+        <span class="streep" style="background:var(--blauw)"></span>
+        <div><b>Bezig</b><span>Er staat iemand geklokt, of er is al een punt af.</span></div>
+      </div>
+      <div class="standrij">
+        <span class="streep" style="background:var(--violet)"></span>
+        <div><b>Klaar om af te ronden</b><span>Alle punten af, maar niemand heeft op “Werkbon voltooien” gedrukt. Dat ben jij.</span></div>
+      </div>
+      <div class="standrij">
+        <span class="streep" style="background:var(--groen)"></span>
+        <div><b>Afgerond &middot; Opgeleverd</b><span>De bon is dicht. Opleveren doet kantoor.</span></div>
+      </div>
+      <div class="standrij">
+        <span class="streep" style="background:var(--rood)"></span>
+        <div><b>Ligt stil</b><span>Kantoor heeft de klus stilgelegd. Niet doorwerken — de reden staat erbij.</span></div>
+      </div>
+      <div class="standrij">
+        <span class="streep" style="background:var(--amber)"></span>
+        <div><b>Loopt uit</b><span>Over de opleverdatum heen. De klus loopt nog, maar er wordt naar gekeken.</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ Storingen ═════════════════════════════════════════════ -->
+<section>
+  <div class="wrap">
+    <div class="sectiekop">
+      <div class="eyebrow">Als het niet gaat zoals je verwacht</div>
+      <h2>Wat je ziet, en wat je doet</h2>
+      <p>
+        Bijna alles hieronder is geen storing maar de app die iets tegenhoudt.
+        Zoek de regel op en je bent er zo weer uit.
+      </p>
+    </div>
+
+    <div class="tabelbak">
+      <table>
+        <thead>
+          <tr><th>Wat je ziet</th><th>Wat er aan de hand is</th><th>Wat je doet</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>De afvinkknop is grijs</td>
+            <td>Je werkdag loopt niet — nog niet gestart, of gestopt.</td>
+            <td>Start of hervat je werkdag met de knop onderin.</td>
+          </tr>
+          <tr>
+            <td>“Foto vereist” naast een punt</td>
+            <td>Op dit punt moet eerst bewijs.</td>
+            <td>Tik het cameravakje aan en maak je foto.</td>
+          </tr>
+          <tr>
+            <td>Rood blokje bij een punt, na een foto</td>
+            <td>De foto kwam niet aan. Hij is niet kwijt.</td>
+            <td>Zoek bereik en tik op “Foto opnieuw versturen”.</td>
+          </tr>
+          <tr>
+            <td>“De foto’s konden niet worden geladen”</td>
+            <td>Alleen het tonen mislukt — ze zijn wél opgeslagen.</td>
+            <td>Niets. Gewoon doorwerken.</td>
+          </tr>
+          <tr>
+            <td>“Het scherm kon niet worden bijgewerkt”</td>
+            <td>Je verbinding viel weg; wat je ziet kan verouderd zijn.</td>
+            <td>Verbinding checken en de pagina opnieuw laden.</td>
+          </tr>
+          <tr>
+            <td>“Je staat niet meer op deze werkbon”</td>
+            <td>Kantoor heeft je van de bon gehaald.</td>
+            <td>Bel je uitvoerder en laat je opnieuw inplannen.</td>
+          </tr>
+          <tr>
+            <td>“Vandaag geen werkbon”</td>
+            <td>Er staat niets voor je gepland.</td>
+            <td>Kijk bij Mijn week. Klopt het niet? Bel je uitvoerder.</td>
+          </tr>
+          <tr>
+            <td>Oranje blok “Deze klus ligt stil”</td>
+            <td>Kantoor heeft de klus stilgelegd, bijvoorbeeld om asbest.</td>
+            <td>Niet doorwerken. Bel je uitvoerder.</td>
+          </tr>
+          <tr>
+            <td>Amber blok “Je werkdag loopt nog op een andere klus”</td>
+            <td>Je staat nog geklokt op een ander adres.</td>
+            <td>Ga er via de knop naartoe en stop die werkdag eerst.</td>
+          </tr>
+          <tr>
+            <td>“Werkbon voltooien” staat er niet</td>
+            <td>Er staat nog minstens één punt open.</td>
+            <td>Scroll de lijst na op een punt zonder groen vinkje.</td>
+          </tr>
+          <tr>
+            <td>Je bent uitgelogd</td>
+            <td>Gebeurt zelden, maar kan.</td>
+            <td>Log opnieuw in. Alles wat verstuurd was, staat er nog.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ══ Voet ══════════════════════════════════════════════════ -->
+<footer>
+  <div class="wrap">
+    <div class="voetkop">NMZ GO — handleiding voor de uitvoering</div>
+    <div class="voetrij">
+      <div>
+        <b>Vragen over een klus</b>
+        Je uitvoerder. Adres, planning, punten die niet kloppen, stilleggen.
+      </div>
+      <div>
+        <b>Vragen over de app</b>
+        Kantoor. Inloggen, wachtwoord, of iets dat echt niet werkt.
+      </div>
+      <div>
+        <b>Klopt er iets niet in deze uitleg?</b>
+        Zeg het — dan passen we hem aan. Deze handleiding hoort de app te volgen,
+        niet andersom.
+      </div>
+    </div>
+  </div>
+</footer>
+
+<div class="band"></div>
+
+</body>
+</html>
