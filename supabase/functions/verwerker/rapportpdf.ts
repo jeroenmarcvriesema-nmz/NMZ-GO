@@ -155,6 +155,12 @@ function blok(pen: Pen, titel: string, tekst: string | null | undefined): void {
   pen.y -= 3 * MM
 }
 
+/** De acht bytes waarmee elk PNG-bestand begint. */
+function isPng(bytes: Uint8Array): boolean {
+  return bytes.length > 8 &&
+    bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47
+}
+
 /** `data:image/jpeg;base64,...` terug naar bytes. */
 function uitDataUri(bron: string): { bytes: Uint8Array; png: boolean } | null {
   const m = /^data:(image\/[a-z+]+);base64,(.*)$/is.exec(bron.trim())
@@ -186,8 +192,12 @@ async function fotos(pen: Pen, lijst: Rapportfoto[], onderschrift: string): Prom
   for (const foto of lijst) {
     // Ruwe bytes als ze er zijn; de data-URI is de terugval voor wie
     // deze functie met alleen een URI aanroept.
+    //
+    // Het formaat lezen we uit de bytes en nemen we niet aan. De cache
+    // schrijft JPEG, maar "het zal wel JPEG zijn" betekent dat één PNG
+    // stilletjes van het rapport verdwijnt — en dat is bewijsmateriaal.
     const rauw = foto.bytes?.length
-      ? { bytes: foto.bytes, png: false }
+      ? { bytes: foto.bytes, png: isPng(foto.bytes) }
       : uitDataUri(foto.bron)
     if (!rauw) continue
 
