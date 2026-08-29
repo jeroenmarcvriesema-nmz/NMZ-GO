@@ -53,8 +53,13 @@
 // ============================================================
 
 import { SupabaseClient } from 'jsr:@supabase/supabase-js@2'
-import { datumInWoorden, periodeInWoorden, voornamen, type Rapportfoto, type Rapportpunt, type Rapportgegevens } from './rapportsjabloon.ts'
-import { bouwRapportPdf } from './rapportpdf.ts'
+import {
+  bouwRapport,
+  datumInWoorden,
+  periodeInWoorden,
+  type Rapportfoto,
+  type Rapportpunt,
+} from './rapportsjabloon.ts'
 
 /** Breedte waarop een foto het document in gaat. */
 const FOTO_BREEDTE = 1000
@@ -95,6 +100,16 @@ const MAX_BRONBYTES_PER_RONDE = 4_000_000
 const BUCKET_FOTOS = 'werkbon-fotos'
 const BUCKET_DOCUMENTEN = 'werkbon-documenten'
 
+function base64(bytes: Uint8Array): string {
+  // Per blok, want `String.fromCharCode(...bytes)` in één keer legt de
+  // aanroepstapel om bij een bestand van een paar honderd kilobyte.
+  let ruw = ''
+  const blok = 0x8000
+  for (let i = 0; i < bytes.length; i += blok) {
+    ruw += String.fromCharCode(...bytes.subarray(i, i + blok))
+  }
+  return btoa(ruw)
+}
 
 /**
  * Zoveel bytes aan foto's gaat er hooguit in één rapport.
@@ -366,11 +381,7 @@ export async function bouwOpleverrapport(
 
     if (beeldBytes + bytes.length > MAX_BEELD_BYTES) break
     beeldBytes += bytes.length
-    // Alleen de bytes. De data-URI was er voor de HTML-weergave; het
-    // rapport is een PDF en die leest bytes. Hem toch bouwen kostte bij
-    // twintig foto's megabytes aan base64 die niemand las — en dat was
-    // genoeg om de edge function op zijn resource-limiet af te schieten.
-    beeldPerFoto.set(f.id, { bytes, fase: f.fase })
+    beeldPerFoto.set(f.id, { bron: `data:image/jpeg;base64,${base64(bytes)}`, fase: f.fase })
   }
 
   // ── Alles op zijn plaats ──
@@ -390,12 +401,7 @@ export async function bouwOpleverrapport(
     .map((f: any) => beeldPerFoto.get(f.id))
     .filter(Boolean) as Rapportfoto[]
 
-  // De gegevens één keer samenstellen. `rapportsjabloon.ts` bepaalt met
-  // zijn types wát er op het rapport hoort te staan en blijft daarmee de
-  // bron van waarheid voor de inhoud; `bouwRapportPdf` zet het op
-  // papier. De HTML-variant in dat sjabloon is de leesbare weergave van
-  // dezelfde opbouw en blijft staan als referentie.
-  const gegevens: Rapportgegevens = {
+  const html = bouwRapport({
     bonnummer: bon.bonnummer ?? null,
     projectnaam: bon.projectnaam ?? null,
     adres: bon.adres ?? null,
@@ -411,17 +417,15 @@ export async function bouwOpleverrapport(
       bon.geplande_start ?? bon.datum,
       bon.geplande_eind ?? bon.geplande_start ?? bon.datum,
     ),
-    // Alleen voornamen: het rapport gaat naar een opdrachtgever en die
-    // hoeft de achternamen van de ploeg niet te weten.
-    ploeg: voornamen(
-      (bon.werkbon_medewerkers ?? []).map((wm: any) => wm.persoon?.naam).filter(Boolean),
-    ),
+    ploeg: (bon.werkbon_medewerkers ?? [])
+      .map((wm: any) => wm.persoon?.naam)
+      .filter(Boolean),
     opmerkingenBewoners: bon.opmerkingen_bewoners ?? null,
     extraWerkzaamheden: bon.extra_werkzaamheden ?? null,
     bijzonderheden: bon.bijzonderheden ?? null,
     punten,
     losseFotos,
-  }
+  })
 
   // ── Wegschrijven ──
   // Een vast pad per rapportage: opnieuw draaien overschrijft het
@@ -434,17 +438,15 @@ export async function bouwOpleverrapport(
   // verwerker het bestand probleemloos weg, want die gaat met de
   // service-rol langs de regels heen, en kan kantoor het daarna nooit
   // openen. Dezelfde indeling dus als de werkopdracht en de tekening.
-  // Een PDF en geen HTML. Dit rapport gaat per mail naar een
-  // opdrachtgever: dat moet een bestand zijn dat je opent, print en
-  // bewaart, niet een pagina van acht megabyte die als broncode op het
-  // scherm kan belanden. Het sjabloon hierboven bepaalt nog steeds wát
-  // erop staat; `bouwRapportPdf` zet diezelfde gegevens op papier.
-  const pad = `${werkbonId}/opleverrapport-${bon.bonnummer ?? werkbonId}.pdf`
-  const bestand = await bouwRapportPdf(gegevens)
+  const pad = `${werkbonId}/opleverrapport-${bon.bonnummer ?? werkbonId}.html`
+  const bestand = new TextEncoder().encode(html)
 
+  // Zonder `; charset=utf-8`: Storage vergelijkt de hele koptekst met
+  // zijn lijst met toegestane types en herkent de variant met charset
+  // niet. Het document draagt zijn codering zelf in een <meta>.
   const { error: uploadFout } = await db.storage
     .from(BUCKET_DOCUMENTEN)
-    .upload(pad, bestand, { contentType: 'application/pdf', upsert: true })
+    .upload(pad, bestand, { contentType: 'text/html', upsert: true })
 
   if (uploadFout) throw new Error(`rapport opslaan mislukt: ${uploadFout.message}`)
 

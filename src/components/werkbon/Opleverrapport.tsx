@@ -4,12 +4,13 @@ import { Button } from '@/components/ui/Button'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { supabase } from '@/lib/supabase'
 import { toast } from '@/store/toastStore'
+import { downloadOpleverrapport } from '@/lib/rapportpdfmaken'
 import { useAuth } from '@/hooks/useAuth'
 import { formatDatum } from '@/lib/utils'
 import type { Werkbon, Rapportage } from '@/types'
 import {
   IconFileText, IconPhoto, IconInfoCircle, IconDeviceFloppy,
-  IconAlertTriangle, IconClock, IconCircleCheck, IconExternalLink,
+  IconAlertTriangle, IconClock, IconCircleCheck, IconExternalLink, IconDownload,
 } from '@tabler/icons-react'
 
 interface Props {
@@ -181,6 +182,12 @@ export function Opleverrapport({ werkbon, onKlaar }: Props) {
             : `${fotos} ${fotos === 1 ? 'foto' : "foto's"} in de fotorapportage`}
         </div>
 
+        {/* De PDF wordt hier in de browser gemaakt, uit de gegevens die
+            dit scherm toch al mag zien. Los van de aanvraag hierboven:
+            die zet een rapport in de bucket voor het dossier en voor
+            ClickUp, dit geeft je nú een bestand om te versturen. */}
+        <RapportPdfKnop werkbonId={werkbon.id} fotos={fotos} />
+
         {rapportage ? (
           <Rapportagestand rapportage={rapportage} />
         ) : (
@@ -209,6 +216,52 @@ export function Opleverrapport({ werkbon, onKlaar }: Props) {
 }
 
 /** Wat er met een lopende aanvraag gebeurd is, zonder mooier voor te stellen dan het is. */
+/**
+ * Het rapport als PDF, gemaakt in de browser.
+ *
+ * De verwerker kan dit niet: daar is het drie keer op zijn
+ * resource-limiet afgeschoten. Een browser heeft dat geheugen wel, en
+ * het bijkomende voordeel is dat het rapport altijd de laatste stand
+ * heeft — geen wachtrij, geen bestand van vorige week.
+ *
+ * Bij veertig foto's duurt dit een halve minuut. Daarom een knop die
+ * zegt dat hij bezig is, en niet een die stil lijkt te hangen.
+ */
+function RapportPdfKnop({ werkbonId, fotos }: { werkbonId: string; fotos: number }) {
+  const [bezig, setBezig] = useState(false)
+
+  const maak = async () => {
+    setBezig(true)
+    try {
+      const { fotos: erin } = await downloadOpleverrapport(werkbonId)
+      toast.goed(
+        erin === fotos
+          ? 'Opleverrapport gedownload'
+          : `Opleverrapport gedownload · ${erin} van de ${fotos} foto’s erin`,
+      )
+    } catch (fout) {
+      toast.fout(
+        fout instanceof Error ? fout.message : 'Het rapport kon niet gemaakt worden.',
+      )
+    } finally {
+      setBezig(false)
+    }
+  }
+
+  return (
+    <div className="mb-4">
+      <Button variant="primary" className="min-h-[44px]" loading={bezig} disabled={fotos === 0} onClick={maak}>
+        <IconDownload className="w-4 h-4" /> {bezig ? 'Rapport maken…' : 'Download als PDF'}
+      </Button>
+      <p className="text-xs text-gray-400 dark:text-white/40 mt-2">
+        {fotos === 0
+          ? 'Zodra er een foto bij de klus staat, kan het rapport gemaakt worden.'
+          : 'Wordt hier gemaakt met de laatste stand van de klus. Bij veel foto’s duurt dat even.'}
+      </p>
+    </div>
+  )
+}
+
 function Rapportagestand({ rapportage }: { rapportage: Rapportage }) {
   if (rapportage.status === 'mislukt') {
     return (

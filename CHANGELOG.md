@@ -1,5 +1,14 @@
 # NMZ GO — Changelog
 
+## Het opleverrapport als PDF, gemaakt in de browser
+
+- **[FEATURE]** Bij elke klus met foto's staat nu **Download als PDF**. Eén druk en je hebt een echt PDF-bestand: titelblad met het logo, projectgegevens, de uitgevoerde punten met een rode stip bij wat niet is afgerond, en de fotorapportage per punt. Alleen voornamen van de ploeg, en een leeg projectnummer staat er niet.
+- **Waarom in de browser en niet op de server.** De verwerker is er drie keer op zijn resource-limiet afgeschoten (HTTP 546) — ook met de logobalk eruit en met de foto's al in de cache. `pdf-lib` draagt de complete standaardlettertypen en een zlib mee en houdt het hele document in het geheugen tot het in één keer wordt weggeschreven. Dat past niet in een edge function. Dat is geen instelling die verkeerd stond, maar de verkeerde plek voor dit werk.
+- **De knop staat los van de aanvraag.** Aanvragen zet een rapport in de bucket voor het dossier en straks voor ClickUp; deze knop geeft je nú een bestand om te versturen, met de laatste stand van de klus. Geen wachtrij, geen bestand van vorige week.
+- pdf-lib wordt pas opgehaald als je op de knop drukt. Statisch meegebundeld groeide de werkbondetailpagina van 35 naar 470 kB — het scherm dat de ploeg de hele dag op een telefoon openslaat, en dat is niet de plek voor een halve megabyte die de meesten nooit gebruiken.
+- Een foto die niet op te halen is wordt overgeslagen in plaats van het hele rapport te laten mislukken. Zijn het er minder geworden, dan zegt de melding hoeveel van hoeveel erin zitten.
+- De verwerker schrijft weer HTML, zoals daarvoor. Die weg is niet kapot en houdt de automatische route open.
+
 ## Zelf kiezen op welke klus je start
 
 - **[FIX]** **De ploeg kan nu een klus aantikken en daar de werkdag starten.** Sinds de klussen van vandaag allemaal op het scherm staan, zagen Danny en Martijn er twee — maar de startknop hoorde altijd bij de klus die de app had gekozen. Op de andere klus konden ze niet klokken. Aantikken verplaatst je werkdag nu naar dat adres, en dat staat er ook bij: "Tik een klus aan om daar je werkdag te starten."

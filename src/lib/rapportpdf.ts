@@ -1,23 +1,27 @@
-// NMZ GO — het opleverrapport als PDF
+// NMZ GO — het opleverrapport als PDF, in de browser
 //
-// Waarom naast `rapportsjabloon.ts` en niet in plaats daarvan: dat
-// sjabloon bepaalt wát er op het rapport staat en in welke volgorde —
-// titelblad, projectgegevens, de punten met hun foto's. Die beslissing
-// hoort op één plek te blijven. Dit bestand doet er niets aan toe; het
-// zet dezelfde `Rapportgegevens` op papier in plaats van in HTML.
+// Waarom hier en niet in de verwerker: daar is het drie keer op zijn
+// resource-limiet afgeschoten (HTTP 546), ook met de logobalk eruit en
+// met de foto's al in de cache. `pdf-lib` draagt de complete
+// standaardlettertypen en een zlib mee, en houdt het hele document in
+// het geheugen tot `save()` er in één keer één byte-array van maakt.
+// Dat past niet in een edge function, en dat is geen instelling maar de
+// verkeerde plek voor dit werk.
 //
-// Waarom een PDF-bibliotheek en geen browser: een opdrachtgever krijgt
-// dit rapport per mail en moet het kunnen openen, printen en bewaren.
-// Een HTML-bestand van acht megabyte is geen bijlage die je verstuurt.
-// Een headless browser draait niet in een Edge Function, dus HTML naar
-// PDF omzetten kan daar niet — deze weg tekent de pagina rechtstreeks.
+// Een browser heeft dat geheugen wel. Kantoor drukt op de knop, de
+// pagina bouwt het document en biedt het aan als bestand.
 //
-// `pdf-lib` via een `npm:`-specifier. Dat raakt `package.json` niet:
-// edge functions halen hun afhankelijkheden per URL op, net als
-// `jsr:@supabase/supabase-js@2` hierboven in de andere bestanden.
+// Wat dat kost: het rapport ontstaat op het moment dat iemand het
+// opvraagt, niet 's nachts vanzelf. Voor "ik wil dit als bijlage
+// versturen" maakt dat niets uit; voor automatisch naar ClickUp sturen
+// wel, en dat blijft dus aan de HTML-kant van de verwerker hangen.
+//
+// De opmaak zelf is ongewijzigd overgenomen: `rapportsjabloon.ts`
+// bepaalt nog steeds wát er op het rapport staat en in welke volgorde.
 
-import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb } from 'npm:pdf-lib@1.17.1'
-import type { Rapportfoto, Rapportgegevens } from './rapportsjabloon.ts'
+import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb } from 'pdf-lib'
+import logobalkUrl from '@/assets/logobalk.pdf?url'
+import type { Rapportfoto, Rapportgegevens } from '@/../supabase/functions/verwerker/rapportsjabloon'
 
 // A4 in punten. Marges zoals het HTML-sjabloon ze heeft: 18 mm opzij,
 // 16 mm onder. Eén millimeter is 2.8346 punt.
@@ -198,7 +202,7 @@ async function fotos(pen: Pen, lijst: Rapportfoto[], onderschrift: string): Prom
     // stilletjes van het rapport verdwijnt — en dat is bewijsmateriaal.
     const rauw = foto.bytes?.length
       ? { bytes: foto.bytes, png: isPng(foto.bytes) }
-      : uitDataUri(foto.bron)
+      : uitDataUri(foto.bron ?? '')
     if (!rauw) continue
 
     let beeld
@@ -251,8 +255,9 @@ async function fotos(pen: Pen, lijst: Rapportfoto[], onderschrift: string): Prom
  */
 async function leesLogobalk(doc: PDFDocument) {
   try {
-    const bytes = await Deno.readFile(new URL('./logobalk.pdf', import.meta.url))
-    const [pagina] = await doc.embedPdf(bytes)
+    const bron = await fetch(logobalkUrl)
+    if (!bron.ok) return null
+    const [pagina] = await doc.embedPdf(new Uint8Array(await bron.arrayBuffer()))
     return pagina
   } catch {
     return null
@@ -282,21 +287,7 @@ export async function bouwRapportPdf(g: Rapportgegevens): Promise<Uint8Array> {
   doc.setProducer('NMZ GO')
   doc.setCreator('NMZ GO')
 
-  // De logobalk staat uit. Twee keer op rij is de worker op zijn
-  // resource-limiet afgeschoten (HTTP 546) op precies de ronde die het
-  // document bouwt, en dit is de enige grote, constante post in die
-  // stap: een PDF van een megabyte met zevenendertig afbeeldingen en
-  // maskerlagen, die `embedPdf` volledig moet inlezen.
-  //
-  // Dit is een meting, geen ontwerpkeuze. Komt het rapport er nu wél
-  // uit, dan is de balk de oorzaak en gaat hij terug als een compacte
-  // afbeelding in plaats van een ingesloten PDF-pagina. Blijft het
-  // omvallen, dan zit het in de foto's en moet het document in porties
-  // opgebouwd worden.
-  //
-  // Tot die tijd: liever een rapport zonder logo dan geen rapport.
-  const LOGOBALK_AAN = Deno.env.get('RAPPORT_LOGOBALK') === 'aan'
-  const balk = LOGOBALK_AAN ? await leesLogobalk(doc) : null
+  const balk = await leesLogobalk(doc)
   const pen: Pen = { doc, pagina: doc.addPage([BREEDTE, HOOGTE]), y: HOOGTE - MARGE, gewoon, vet, adres }
 
   // ── Titelblad ──
