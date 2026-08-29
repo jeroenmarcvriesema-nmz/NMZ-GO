@@ -101,18 +101,18 @@ export default function MijnWeek() {
                   )}>
                     {DAGEN[dag.getDay()]}
                   </span>
-                  <span className="text-xs text-gray-400 dark:text-white/40">
+                  <span className="text-xs text-tekst-gedempt dark:text-white/55">
                     {dag.getDate()}/{dag.getMonth() + 1}
                   </span>
                   {isVandaag && (
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-brand-yellow-dark dark:text-brand-yellow">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-brand-yellow-tekst dark:text-brand-yellow">
                       vandaag
                     </span>
                   )}
                 </div>
 
                 {bonnen.length === 0 ? (
-                  <p className="px-1 py-6 text-xs text-gray-300 dark:text-white/25 text-center">
+                  <p className="px-1 py-6 text-xs text-tekst-fijn dark:text-white/40 text-center">
                     niets gepland
                   </p>
                 ) : (
@@ -139,11 +139,11 @@ export default function MijnWeek() {
                     <div className="text-sm font-semibold truncate text-gray-900 dark:text-white">
                       {w.adres}
                     </div>
-                    <div className="text-xs text-gray-400 dark:text-white/40">
+                    <div className="text-xs text-tekst-gedempt dark:text-white/55">
                       vanaf {formatDatum(w.geplande_start ?? w.datum)} · {(w.taken ?? []).length} punten
                     </div>
                   </div>
-                  <IconChevronRight className="w-4 h-4 flex-shrink-0 text-gray-300 dark:text-white/25" />
+                  <IconChevronRight className="w-4 h-4 flex-shrink-0 text-tekst-fijn dark:text-white/40" />
                 </button>
               ))}
             </div>
@@ -182,7 +182,7 @@ function DagKaart({ werkbon, dag, onOpen }: { werkbon: Werkbon; dag: string; onO
       )}
     >
       <div className="flex items-start gap-1.5">
-        <IconMapPin className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-gray-400 dark:text-white/40" />
+        <IconMapPin className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-tekst-gedempt dark:text-white/55" />
         <span className="min-w-0">
           <span className="block text-sm font-semibold leading-snug text-gray-900 dark:text-white">
             {werkbon.adres}
@@ -214,7 +214,7 @@ function DagKaart({ werkbon, dag, onOpen }: { werkbon: Werkbon; dag: string; onO
         <span className="text-xs font-bold tabular-nums text-gray-500 dark:text-white/50">
           {voortgang}%
         </span>
-        <span className="flex items-center gap-1 text-xs text-gray-400 dark:text-white/40">
+        <span className="flex items-center gap-1 text-xs text-tekst-gedempt dark:text-white/55">
           <IconListCheck className="w-3.5 h-3.5" />{taken.length}
         </span>
         {/* De kluiscode staat hier bewust bij: dan hoef je de bon niet

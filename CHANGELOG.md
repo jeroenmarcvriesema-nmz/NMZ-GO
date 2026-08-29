@@ -1,5 +1,49 @@
 # NMZ GO — Changelog
 
+## De ontwerpaudit uitgevoerd — leesbaarheid, kleur en de bon op een telefoon
+
+Achttien bevindingen uit een volledige audit van de UI, doorgevoerd in één ronde. Bijna allemaal gevallen waarin de code een regel overtrad die in `.ai/` al stond opgeschreven.
+
+### Leesbaarheid
+
+- **[FIX]** **De bijschriftkleur haalde de WCAG-norm niet, in beide thema's — op 191 plekken.** `text-gray-400` is 2,54:1 op wit en `white/40` is 3,79:1 in donker, waar 4,5:1 de norm is. Juist op de datums, aantallen en hints die een zwamsaneerder buiten moet kunnen lezen. Er zijn nu drie tekstkleuren met een gemeten verhouding: `tekst-gedempt` (4,83:1) voor bijschriften, `tekst-zwak` voor labels, en `tekst-fijn` (3,63:1) **uitsluitend** voor decoratie zoals chevrons en placeholders. De regel in `UI_GUIDELINES.md` schreef het oude paar voor en is meeveranderd — anders komt het terug.
+- **[FIX]** De **actieve tab in de mobiele balk** stond op `text-brand-yellow`: geel als tekst op een witte balk, 1,87:1. In de zon was dat geen accent maar een onleesbaar woord. Nu draagt een gele balk bovenaan de tab de markering en blijft de tekst op volle sterkte.
+- **[FIX]** "Zaterdag 29 **A**ugustus 2026" — `capitalize` zet elk woord met een hoofdletter, terwijl Nederlandse maandnamen klein zijn. Nu `first-letter:uppercase`, op de twee plekken waar de datum uit meerdere woorden bestaat.
+
+### Kleur
+
+- **[FIX]** **De voortgangsbalk sprak de badge ernaast tegen.** Vier schermen gaven "geel, en groen bij 100%" mee in plaats van de stand van de klus. Een bon met alle punten afgevinkt maar nog niet afgerond kreeg daardoor een violette badge "Klaar om af te ronden" met een groene balk eronder: dezelfde kaart zei tegelijk dat er nog iemand op een knop moest drukken en dat het klaar was. De balk haalt zijn kleur nu uit `klusstand.ts`, net als de badge, en de automatische omslag naar groen is eruit — die was de oorzaak.
+- **[FIX]** De **accentrand op de kop van een werkbon** stond altijd op geel, wat de stand ook was. Volgt nu `standkleur(werkbon)`.
+- **[FIX]** **Geel betekende zeven dingen tegelijk**: primaire knop, actief menu-item, rolbadge, avatar, dagkolom van vandaag, app-icoon en voortgangsbalk. Het volvlak is nu voorbehouden aan de primaire actie. Het actieve menu-item krijgt een gele balk links met een zachte tint (wat `UI_GUIDELINES.md` altijd al beschreef), de rolbadge wordt neutraal, en de dagkolom van vandaag houdt zijn gele ring maar verliest het gele blok.
+- **[WIJZIGING]** **De kleurwas op lijstkaarten staat uit** (`KLEURWAS` in `klusstand.ts`). Met de was aan kreeg elke kaart een eigen pasteltint en stonden er op de weekplanning vijf gekleurde vlakken naast elkaar — terwijl `PRODUCT_VISION.md` zegt dat de basis van elk scherm neutraal blijft. De stand blijft zichtbaar via de rand links en de badge. Weer aanzetten is één regel; daar is die schakelaar voor.
+- **[FIX]** De waarschuwing **"X op meerdere klussen"** stond in elke dagkolom waar het gold — tot drie keer dezelfde zin naast elkaar. Nu één balk boven de week, met de dagen erachter: completer én rustiger.
+
+### De bon op een telefoon
+
+- **[FEATURE]** **Afgevinkte punten staan dichtgeklapt.** Elk afgerond punt nam de volle hoogte in met fotostrook, knoppen en het gesprekje eronder; bij zes punten waarvan drie af was de pagina bijna zevenduizend pixels lang, en een echte werkopdracht heeft er twintig tot dertig. Dicht blijft zichtbaar dát het punt af is en met welke foto's, in een strook van 32 pixels; aantikken klapt hem open. **Gemeten: 6.896 → 2.987 pixels.**
+- **[FEATURE]** **Openstaande punten staan bovenaan**, afgerond werk onder een streep met een teller erbij. De kop telt bovendien wat er nog moet in plaats van hoeveel punten er zijn — "Uit te voeren punten (30)" op een bon waarvan er 28 af zijn is geen antwoord op de vraag die je stelt. Punten worden niet in de volgorde van de bon afgewerkt, dus het gaat er niet om wat "het volgende" is maar dat wat openstaat bij elkaar staat.
+- **[FIX]** **Aanraakvlakken onder de eigen norm.** De themaknop was 16 bij 16 pixels, pal naast een klok van 40 bij 40 in dezelfde balk; de afvinkknop — de meest gebruikte knop van de app, die met een werkhandschoen wordt geraakt — was 34 pixels hoog waar `DESIGN_SYSTEM.md` er ~44 vraagt. Allebei op maat, met een `aria-label` erbij waar alleen een `title` stond.
+- **[FIX]** De **uitgeschakelde afvinkknop** was dezelfde gele knop op 40% dekking. In fel licht is dat verschil bijna weg en lijkt het alsof de app niet reageert. "Kan nog niet" is nu een grijze omlijnde knop: een andere vorm, niet een blekere versie van dezelfde.
+
+### Navigatie
+
+- **[FIX]** Op `/werkbonnen/nieuw` lichtten **twee menu-items tegelijk** op. Een `NavLink` is zonder `end` ook actief op elk onderliggend pad. Alleen `/werkbonnen` krijgt die vlag — op `/werkbonnen/:id` hóórt "Alle werkbonnen" juist wél op te lichten.
+- **[FIX]** **`/lopend` was op een telefoon nergens te bereiken**: de enige verwijzing stond in de zijbalk, en die is `hidden md:block`. Staat nu in het "Meer"-blad. `tests/rollen.test.ts` stelt voortaan ook de omgekeerde vraag — is elke kantoorroute érgens aan te tikken? — want die ontbrak, en daarom kon dit gat ontstaan.
+
+### Robuustheid en systeem
+
+- **[FIX]** `formatTijd` en `geefUren` vingen alleen `null` af, geen ongeldige datum. `new Date('onzin')` levert geen fout op maar tekst als **"Invalid Date"** en **"NaN:NaN u"**, en die kon zo op het scherm belanden — terwijl `DESIGN_SYSTEM.md` geen technisch jargon in de UI toestaat. Beide geven nu een streepje, net als een stoptijd vóór de starttijd.
+- **[FIX]** **Zes verschillende hoeken waar er drie gedefinieerd zijn.** Twaalf plekken gebruikten `rounded-md`/`-xl`/`-2xl` — Tailwind-standaardwaarden van 6, 12 en 16 pixels die de config niet overschrijft, en die precies tússen de tokens vallen. Alles terug naar `sm`/`DEFAULT`/`lg`.
+- **[FIX]** In donkere modus hadden de **zijbalk en het canvas dezelfde kleur**, waardoor de gelaagdheid die light wél heeft wegviel. De chrome staat nu een tint boven het canvas, zoals de topbalk al deed.
+- **[FIX]** Het **inlogscherm** was het enige vlak dat het thema niet volgde: `bg-gray-900` hard ingesteld, twee verlopen met overgeschreven rgba-waarden en een schaduw buiten de schaal. Het merkpaneel volgt nu licht en donker, met de kleuren uit de tokens. Op een telefoon staat het merk bovenaan in plaats van dat het formulier in een leeg wit vlak zweeft.
+- **[FEATURE]** **Skeleton-laadstaten** (`components/ui/Skelet.tsx`) op het dashboard en de werkbonnenlijst, in plaats van een spinner op een leeg vlak. Stonden al als norm in `UI_GUIDELINES.md` maar bestonden niet.
+- **[FEATURE]** Een **overslaan-naar-inhoud-link**: wie met een toetsenbord werkt tabde op elke pagina eerst langs zestien menu-items.
+- **[FEATURE]** Knoppen hebben een **eigen focusring** in merkgeel in plaats van de standaardring van de browser, en de hele app respecteert **`prefers-reduced-motion`**.
+- **[FIX]** Pagina's hadden **geen maximale contentbreedte**: op een monitor van 1920 stond er duizend pixels lucht tussen een naam en de knop ernaast. Nu een bovengrens in `PageWrapper`.
+- **[FIX]** De **weekplanning** perste zes dagen in een raster van zo'n 150 pixels per kolom, waar adressen middenin een woord afbraken ("Meidoornstraa / t 4"). Een dag is nu minstens 190 pixels en de week schuift desnoods opzij; zaterdag verschijnt alleen als er zaterdag werk staat of als het vandaag is.
+- **[FIX]** Kleinere dingen: de zoekplaceholder werd middenin een woord afgekapt (wat er doorzocht wordt staat nu als hint eronder), het zoekveld op de planning kromp op een tablet tot een vakje met alleen het vergrootglas, "Opslaan" en "Werkbon opslaan" waren allebei primair, en "Opleveren" zag er bruikbaar uit terwijl de regel eronder uitlegde dat het nog niet kon — die staat nu uit met die reden als toelichting.
+
+
 ## Het opleverrapport als PDF, gemaakt in de browser
 
 - **[FEATURE]** Bij elke klus met foto's staat nu **Download als PDF**. Eén druk en je hebt een echt PDF-bestand: titelblad met het logo, projectgegevens, de uitgevoerde punten met een rode stip bij wat niet is afgerond, en de fotorapportage per punt. Alleen voornamen van de ploeg, en een leeg projectnummer staat er niet.

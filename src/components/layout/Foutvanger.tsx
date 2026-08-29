@@ -120,7 +120,7 @@ export class Foutvanger extends Component<Props, State> {
               met kantoor kan hem voorlezen; wie dat niet doet heeft er
               geen last van. */}
           <details className="mt-6 text-left">
-            <summary className="cursor-pointer text-xs text-gray-400 dark:text-white/40 hover:text-gray-600 dark:hover:text-white/60">
+            <summary className="cursor-pointer text-xs text-tekst-gedempt dark:text-white/55 hover:text-gray-600 dark:hover:text-white/60">
               Technische details
             </summary>
             <pre className="mt-2 max-h-40 overflow-auto rounded-sm bg-surface-2 dark:bg-white/5 p-3 text-[11px] leading-relaxed text-gray-500 dark:text-white/50 whitespace-pre-wrap break-words">

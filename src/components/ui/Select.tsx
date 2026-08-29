@@ -48,7 +48,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
               <option key={o.waarde} value={o.waarde}>{o.label}</option>
             ))}
           </select>
-          <IconChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40 pointer-events-none" />
+          <IconChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-tekst-gedempt dark:text-white/55 pointer-events-none" />
         </div>
         {error && <p className="mt-1.5 text-xs text-brand-red dark:text-red-400">{error}</p>}
       </div>

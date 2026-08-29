@@ -5,7 +5,7 @@ import { PageWrapper } from '@/components/layout/PageWrapper'
 import { WerkbonKaart } from '@/components/werkbon/WerkbonKaart'
 import { Weekkiezer } from '@/components/layout/Weekkiezer'
 import { Button } from '@/components/ui/Button'
-import { Spinner } from '@/components/ui/Spinner'
+import { SkeletLijst } from '@/components/ui/Skelet'
 import { useWerkbonnen } from '@/hooks/useWerkbonnen'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Synchronisatie } from '@/components/werkbon/Synchronisatie'
@@ -155,15 +155,28 @@ export default function Werkbonnen() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-white/40" />
-            <input
-              type="text"
-              placeholder="Adres, plaats, postcode, bonnummer, opdrachtgever of naam…"
-              value={zoek}
-              onChange={(e) => setZoek(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 text-sm text-gray-900 dark:text-white bg-white dark:bg-surface-dark-2 border border-gray-200 dark:border-white/10 rounded-sm outline-none placeholder:text-gray-400 dark:placeholder:text-white/30 focus:border-brand-yellow"
-            />
+          {/* De placeholder was "Adres, plaats, postcode, bonnummer,
+              opdrachtgever of naam…" en werd middenin een woord afgekapt,
+              zonder beletselteken. Wat er allemaal doorzocht wordt staat nu
+              als hint onder het veld, waar het wél past. */}
+          <div className="flex-1">
+            {/* De `relative` zit om het invoerveld alleen, niet om het veld
+                plús de hint eronder — anders centreert het vergrootglas
+                zich op die twee samen en zakt het onder het veld uit. */}
+            <div className="relative">
+              <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tekst-gedempt dark:text-white/55" />
+              <input
+                type="text"
+                placeholder="Zoek op adres, bon of naam…"
+                value={zoek}
+                onChange={(e) => setZoek(e.target.value)}
+                aria-describedby="zoek-hint"
+                className="w-full min-h-[44px] pl-9 pr-4 text-sm text-gray-900 dark:text-white bg-white dark:bg-surface-dark-2 border border-gray-200 dark:border-white/10 rounded-sm outline-none placeholder:text-tekst-fijn dark:placeholder:text-white/45 focus:border-brand-yellow focus:ring-2 focus:ring-brand-yellow/20"
+              />
+            </div>
+            <p id="zoek-hint" className="mt-1.5 text-xs text-tekst-gedempt dark:text-white/55">
+              Zoekt in adres, plaats, postcode, bonnummer, opdrachtgever en namen.
+            </p>
           </div>
           <div className="flex flex-wrap gap-1.5 bg-surface-2 dark:bg-white/5 p-1 rounded-sm">
             {STANDFILTERS.map((f) => (
@@ -184,7 +197,7 @@ export default function Werkbonnen() {
         </div>
 
         {perWeek && zoekt && (
-          <p className="text-xs text-gray-400 dark:text-white/40">
+          <p className="text-xs text-tekst-gedempt dark:text-white/55">
             Zolang je zoekt kijken we door alle weken heen — anders mis je een
             klus omdat hij toevallig vorige maand stond.
           </p>
@@ -192,7 +205,7 @@ export default function Werkbonnen() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-20"><Spinner className="w-8 h-8" /></div>
+        <SkeletLijst aantal={4} />
       ) : error ? (
         <ErrorState
           melding="De werkbonnen konden niet worden geladen. Controleer je verbinding."

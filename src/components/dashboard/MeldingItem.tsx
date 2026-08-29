@@ -44,7 +44,7 @@ export function MeldingItem({ melding }: MeldingItemProps) {
         <div className="text-sm font-semibold text-gray-800 dark:text-white truncate">{melding.project}</div>
         <div className="text-xs text-gray-500 dark:text-white/60">{melding.tekst}</div>
       </div>
-      <span className="text-[11px] text-gray-400 dark:text-white/40 font-mono flex-shrink-0">{melding.tijd}</span>
+      <span className="text-[11px] text-tekst-gedempt dark:text-white/55 font-mono flex-shrink-0">{melding.tijd}</span>
     </div>
   )
 }

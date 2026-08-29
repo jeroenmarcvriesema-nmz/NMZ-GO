@@ -225,14 +225,20 @@ export default function WerkbonNieuw() {
     <PageWrapper title="Nieuwe werkbon" actions={
       <div className="flex gap-2">
         <Button variant="ghost" onClick={() => navigate('/werkbonnen')}><IconArrowLeft className="w-4 h-4" /> Terug</Button>
-        <Button variant="primary" loading={loading} onClick={handleSave}>Opslaan</Button>
+        {/* Secundair, niet primair. Onderaan het formulier staat
+            "Werkbon opslaan" over de volle breedte, en die is de
+            hoofdactie — twee gele knoppen op één scherm breekt de regel
+            "maximaal één primary" uit UI_GUIDELINES.md, en laat de
+            gebruiker raden welke van de twee de echte is. Deze blijft
+            staan als snelle uitweg voor wie al bovenaan is. */}
+        <Button variant="secondary" loading={loading} onClick={handleSave}>Opslaan</Button>
       </div>
     }>
       <div className="max-w-4xl space-y-5">
         <Card accent="yellow">
           <SectionHeading title="Werkbon informatie" />
           <div className="space-y-3">
-            <Input label="Bonnummer" value={bonnummer} readOnly className="bg-surface-2 dark:bg-white/5 text-gray-400 dark:text-white/40"
+            <Input label="Bonnummer" value={bonnummer} readOnly className="bg-surface-2 dark:bg-white/5 text-tekst-gedempt dark:text-white/55"
               hint={gelezen?.opdrachtnummer ? 'Overgenomen uit de werkopdracht' : undefined} />
 
             {/* De twee datums waar de planning op draait. Zonder deze
@@ -261,7 +267,7 @@ export default function WerkbonNieuw() {
                 {p.naam}
               </button>
             ))}
-            {alleProfielen.length === 0 && <p className="text-sm text-gray-400 dark:text-white/40">Geen medewerkers gevonden.</p>}
+            {alleProfielen.length === 0 && <p className="text-sm text-tekst-gedempt dark:text-white/55">Geen medewerkers gevonden.</p>}
           </div>
         </Card>
 
@@ -366,7 +372,7 @@ export default function WerkbonNieuw() {
                       className="w-full px-3 py-2 text-xs bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-sm outline-none focus:border-brand-yellow text-gray-500 dark:text-white/50" />
                   </div>
                   <button onClick={() => setTaken((prev) => prev.filter((_, j) => j !== i))}
-                    className="p-2 text-gray-300 dark:text-white/30 hover:text-brand-red transition-colors mt-0.5">
+                    className="p-2 text-tekst-fijn dark:text-white/40 hover:text-brand-red transition-colors mt-0.5">
                     <IconTrash className="w-4 h-4" />
                   </button>
                 </div>

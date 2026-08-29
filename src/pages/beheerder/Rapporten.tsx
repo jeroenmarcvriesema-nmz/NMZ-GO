@@ -141,7 +141,7 @@ export default function Rapporten() {
                       <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">
                         {w.adres}
                       </div>
-                      <div className="text-xs text-gray-400 dark:text-white/40 mt-0.5 truncate">
+                      <div className="text-xs text-tekst-gedempt dark:text-white/55 mt-0.5 truncate">
                         {[
                           w.bonnummer,
                           formatDatum(w.opgeleverd_op ?? w.datum),
@@ -152,12 +152,12 @@ export default function Rapporten() {
                         <Badge variant="green">
                           {w.opgeleverd_op ? 'Opgeleverd' : 'Afgerond'}
                         </Badge>
-                        <span className="text-xs text-gray-400 dark:text-white/40">
+                        <span className="text-xs text-tekst-gedempt dark:text-white/55">
                           {berekenVoortgang(taken)}% · {taken.length} punten · {fotos} foto's
                         </span>
                       </div>
                     </div>
-                    <IconChevronRight className="w-4 h-4 flex-shrink-0 text-gray-300 dark:text-white/25" />
+                    <IconChevronRight className="w-4 h-4 flex-shrink-0 text-tekst-fijn dark:text-white/40" />
                   </button>
                 )
               })}
@@ -165,7 +165,7 @@ export default function Rapporten() {
           )}
         </Card>
 
-        <p className="text-xs text-gray-400 dark:text-white/40 leading-relaxed">
+        <p className="text-xs text-tekst-gedempt dark:text-white/55 leading-relaxed">
           De export bevat adres, ploeg, afgevinkte punten en het aantal foto's per
           bon — genoeg voor de administratie. Het opleverrapport per klus vraag je
           aan op de werkbon zelf, samen met de drie tekstvelden die erin komen. De

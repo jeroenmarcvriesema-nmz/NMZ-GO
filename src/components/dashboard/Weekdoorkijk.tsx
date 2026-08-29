@@ -67,8 +67,8 @@ export function Weekdoorkijk({ dagen, onDag }: WeekdoorkijkProps) {
             <span className={cn(
               'text-[11px] font-semibold capitalize',
               dag.vandaag
-                ? 'text-brand-yellow-dark dark:text-brand-yellow'
-                : 'text-gray-400 dark:text-white/40',
+                ? 'text-brand-yellow-tekst dark:text-brand-yellow'
+                : 'text-tekst-gedempt dark:text-white/55',
             )}>
               {dag.vandaag ? 'nu' : dag.naam}
             </span>

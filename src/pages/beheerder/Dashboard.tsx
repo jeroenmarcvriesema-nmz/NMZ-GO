@@ -9,7 +9,7 @@ import { Standbalk } from '@/components/dashboard/Standbalk'
 import { Voorzieningentegels } from '@/components/dashboard/Voorzieningentegels'
 import { Weekdoorkijk } from '@/components/dashboard/Weekdoorkijk'
 import { Button } from '@/components/ui/Button'
-import { Spinner } from '@/components/ui/Spinner'
+import { SkeletDashboard } from '@/components/ui/Skelet'
 import { useDashboard } from '@/hooks/useDashboard'
 import { useAuth } from '@/hooks/useAuth'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -51,7 +51,10 @@ export default function Dashboard() {
   if (loading) {
     return (
       <PageWrapper title="Dashboard">
-        <div className="flex justify-center py-32"><Spinner className="w-8 h-8" /></div>
+        {/* De vorm van het dashboard in plaats van een spinner op een
+            leeg vlak. UI_GUIDELINES.md beschreef dit al als de norm;
+            het bestond alleen nog niet. */}
+        <SkeletDashboard />
       </PageWrapper>
     )
   }
@@ -95,7 +98,7 @@ export default function Dashboard() {
         <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white break-words">
           {greeting()}, {voornaam}
         </h1>
-        <p className="text-sm text-gray-400 dark:text-white/40 mt-1.5 capitalize">{formatDatumLang()}</p>
+        <p className="text-sm text-tekst-gedempt dark:text-white/55 mt-1.5 first-letter:uppercase">{formatDatumLang()}</p>
         {urgenteMeldingen.length > 0 && (
           <div className="mt-3 inline-flex items-center gap-2 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-400 text-sm font-medium px-3 py-1.5 rounded-lg">
             <IconAlertTriangle className="w-4 h-4" />
@@ -120,14 +123,16 @@ export default function Dashboard() {
           Een tegel op nul gaat nergens heen. Doorklikken naar een lege
           lijst is een belofte die niet wordt waargemaakt, en het haalt
           bovendien het optillen bij hover weg — zie KpiCard. */}
-      <div className="grid grid-cols-2 xl:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8">
+      {/* Vijf tegels in twee kolommen: de vijfde staat altijd alleen op de
+          laatste rij, tussen 390 en 1280 pixels. Die laatste pakt nu de volle
+          breedte in plaats van als halve tegel achter te blijven. */}
+      <div className="grid grid-cols-2 xl:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8 [&>*:last-child:nth-child(odd)]:col-span-2 xl:[&>*:last-child:nth-child(odd)]:col-span-1">
         <KpiCard
           label={STANDEN.stilgelegd.label}
           value={v.stilgelegd}
           icon={<IconPlayerPause />}
           variant={v.stilgelegd > 0 ? 'red' : 'neutral'}
           onClick={v.stilgelegd > 0 ? () => navigate('/werkbonnen?stand=stilgelegd') : undefined}
-          actie={v.stilgelegd > 0 ? 'Bekijk klussen' : undefined}
         />
         <KpiCard
           label={STANDEN.af_te_ronden.kort}
@@ -135,7 +140,6 @@ export default function Dashboard() {
           icon={<IconCircleCheck />}
           variant={v.af_te_ronden > 0 ? 'violet' : 'neutral'}
           onClick={v.af_te_ronden > 0 ? () => navigate('/werkbonnen?stand=af_te_ronden') : undefined}
-          actie={v.af_te_ronden > 0 ? 'Bekijk klussen' : undefined}
         />
         <KpiCard
           label={STANDEN.bezig.label}
@@ -143,7 +147,6 @@ export default function Dashboard() {
           icon={<IconPlayerPlay />}
           variant={v.bezig > 0 ? 'blue' : 'neutral'}
           onClick={v.bezig > 0 ? () => navigate('/werkbonnen?stand=bezig') : undefined}
-          actie={v.bezig > 0 ? 'Bekijk klussen' : undefined}
         />
         <KpiCard
           label={STANDEN.niet_gestart.kort}
@@ -151,7 +154,6 @@ export default function Dashboard() {
           icon={<IconClock />}
           variant="neutral"
           onClick={v.niet_gestart > 0 ? () => navigate('/werkbonnen?stand=niet_gestart') : undefined}
-          actie={v.niet_gestart > 0 ? 'Bekijk klussen' : undefined}
         />
         {/* De enige tegel die ergens heen gaat. Uitloop heeft een eigen
             scherm met de reden erbij; dit getal is het startpunt van die
@@ -163,7 +165,6 @@ export default function Dashboard() {
           icon={<IconClockExclamation />}
           variant={data.uitgelopen > 0 ? 'red' : 'neutral'}
           onClick={data.uitgelopen > 0 ? () => navigate('/uitloop') : undefined}
-          actie={data.uitgelopen > 0 ? 'Bekijk uitloop' : undefined}
         />
       </div>
 
@@ -185,11 +186,11 @@ export default function Dashboard() {
           die lopen, en of morgen vol staat of leeg. Dat is de vraag
           waarvoor iemand anders naar de planning klikte om te tellen. */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 xl:gap-8 mb-8 sm:mb-10">
-        <div className="xl:col-span-2 min-w-0 bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-xl shadow-sm p-4 sm:p-6">
+        <div className="xl:col-span-2 min-w-0 bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-lg shadow-sm p-4 sm:p-6">
           <SectionHeading
             title="Werkvoorraad"
             actions={
-              <span className="text-xs text-gray-400 dark:text-white/40">
+              <span className="text-xs text-tekst-gedempt dark:text-white/55">
                 {openstaand} {openstaand === 1 ? 'klus' : 'klussen'} open
               </span>
             }
@@ -201,7 +202,7 @@ export default function Dashboard() {
             leeg="Er staat niets open. Zodra de synchronisatie klussen binnenhaalt verschijnen ze hier."
           />
         </div>
-        <div className="min-w-0 bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-xl shadow-sm p-4 sm:p-6">
+        <div className="min-w-0 bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-lg shadow-sm p-4 sm:p-6">
           <SectionHeading
             title="Deze week"
             actions={
@@ -220,7 +221,7 @@ export default function Dashboard() {
           dan schuift de hele pagina opzij — dat was het overzicht dat
           buiten de marges viel. */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 xl:gap-8">
-        <div className="xl:col-span-2 min-w-0 bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-xl shadow-sm p-4 sm:p-6">
+        <div className="xl:col-span-2 min-w-0 bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-lg shadow-sm p-4 sm:p-6">
           <SectionHeading
             title="Projectoverzicht"
             actions={
@@ -248,7 +249,7 @@ export default function Dashboard() {
             <ProjectTabel projecten={data.projecten} />
           )}
         </div>
-        <div className="min-w-0 bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-xl shadow-sm p-4 sm:p-6">
+        <div className="min-w-0 bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-lg shadow-sm p-4 sm:p-6">
           <SectionHeading title="Activiteit vandaag" />
           <ActivityFeed activiteit={data.activiteit} />
         </div>

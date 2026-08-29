@@ -10,7 +10,17 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ variant = 'secondary', size = 'md', loading, fullWidth, className, children, disabled, ...props }, ref) => {
-    const base = 'inline-flex items-center justify-center gap-2 font-semibold rounded-sm transition-all duration-150 ease-brand disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] cursor-pointer'
+    // De focusring hoort bij de knop, niet bij de browser.
+    //
+    // Er stond niets: de standaardring van de browser deed het werk. Die
+    // wérkt, maar hij is per browser anders en heeft niets met dit merk
+    // te maken — en `PRODUCT_VISION.md` noemt Raycast met zoveel woorden
+    // als voorbeeld van toetsenbord-eerst. Dan hoort een knop te laten
+    // zien dat hij de focus heeft in de kleur van de app.
+    //
+    // `focus-visible` en niet `focus`: met de muis klikken hoort geen
+    // ring op te leveren, met Tab wel.
+    const base = 'inline-flex items-center justify-center gap-2 font-semibold rounded-sm transition-all duration-150 ease-brand disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow/60 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-surface-dark'
     const variants = {
       primary:   'bg-brand-yellow text-gray-900 border border-brand-yellow-dark hover:bg-brand-yellow-dark shadow-sm',
       secondary: 'bg-white dark:bg-surface-dark-2 text-gray-900 dark:text-white border border-gray-200 dark:border-white/10 hover:bg-surface-2 dark:hover:bg-white/5',

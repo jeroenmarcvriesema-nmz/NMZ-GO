@@ -50,7 +50,7 @@ export function DocumentKiezer({ label, hint, waarde, bezig, onKies, onWis }: Pr
         <IconFileTypePdf
           className={cn(
             'w-5 h-5 flex-shrink-0',
-            waarde ? 'text-brand-red' : 'text-gray-400 dark:text-white/40',
+            waarde ? 'text-brand-red' : 'text-tekst-gedempt dark:text-white/55',
           )}
         />
 
@@ -58,7 +58,7 @@ export function DocumentKiezer({ label, hint, waarde, bezig, onKies, onWis }: Pr
           {waarde ? (
             <div className="text-sm font-medium text-gray-900 dark:text-white truncate">{waarde}</div>
           ) : (
-            <div className="text-sm text-gray-400 dark:text-white/40">
+            <div className="text-sm text-tekst-gedempt dark:text-white/55">
               {hint ?? 'Nog geen bestand gekozen'}
             </div>
           )}
@@ -79,7 +79,7 @@ export function DocumentKiezer({ label, hint, waarde, bezig, onKies, onWis }: Pr
             type="button"
             onClick={onWis}
             disabled={bezig}
-            className="p-2 text-gray-300 dark:text-white/30 hover:text-brand-red transition-colors disabled:opacity-50 cursor-pointer"
+            className="p-2 text-tekst-fijn dark:text-white/40 hover:text-brand-red transition-colors disabled:opacity-50 cursor-pointer"
             title={`${label} verwijderen`}
           >
             <IconTrash className="w-4 h-4" />

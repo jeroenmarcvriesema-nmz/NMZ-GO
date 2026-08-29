@@ -107,7 +107,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
           <div className="text-center pb-7 -mt-4">
             <button
               onClick={() => supabase.auth.signOut().then(() => (window.location.href = '/login'))}
-              className="text-sm text-gray-400 dark:text-white/40 underline hover:text-gray-600 dark:hover:text-white/70 transition-colors"
+              className="text-sm text-tekst-gedempt dark:text-white/55 underline hover:text-gray-600 dark:hover:text-white/70 transition-colors"
             >
               Uitloggen
             </button>

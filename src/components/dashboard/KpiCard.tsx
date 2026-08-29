@@ -78,7 +78,7 @@ export function KpiCard({ label, value, icon, variant = 'neutral', sub, onClick,
       onClick={onClick}
       type={onClick ? 'button' : undefined}
       className={cn(
-        'min-w-0 rounded-xl border border-gray-100 dark:border-white/10 shadow-sm p-4 sm:p-6',
+        'min-w-0 rounded-lg border border-gray-100 dark:border-white/10 shadow-sm p-4 sm:p-6',
         'flex flex-col gap-3 relative overflow-hidden transition-all duration-200 ease-brand',
         v.bg,
         onClick && [
@@ -93,7 +93,7 @@ export function KpiCard({ label, value, icon, variant = 'neutral', sub, onClick,
           <span className={cn('text-[19px]', v.iconColor)}>{icon}</span>
         </div>
         {onClick && (
-          <IconChevronRight className="w-4 h-4 flex-shrink-0 mt-1 text-gray-300 dark:text-white/25" />
+          <IconChevronRight className="w-4 h-4 flex-shrink-0 mt-1 text-tekst-fijn dark:text-white/40" />
         )}
       </div>
       <div className="min-w-0">
@@ -102,10 +102,16 @@ export function KpiCard({ label, value, icon, variant = 'neutral', sub, onClick,
         <div className={cn('text-3xl sm:text-4xl font-extrabold tracking-tight leading-none break-words', v.value)}>
           {value}
         </div>
-        <div className="text-xs sm:text-sm font-medium text-gray-400 dark:text-white/40 mt-2 break-words">{label}</div>
-        {sub && <div className="text-xs text-gray-300 dark:text-white/30 mt-0.5 break-words">{sub}</div>}
+        <div className="text-xs sm:text-sm font-medium text-tekst-gedempt dark:text-white/55 mt-2 break-words">{label}</div>
+        {/* `sub` is een zin en geen decoratie, dus de gedempte tekstkleur
+            en niet de fijne. Hij stond op gray-300: 1,47:1 op wit, wat
+            neerkomt op onzichtbaar. */}
+        {sub && <div className="text-xs text-tekst-gedempt dark:text-white/55 mt-0.5 break-words">{sub}</div>}
+        {/* Was `text-brand-yellow-dark`: 2,75:1 op wit. Merkgeel is een
+            prima accentkleur maar geen tekstkleur — voor een regel die
+            zegt wat er gebeurt als je klikt, telt leesbaarheid. */}
         {actie && (
-          <div className="text-xs font-semibold text-brand-yellow-dark dark:text-brand-yellow mt-1.5 break-words">
+          <div className="text-xs font-semibold text-tekst-zwak dark:text-brand-yellow mt-1.5 break-words">
             {actie} →
           </div>
         )}

@@ -41,7 +41,7 @@ export function Voorzieningentegels() {
           het daar, dan blijft er tijdens het laden een kopje boven niets
           staan. Een ander soort getal dan de standen erboven — die gaan
           over klussen, deze over spullen — dus het mag er staan. */}
-      <h2 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 dark:text-white/35 mb-2.5">
+      <h2 className="text-[10px] font-bold tracking-widest uppercase text-tekst-gedempt dark:text-white/55 mb-2.5">
         Containers &amp; dixi&apos;s
       </h2>
       <div className="grid grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">

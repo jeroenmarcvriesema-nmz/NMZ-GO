@@ -44,8 +44,20 @@ export type Klusstand =
  *
  * Dit is één schakelaar en geen instelling per scherm, want het hele
  * punt is dat de lijsten er hetzelfde uitzien.
+ *
+ * Staat nu uit. Met de was aan kreeg elke kaart in een lijst een eigen
+ * pasteltint, en dan staan er op de weekplanning vijf gekleurde vlakken
+ * naast elkaar plus de oranje waarschuwingen — terwijl
+ * `PRODUCT_VISION.md` zegt dat de basis van elk scherm neutraal blijft
+ * en er geen concurrerende accenten zijn. De stand is nu nog steeds
+ * zichtbaar, alleen via de rand links en de badge; dat leest rustiger
+ * en scherper, omdat het oog naar de twee dragers gaat in plaats van
+ * naar een vlak dat de hele kaart vult.
+ *
+ * Weer aanzetten is één regel — dat is precies waarom deze schakelaar
+ * bestaat.
  */
-export const KLEURWAS = true
+export const KLEURWAS = false
 
 /** Genoeg van een werkbon om te weten hoe hij ervoor staat. */
 export interface Klusfeiten {

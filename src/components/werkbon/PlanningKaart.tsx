@@ -92,11 +92,20 @@ export function PlanningKaart({ item, onOpen, loopIn, loopUit, ruim }: PlanningK
       <div className="flex items-start gap-1.5">
         {loopIn && (
           <IconArrowNarrowLeft
-            className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-gray-300 dark:text-white/25"
+            className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-tekst-fijn dark:text-white/40"
             title="Loopt door van gisteren"
           />
         )}
         <span className={cn(
+          // `break-words` breekt middenin een woord zodra het niet past.
+          // Dat gebeurde voortdurend ("Meidoornstraa / t 4"), maar de
+          // oorzaak was de kolombreedte en niet deze regel: de
+          // dagkolommen hebben nu een ondergrens van 190 pixels (zie
+          // Planning.tsx). `break-words` blijft staan als laatste
+          // redmiddel voor een woord dat écht breder is dan de kaart —
+          // dan is afbreken beter dan buiten het kader steken.
+          // `hyphens-auto` is bewust géén oplossing: dat werkt alleen als
+          // de browser een Nederlands afbreekwoordenboek heeft.
           'flex-1 min-w-0 font-bold leading-snug text-gray-900 dark:text-white break-words',
           ruim ? 'text-sm' : 'text-[13px]',
         )}>
@@ -104,7 +113,7 @@ export function PlanningKaart({ item, onOpen, loopIn, loopUit, ruim }: PlanningK
         </span>
         {loopUit && (
           <IconArrowNarrowRight
-            className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-gray-300 dark:text-white/25"
+            className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-tekst-fijn dark:text-white/40"
             title="Loopt morgen door"
           />
         )}
@@ -119,7 +128,7 @@ export function PlanningKaart({ item, onOpen, loopIn, loopUit, ruim }: PlanningK
         </span>
 
         {item.punten > 0 && (
-          <span className="flex items-center gap-1 text-[11px] text-gray-400 dark:text-white/40 tabular-nums">
+          <span className="flex items-center gap-1 text-[11px] text-tekst-gedempt dark:text-white/55 tabular-nums">
             <IconListCheck className="w-3 h-3 flex-shrink-0" />
             {item.puntenKlaar}/{item.punten}
           </span>

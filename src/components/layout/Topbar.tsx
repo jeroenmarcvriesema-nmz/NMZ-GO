@@ -33,17 +33,23 @@ export function MobileTopbar({ title, actions }: { title: string; actions?: Reac
   return (
     <header className="sticky top-0 z-40 bg-white dark:bg-surface-dark-2 border-b border-gray-100 dark:border-white/10 border-t-[3px] border-t-brand-yellow">
       <div className="flex items-center gap-3 px-4 py-3.5">
-        <div className="w-7 h-7 rounded-md bg-brand-yellow flex items-center justify-center flex-shrink-0">
+        <div className="w-7 h-7 rounded-sm bg-brand-yellow flex items-center justify-center flex-shrink-0">
           <IconClipboardCheck className="w-4 h-4 text-gray-900" />
         </div>
         <span className="text-[15px] font-bold text-gray-900 dark:text-white flex-1 min-w-0 truncate">{title}</span>
         <Meldingen />
+        {/* Was 16 bij 16 pixels — het kleinste aanraakvlak van de app, pal
+            naast een klok van 40 bij 40 in dezelfde balk. DESIGN_SYSTEM.md
+            vraagt ~44; 40 is wat er in een balk van 14 past en is de maat
+            die de klok ernaast al had. `aria-label` erbij: een `title`
+            alleen is geen betrouwbare naam voor een schermlezer. */}
         <button
           onClick={toggleTheme}
-          className="flex-shrink-0 text-gray-400 dark:text-white/50 hover:text-gray-900 dark:hover:text-white transition-colors"
+          aria-label={theme === 'dark' ? 'Licht thema' : 'Donker thema'}
           title={theme === 'dark' ? 'Licht thema' : 'Donker thema'}
+          className="flex-shrink-0 flex items-center justify-center w-10 h-10 -mr-2 rounded-lg text-tekst-gedempt dark:text-white/60 hover:text-gray-900 dark:hover:text-white hover:bg-surface-2 dark:hover:bg-white/5 transition-colors"
         >
-          {theme === 'dark' ? <IconSun className="w-4 h-4" /> : <IconMoon className="w-4 h-4" />}
+          {theme === 'dark' ? <IconSun className="w-5 h-5" /> : <IconMoon className="w-5 h-5" />}
         </button>
       </div>
 

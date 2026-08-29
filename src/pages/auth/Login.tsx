@@ -41,17 +41,29 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 flex">
-      <div className="hidden lg:flex flex-1 flex-col items-center justify-center p-12 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(240,180,32,0.15),transparent_60%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,rgba(188,41,52,0.12),transparent_60%)]" />
+    // Dit was het enige scherm in de app dat het thema niet volgde:
+    // `bg-gray-900` hard ingesteld, twee radiale verlopen met de
+    // merkkleuren als losse rgba-waarden erin, en een schaduw buiten de
+    // schaduwschaal. Drie eigen regels tegelijk overtreden, op een
+    // overblijfsel uit de tijd dat de zijbalk permanent donker was.
+    //
+    // Het merkpaneel blijft — dat is wat dit scherm karakter geeft —
+    // maar het is nu een vlak dat licht en donker allebei kent: warm
+    // steen in licht, diep in donker, met dezelfde gele gloed erover.
+    <div className="min-h-screen bg-surface-2 dark:bg-surface-dark flex">
+      <div className="hidden lg:flex flex-1 flex-col items-center justify-center p-12 relative overflow-hidden bg-surface-3 dark:bg-surface-dark">
+        {/* De gloed komt uit de merkkleuren zelf in plaats van uit
+            overgeschreven rgba-waarden, zodat hij meebeweegt als het
+            palet ooit wijzigt. */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,theme(colors.brand.yellow/25%),transparent_60%)] dark:bg-[radial-gradient(circle_at_20%_20%,theme(colors.brand.yellow/15%),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,theme(colors.brand.red/6%),transparent_60%)] dark:bg-[radial-gradient(circle_at_80%_80%,theme(colors.brand.red/12%),transparent_60%)]" />
         <div className="relative z-10 text-center">
-          <div className="w-20 h-20 rounded-2xl bg-brand-yellow flex items-center justify-center mx-auto mb-6 shadow-[0_4px_20px_rgba(240,180,32,0.4)]">
+          <div className="w-20 h-20 rounded-lg bg-brand-yellow flex items-center justify-center mx-auto mb-6 shadow-md">
             <IconClipboardCheck className="w-10 h-10 text-gray-900" />
           </div>
-          <h1 className="text-5xl font-extrabold text-white tracking-tight mb-3">NMZ GO</h1>
+          <h1 className="text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-3">NMZ GO</h1>
           <div className="w-12 h-1 bg-brand-yellow rounded mx-auto mb-4" />
-          <p className="text-white/50 text-lg">Werkopdrachten &amp; checklists</p>
+          <p className="text-gray-600 dark:text-white/60 text-lg">Werkopdrachten &amp; checklists</p>
           <div className="mt-12 space-y-4 text-left max-w-xs">
             {[
               'Werkbonnen direct op je telefoon',
@@ -59,7 +71,7 @@ export default function Login() {
               'Live voortgang voor de beheerder',
               'Week-dashboard met schema-bewaking',
             ].map((item) => (
-              <div key={item} className="flex items-center gap-3 text-white/70 text-sm font-medium">
+              <div key={item} className="flex items-center gap-3 text-gray-700 dark:text-white/70 text-sm font-medium">
                 <div className="w-1.5 h-1.5 rounded-full bg-brand-yellow flex-shrink-0" />
                 {item}
               </div>
@@ -68,13 +80,18 @@ export default function Login() {
         </div>
       </div>
 
-      <div className="w-full lg:w-[420px] bg-white dark:bg-surface-dark-2 flex items-center justify-center p-10 shadow-[-20px_0_60px_rgba(0,0,0,0.2)] animate-page-in">
+      {/* Op een telefoon zie je uitsluitend dit paneel, en het stond
+          verticaal gecentreerd met het merk als klein chipje ertussen:
+          een wit vlak met een formulier erin. Nu staat het merk bovenaan
+          en begint het formulier hoger, want het toetsenbord komt toch
+          op en duwt alles omhoog. */}
+      <div className="w-full lg:w-[420px] bg-white dark:bg-surface-dark-2 flex items-start lg:items-center justify-center px-6 py-12 sm:p-10 shadow-lg animate-page-in">
         <div className="w-full max-w-sm">
           <div className="flex items-center gap-2.5 mb-8">
-            <div className="w-9 h-9 rounded-sm bg-brand-yellow flex items-center justify-center">
+            <div className="w-9 h-9 rounded-sm bg-brand-yellow flex items-center justify-center flex-shrink-0">
               <IconClipboardCheck className="w-5 h-5 text-gray-900" />
             </div>
-            <span className="text-xs font-bold text-gray-400 dark:text-white/40 tracking-widest uppercase">NMZ GO</span>
+            <span className="text-xs font-bold text-tekst-gedempt dark:text-white/55 tracking-widest uppercase">NMZ GO</span>
           </div>
           <h2 className="text-3xl font-extrabold tracking-tight mb-1.5 text-gray-900 dark:text-white">Inloggen</h2>
           <p className="text-sm text-gray-500 dark:text-white/60 mb-7">Vul je e-mailadres en wachtwoord in</p>

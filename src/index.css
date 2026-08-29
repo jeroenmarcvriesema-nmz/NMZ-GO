@@ -43,3 +43,24 @@
 .scrollbar-verbergen::-webkit-scrollbar {
   display: none;
 }
+
+/* Wie in zijn systeeminstellingen heeft gezet dat hij minder beweging
+   wil, meent dat. Voor sommige mensen is het geen voorkeur maar de
+   reden dat ze misselijk worden van een scherm.
+
+   De app leunt op animatie: `animate-page-in` draait bij elke route,
+   elke toast en elke modal, kaarten tillen op bij hover en knoppen
+   klinken in bij het klikken. Dat blijft allemaal staan — hier wordt
+   het alleen zo kort gemaakt dat het niet meer beweegt. Bewust niet
+   `animation: none`: een element dat op `opacity: 0` begint en waarvan
+   je de animatie wegneemt, blijft onzichtbaar. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

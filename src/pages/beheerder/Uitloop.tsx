@@ -109,9 +109,9 @@ export default function Uitloop() {
           <Card>
             <SectionHeading
               title="Waarom er is stilgelegd"
-              actions={<IconHistory className="w-4 h-4 text-gray-400 dark:text-white/40" />}
+              actions={<IconHistory className="w-4 h-4 text-tekst-gedempt dark:text-white/55" />}
             />
-            <p className="text-xs text-gray-400 dark:text-white/40 -mt-2 mb-3">
+            <p className="text-xs text-tekst-gedempt dark:text-white/55 -mt-2 mb-3">
               De laatste {historie.length}. Eén keer asbest is pech; vier keer in een
               maand zegt iets over de voorbereiding.
             </p>
@@ -127,11 +127,11 @@ export default function Uitloop() {
                     <div className="text-sm text-gray-700 dark:text-white/70 leading-snug">
                       {h.reden ?? 'Geen reden vastgelegd'}
                     </div>
-                    <div className="text-xs text-gray-400 dark:text-white/40 mt-0.5 truncate">
+                    <div className="text-xs text-tekst-gedempt dark:text-white/55 mt-0.5 truncate">
                       {h.adres ?? 'onbekend adres'} · {formatDatum(h.created_at)}
                     </div>
                   </div>
-                  <IconChevronRight className="w-4 h-4 flex-shrink-0 mt-0.5 text-gray-300 dark:text-white/25" />
+                  <IconChevronRight className="w-4 h-4 flex-shrink-0 mt-0.5 text-tekst-fijn dark:text-white/40" />
                 </button>
               ))}
             </div>
@@ -148,13 +148,13 @@ function Regel({ bon, onOpen, stil }: { bon: UitloopBon; onOpen: () => void; sti
       onClick={onOpen}
       className="flex items-start gap-3 w-full py-3 text-left hover:bg-brand-yellow-light/30 dark:hover:bg-white/5 rounded-lg px-2 -mx-2 transition-colors"
     >
-      <IconMapPin className="w-4 h-4 flex-shrink-0 mt-1 text-gray-400 dark:text-white/40" />
+      <IconMapPin className="w-4 h-4 flex-shrink-0 mt-1 text-tekst-gedempt dark:text-white/55" />
 
       <div className="flex-1 min-w-0">
         <div className="font-semibold text-sm text-gray-900 dark:text-white truncate">
           {bon.adres}
         </div>
-        <div className="text-xs text-gray-400 dark:text-white/40 mt-0.5">
+        <div className="text-xs text-tekst-gedempt dark:text-white/55 mt-0.5">
           {[bon.plaats, `gepland tot ${formatDatum(bon.geplande_eind ?? bon.datum)}`]
             .filter(Boolean).join(' · ')}
         </div>
@@ -176,12 +176,12 @@ function Regel({ bon, onOpen, stil }: { bon: UitloopBon; onOpen: () => void; sti
             'text-xs',
             bon.puntenKlaar === bon.punten && bon.punten > 0
               ? 'text-green-600 dark:text-green-400'
-              : 'text-gray-400 dark:text-white/40'
+              : 'text-tekst-gedempt dark:text-white/55'
           )}>
             {bon.puntenKlaar}/{bon.punten} punten
           </span>
           {bon.medewerkers.length > 0 && (
-            <span className="flex items-center gap-1 text-xs text-gray-400 dark:text-white/40 min-w-0">
+            <span className="flex items-center gap-1 text-xs text-tekst-gedempt dark:text-white/55 min-w-0">
               <IconUsers className="w-3.5 h-3.5 flex-shrink-0" />
               <span className="truncate">{bon.medewerkers.map((m) => m.naam).join(', ')}</span>
             </span>
@@ -189,7 +189,7 @@ function Regel({ bon, onOpen, stil }: { bon: UitloopBon; onOpen: () => void; sti
         </div>
       </div>
 
-      <IconChevronRight className="w-4 h-4 flex-shrink-0 mt-1 text-gray-300 dark:text-white/25" />
+      <IconChevronRight className="w-4 h-4 flex-shrink-0 mt-1 text-tekst-fijn dark:text-white/40" />
     </button>
   )
 }

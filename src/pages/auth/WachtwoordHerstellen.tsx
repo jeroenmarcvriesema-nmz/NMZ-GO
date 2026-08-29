@@ -62,13 +62,13 @@ export default function WachtwoordHerstellen() {
           <div className="w-9 h-9 rounded-sm bg-brand-yellow flex items-center justify-center">
             <IconClipboardCheck className="w-5 h-5 text-gray-900" />
           </div>
-          <span className="text-xs font-bold text-gray-400 dark:text-white/40 tracking-widest uppercase">NMZ GO</span>
+          <span className="text-xs font-bold text-tekst-gedempt dark:text-white/55 tracking-widest uppercase">NMZ GO</span>
         </div>
 
         {fase === 'controleren' && (
           <div className="flex flex-col items-center py-10">
             <Spinner className="w-7 h-7" />
-            <p className="text-sm text-gray-400 dark:text-white/40 mt-4">Link controleren…</p>
+            <p className="text-sm text-tekst-gedempt dark:text-white/55 mt-4">Link controleren…</p>
           </div>
         )}
 

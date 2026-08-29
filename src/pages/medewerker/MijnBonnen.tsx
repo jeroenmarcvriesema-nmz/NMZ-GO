@@ -55,12 +55,12 @@ export default function MijnBonnen() {
       <div className="max-w-4xl space-y-4">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-white/40" />
+            <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tekst-gedempt dark:text-white/55" />
             <input
               value={zoek}
               onChange={(e) => setZoek(e.target.value)}
               placeholder="Zoek op adres, plaats of bonnummer"
-              className="w-full min-h-[44px] pl-9 pr-3 rounded-sm border border-gray-200 dark:border-white/10 bg-white dark:bg-surface-dark-2 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:border-brand-yellow transition-all"
+              className="w-full min-h-[44px] pl-9 pr-3 rounded-sm border border-gray-200 dark:border-white/10 bg-white dark:bg-surface-dark-2 text-sm text-gray-900 dark:text-white placeholder:text-tekst-fijn dark:placeholder:text-white/45 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:border-brand-yellow transition-all"
             />
           </div>
 
@@ -143,12 +143,12 @@ function BonRegel({ werkbon, onOpen, looptDoor }: { werkbon: Werkbon; onOpen: ()
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-start gap-1.5">
-            <IconMapPin className="w-4 h-4 flex-shrink-0 mt-0.5 text-gray-400 dark:text-white/40" />
+            <IconMapPin className="w-4 h-4 flex-shrink-0 mt-0.5 text-tekst-gedempt dark:text-white/55" />
             <span className="font-bold leading-snug text-gray-900 dark:text-white">
               {werkbon.adres}
             </span>
           </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 ml-5.5 text-xs text-gray-400 dark:text-white/40">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 ml-5.5 text-xs text-tekst-gedempt dark:text-white/55">
             {looptDoor && (
               <span className="font-semibold text-gray-500 dark:text-white/50">loopt door</span>
             )}
@@ -164,7 +164,7 @@ function BonRegel({ werkbon, onOpen, looptDoor }: { werkbon: Werkbon; onOpen: ()
 
         <div className="flex items-center gap-2 flex-shrink-0">
           <Badge variant={k.badge}>{k.label}</Badge>
-          <IconChevronRight className="w-4 h-4 text-gray-300 dark:text-white/25" />
+          <IconChevronRight className="w-4 h-4 text-tekst-fijn dark:text-white/40" />
         </div>
       </div>
 
@@ -176,8 +176,8 @@ function BonRegel({ werkbon, onOpen, looptDoor }: { werkbon: Werkbon; onOpen: ()
       )}
 
       <div className="mt-3">
-        <ProgressBar value={voortgang} size="sm" variant={voortgang === 100 ? 'green' : 'yellow'} />
-        <div className="flex items-center gap-4 mt-2 text-xs text-gray-400 dark:text-white/40">
+        <ProgressBar value={voortgang} size="sm" variant={k.badge} />
+        <div className="flex items-center gap-4 mt-2 text-xs text-tekst-gedempt dark:text-white/55">
           <span className="flex items-center gap-1">
             <IconListCheck className="w-3.5 h-3.5" />
             {taken.filter((t) => t.voltooid).length}/{taken.length} punten

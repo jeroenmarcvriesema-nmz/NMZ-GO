@@ -56,7 +56,7 @@ function StatusPil({ regel }: { regel: ProjectRegel }) {
   return (
     <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
       <span className={cn(
-        'inline-flex items-center text-[11px] font-bold px-2 py-0.5 rounded-md border',
+        'inline-flex items-center text-[11px] font-bold px-2 py-0.5 rounded-sm border',
         k.vlak, k.omlijsting, k.tekst,
       )}>
         {k.kort}
@@ -132,7 +132,7 @@ export function ProjectTabel({ projecten }: ProjectTabelProps) {
                   <div className="font-semibold text-sm text-gray-900 dark:text-white truncate">
                     {p.projectnaam}
                   </div>
-                  <div className="flex items-center gap-1 text-xs text-gray-400 dark:text-white/40 mt-0.5 min-w-0">
+                  <div className="flex items-center gap-1 text-xs text-tekst-gedempt dark:text-white/55 mt-0.5 min-w-0">
                     <IconMapPin className="w-3 h-3 flex-shrink-0" />
                     <span className="truncate">{p.adres}</span>
                   </div>
@@ -141,7 +141,7 @@ export function ProjectTabel({ projecten }: ProjectTabelProps) {
               </div>
 
               {p.team.length > 0 && (
-                <div className="text-xs text-gray-400 dark:text-white/40 mt-1 truncate">
+                <div className="text-xs text-tekst-gedempt dark:text-white/55 mt-1 truncate">
                   {p.team.join(', ')}
                 </div>
               )}
@@ -150,7 +150,7 @@ export function ProjectTabel({ projecten }: ProjectTabelProps) {
                 <VoortgangBalk value={p.voortgang} stand={p.stand} />
               </div>
 
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-[11px] text-gray-400 dark:text-white/40">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-[11px] text-tekst-gedempt dark:text-white/55">
                 <span className="flex items-center gap-1">
                   <IconListCheck className="w-3 h-3 flex-shrink-0" />
                   {p.aantalTakenKlaar}/{p.aantalTaken}
@@ -164,7 +164,7 @@ export function ProjectTabel({ projecten }: ProjectTabelProps) {
               </div>
             </div>
 
-            <IconChevronRight className="w-4 h-4 flex-shrink-0 mt-1 text-gray-300 dark:text-white/25" />
+            <IconChevronRight className="w-4 h-4 flex-shrink-0 mt-1 text-tekst-fijn dark:text-white/40" />
           </button>
         ))}
       </div>
@@ -174,11 +174,11 @@ export function ProjectTabel({ projecten }: ProjectTabelProps) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100 dark:border-white/10">
-              <th className="text-left text-xs font-semibold text-gray-400 dark:text-white/40 pb-3 pr-4">Project</th>
-              <th className="text-left text-xs font-semibold text-gray-400 dark:text-white/40 pb-3 pr-4">Team</th>
-              <th className="text-left text-xs font-semibold text-gray-400 dark:text-white/40 pb-3 pr-4">Status</th>
-              <th className="text-left text-xs font-semibold text-gray-400 dark:text-white/40 pb-3 pr-4 min-w-[130px]">Voortgang</th>
-              <th className="text-right text-xs font-semibold text-gray-400 dark:text-white/40 pb-3 hidden 2xl:table-cell">Laatste update</th>
+              <th className="text-left text-xs font-semibold text-tekst-gedempt dark:text-white/55 pb-3 pr-4">Project</th>
+              <th className="text-left text-xs font-semibold text-tekst-gedempt dark:text-white/55 pb-3 pr-4">Team</th>
+              <th className="text-left text-xs font-semibold text-tekst-gedempt dark:text-white/55 pb-3 pr-4">Status</th>
+              <th className="text-left text-xs font-semibold text-tekst-gedempt dark:text-white/55 pb-3 pr-4 min-w-[130px]">Voortgang</th>
+              <th className="text-right text-xs font-semibold text-tekst-gedempt dark:text-white/55 pb-3 hidden 2xl:table-cell">Laatste update</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50 dark:divide-white/5">
@@ -190,7 +190,7 @@ export function ProjectTabel({ projecten }: ProjectTabelProps) {
               >
                 <td className="py-4 pr-4 max-w-[18rem]">
                   <div className="font-semibold text-gray-900 dark:text-white text-sm truncate">{p.projectnaam}</div>
-                  <div className="text-xs text-gray-400 dark:text-white/40 mt-0.5 truncate">{p.adres}</div>
+                  <div className="text-xs text-tekst-gedempt dark:text-white/55 mt-0.5 truncate">{p.adres}</div>
                 </td>
                 <td className="py-4 pr-4 max-w-[12rem]">
                   <div className="flex flex-col gap-0.5">
@@ -205,11 +205,11 @@ export function ProjectTabel({ projecten }: ProjectTabelProps) {
                 <td className="py-4 pr-4">
                   <VoortgangBalk value={p.voortgang} stand={p.stand} />
                   <div className="hidden lg:flex items-center gap-3 mt-1.5">
-                    <span className="flex items-center gap-1 text-[11px] text-gray-400 dark:text-white/40">
+                    <span className="flex items-center gap-1 text-[11px] text-tekst-gedempt dark:text-white/55">
                       <IconListCheck className="w-3 h-3" />
                       {p.aantalTakenKlaar}/{p.aantalTaken} taken
                     </span>
-                    <span className="flex items-center gap-1 text-[11px] text-gray-400 dark:text-white/40">
+                    <span className="flex items-center gap-1 text-[11px] text-tekst-gedempt dark:text-white/55">
                       <IconPhoto className="w-3 h-3" />
                       {p.aantalFotos} foto's
                     </span>
@@ -217,7 +217,7 @@ export function ProjectTabel({ projecten }: ProjectTabelProps) {
                   </div>
                 </td>
                 <td className="py-4 text-right hidden 2xl:table-cell whitespace-nowrap">
-                  <span className="text-xs text-gray-400 dark:text-white/40">{formatRelatief(p.laatsteUpdate)}</span>
+                  <span className="text-xs text-tekst-gedempt dark:text-white/55">{formatRelatief(p.laatsteUpdate)}</span>
                 </td>
               </tr>
             ))}

@@ -25,7 +25,7 @@ export default function WerkbonUitvoeren() {
   const { werkbon, loading, error, refetch } = useWerkbon(id)
 
   if (loading) return <PageWrapper title="Werkbon"><div className="flex justify-center py-20"><Spinner className="w-8 h-8" /></div></PageWrapper>
-  if (!werkbon) return <PageWrapper title="Werkbon"><div className="text-center py-16 text-gray-400 dark:text-white/40">Werkbon niet gevonden.</div></PageWrapper>
+  if (!werkbon) return <PageWrapper title="Werkbon"><div className="text-center py-16 text-tekst-gedempt dark:text-white/55">Werkbon niet gevonden.</div></PageWrapper>
 
   return (
     <PageWrapper title={werkbon.adres}>

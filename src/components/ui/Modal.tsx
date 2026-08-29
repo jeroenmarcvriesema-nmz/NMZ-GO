@@ -46,7 +46,7 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
           <button
             onClick={onClose}
             aria-label="Sluiten"
-            className="flex-shrink-0 text-gray-400 dark:text-white/40 hover:text-gray-900 dark:hover:text-white transition-colors"
+            className="flex-shrink-0 text-tekst-gedempt dark:text-white/55 hover:text-gray-900 dark:hover:text-white transition-colors"
           >
             <IconX className="w-5 h-5" />
           </button>

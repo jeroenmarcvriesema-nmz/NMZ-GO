@@ -152,7 +152,7 @@ export default function PersoonDetail() {
                   : <Badge variant="gray">Nog geen account</Badge>}
                 {!persoon.actief && <Badge variant="red">Non-actief</Badge>}
                 {persoon.clickup_label && (
-                  <span className="text-xs text-gray-400 dark:text-white/40">
+                  <span className="text-xs text-tekst-gedempt dark:text-white/55">
                     ClickUp: {persoon.clickup_label}
                   </span>
                 )}
@@ -184,7 +184,7 @@ export default function PersoonDetail() {
           </div>
 
           {!account && (
-            <p className="mt-4 text-sm leading-relaxed text-gray-400 dark:text-white/40">
+            <p className="mt-4 text-sm leading-relaxed text-tekst-gedempt dark:text-white/55">
               Deze naam staat wel in de planning maar heeft nog geen account. Klussen
               kunnen gewoon aan hem gekoppeld worden; hij ziet ze zodra hij is
               uitgenodigd via het teamoverzicht.
@@ -271,13 +271,13 @@ export default function PersoonDetail() {
             </div>
 
             {!account && (
-              <p className="mt-3 text-xs text-gray-400 dark:text-white/40">
+              <p className="mt-3 text-xs text-tekst-gedempt dark:text-white/55">
                 Rol en wachtwoord kunnen pas zodra er een account is. Uitnodigen doe je
                 op het teamoverzicht.
               </p>
             )}
             {!persoon.actief && (
-              <p className="mt-3 text-xs text-gray-400 dark:text-white/40">
+              <p className="mt-3 text-xs text-tekst-gedempt dark:text-white/55">
                 Op non-actief verdwijnt hij uit de keuzelijsten en uit de koppeling met
                 ClickUp. Wat hij heeft gedaan blijft staan.
               </p>
@@ -311,7 +311,7 @@ export default function PersoonDetail() {
                           <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">
                             {b.adres}
                           </div>
-                          <div className="text-xs text-gray-400 dark:text-white/40 mt-0.5">
+                          <div className="text-xs text-tekst-gedempt dark:text-white/55 mt-0.5">
                             {!begintHier && <span className="font-semibold text-gray-500 dark:text-white/50">loopt door · </span>}
                             {formatDatum(b.geplande_start ?? b.datum)} · {b.puntenKlaar}/{b.punten} punten
                           </div>
@@ -325,7 +325,7 @@ export default function PersoonDetail() {
                             : b.stilgelegd_op ? 'Ligt stil'
                             : b.status === 'voltooid' ? 'Afgerond' : 'Loopt'}
                         </Badge>
-                        <IconChevronRight className="w-4 h-4 flex-shrink-0 text-gray-300 dark:text-white/25" />
+                        <IconChevronRight className="w-4 h-4 flex-shrink-0 text-tekst-fijn dark:text-white/40" />
                       </button>
                     ))}
                   </div>

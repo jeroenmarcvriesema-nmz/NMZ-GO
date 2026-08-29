@@ -18,12 +18,12 @@ interface EmptyStateProps {
 export function EmptyState({ icon, titel, uitleg, actie, className }: EmptyStateProps) {
   return (
     <div className={cn('flex flex-col items-center text-center px-6 py-14', className)}>
-      <div className="w-12 h-12 rounded-full bg-surface-2 dark:bg-white/5 flex items-center justify-center text-gray-400 dark:text-white/30 [&>svg]:w-6 [&>svg]:h-6">
+      <div className="w-12 h-12 rounded-full bg-surface-2 dark:bg-white/5 flex items-center justify-center text-tekst-fijn dark:text-white/40 [&>svg]:w-6 [&>svg]:h-6">
         {icon}
       </div>
       <div className="mt-4 font-semibold text-gray-700 dark:text-white/80">{titel}</div>
       {uitleg && (
-        <p className="mt-1.5 text-sm text-gray-400 dark:text-white/40 max-w-xs leading-relaxed">{uitleg}</p>
+        <p className="mt-1.5 text-sm text-tekst-gedempt dark:text-white/55 max-w-xs leading-relaxed">{uitleg}</p>
       )}
       {actie && <div className="mt-5">{actie}</div>}
     </div>

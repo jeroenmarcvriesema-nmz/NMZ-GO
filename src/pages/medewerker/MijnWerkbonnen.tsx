@@ -50,7 +50,7 @@ function Schil({ voornaam, children }: { voornaam: string; children: React.React
     <PageWrapper title="Vandaag">
       <div className="max-w-5xl space-y-4 pb-28">
         <div>
-          <p className="text-xs text-gray-400 dark:text-white/40 capitalize">{datumLang()}</p>
+          <p className="text-xs text-tekst-gedempt dark:text-white/55 first-letter:uppercase">{datumLang()}</p>
           <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">
             {groet()}, {voornaam}
           </h1>
@@ -189,7 +189,7 @@ export default function MijnWerkbonnen() {
               <IconCircleCheck className="w-6 h-6 text-green-600 dark:text-green-400" />
             </div>
             <h2 className="font-bold text-gray-900 dark:text-white">Werkdag gestopt</h2>
-            <p className="text-sm text-gray-400 dark:text-white/40 mt-1">
+            <p className="text-sm text-tekst-gedempt dark:text-white/55 mt-1">
               {formatTijd(werkdag.startTijd)} — {formatTijd(werkdag.stopTijd)} ·{' '}
               {geefUren(werkdag.startTijd, werkdag.stopTijd)} uur
             </p>
@@ -265,7 +265,7 @@ export default function MijnWerkbonnen() {
                   <span className="text-xs text-blue-700 dark:text-blue-400 tabular-nums whitespace-nowrap">
                     {berekenVoortgang(w.taken ?? [])}%
                   </span>
-                  <IconChevronRight className="w-4 h-4 flex-shrink-0 text-gray-400 dark:text-white/40" />
+                  <IconChevronRight className="w-4 h-4 flex-shrink-0 text-tekst-gedempt dark:text-white/55" />
                 </button>
               ))}
             </div>
@@ -295,7 +295,7 @@ export default function MijnWerkbonnen() {
                   <span className="text-xs text-amber-700 dark:text-amber-400 tabular-nums whitespace-nowrap">
                     {berekenVoortgang(w.taken ?? [])}%
                   </span>
-                  <IconChevronRight className="w-4 h-4 flex-shrink-0 text-gray-400 dark:text-white/40" />
+                  <IconChevronRight className="w-4 h-4 flex-shrink-0 text-tekst-gedempt dark:text-white/55" />
                 </button>
               ))}
             </div>
@@ -399,7 +399,7 @@ function Werkdagbalk({ fase, bezig, onStart, onStop, onHervat }: {
             Alleen vóór het starten: daarna is er niets meer op te
             vragen en zou het een waarschuwing zijn zonder aanleiding. */}
         {LOCATIE_AAN && fase === 'voor_start' && (
-          <p className="flex items-start gap-1.5 text-[11px] leading-snug text-gray-400 dark:text-white/40 mt-2 max-w-prose">
+          <p className="flex items-start gap-1.5 text-[11px] leading-snug text-tekst-gedempt dark:text-white/55 mt-2 max-w-prose">
             <IconMapPin className="w-3 h-3 flex-shrink-0 mt-0.5" />
             Bij het aanmelden wordt je locatie eenmalig opgevraagd om de afstand
             tot het werkadres te bepalen. Je positie wordt niet bewaard en je
@@ -459,14 +459,16 @@ function Dagkaart({ aantalKlaar, aantalTaken, aantalFotos, voortgang, uren, stan
 function Cijfer({ icon, waarde, label }: { icon: React.ReactNode; waarde: string | number; label: string }) {
   return (
     <div className="flex items-center gap-2 min-w-0">
-      <span className="w-8 h-8 rounded-lg bg-surface-2 dark:bg-white/5 flex items-center justify-center flex-shrink-0 text-gray-400 dark:text-white/40">
+      <span className="w-8 h-8 rounded-lg bg-surface-2 dark:bg-white/5 flex items-center justify-center flex-shrink-0 text-tekst-gedempt dark:text-white/55">
         {icon}
       </span>
       <span className="min-w-0">
-        <span className="block text-base font-extrabold tabular-nums leading-none text-gray-900 dark:text-white">
+        {/* `truncate`: een lange waarde schoof hier onder het pictogram
+            van het vakje ernaast door in plaats van af te breken. */}
+        <span className="block text-base font-extrabold tabular-nums leading-none text-gray-900 dark:text-white truncate">
           {waarde}
         </span>
-        <span className="block text-[11px] text-gray-400 dark:text-white/40 mt-0.5 truncate">{label}</span>
+        <span className="block text-[11px] text-tekst-gedempt dark:text-white/55 mt-0.5 truncate">{label}</span>
       </span>
     </div>
   )
@@ -500,7 +502,7 @@ function Prestaties() {
               <p className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white tabular-nums mt-1 leading-none">
                 {c.waarde}
               </p>
-              <p className="text-[10px] sm:text-[11px] text-gray-400 dark:text-white/40 mt-1 leading-tight break-words">
+              <p className="text-[10px] sm:text-[11px] text-tekst-gedempt dark:text-white/55 mt-1 leading-tight break-words">
                 {c.label}
               </p>
             </div>
@@ -524,7 +526,7 @@ function WaarWerktWie() {
 
   return (
     <div className="bg-white dark:bg-surface-dark-2 border border-gray-100 dark:border-white/10 rounded-lg shadow-sm p-5">
-      <SectionHeading title="Wie werkt waar vandaag" actions={<IconUsers className="w-4 h-4 text-gray-400 dark:text-white/40" />} />
+      <SectionHeading title="Wie werkt waar vandaag" actions={<IconUsers className="w-4 h-4 text-tekst-gedempt dark:text-white/55" />} />
       {loading ? (
         <div className="flex justify-center py-4"><Spinner className="w-5 h-5" /></div>
       ) : (
@@ -534,7 +536,7 @@ function WaarWerktWie() {
               <Avatar naam={r.medewerker} size="sm" />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{r.medewerker}</p>
-                <p className="text-xs text-gray-400 dark:text-white/40 truncate">
+                <p className="text-xs text-tekst-gedempt dark:text-white/55 truncate">
                   {r.adres}{r.plaats ? `, ${r.plaats}` : ''}
                 </p>
               </div>

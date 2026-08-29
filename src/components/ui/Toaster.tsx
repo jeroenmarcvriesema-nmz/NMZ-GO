@@ -44,7 +44,7 @@ export function Toaster() {
           <button
             onClick={() => sluit(t.id)}
             aria-label="Melding sluiten"
-            className="flex-shrink-0 text-gray-400 dark:text-white/40 hover:text-gray-900 dark:hover:text-white transition-colors"
+            className="flex-shrink-0 text-tekst-gedempt dark:text-white/55 hover:text-gray-900 dark:hover:text-white transition-colors"
           >
             <IconX className="w-4 h-4" />
           </button>

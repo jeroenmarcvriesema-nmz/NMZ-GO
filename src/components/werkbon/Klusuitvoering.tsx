@@ -65,6 +65,10 @@ export function Klusuitvoering({
   const voortgang = berekenVoortgang(taken)
   // Dezelfde stand en kleur als op de lijstschermen en de planning.
   const k = standkleur(werkbon)
+  // De volgorde uit de werkopdracht blijft binnen elke groep staan; alleen
+  // het afgeronde werk zakt naar onderen.
+  const open = taken.filter((t) => !t.voltooid)
+  const klaar = taken.filter((t) => t.voltooid)
   const aantalKlaar = taken.filter((t) => t.voltooid).length
   const allesAfgevinkt = taken.length > 0 && aantalKlaar === taken.length
 
@@ -103,7 +107,7 @@ export function Klusuitvoering({
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             {kopje && (
-              <p className="text-[11px] font-bold text-gray-400 dark:text-white/40 uppercase tracking-widest mb-2">
+              <p className="text-[11px] font-bold text-tekst-gedempt dark:text-white/55 uppercase tracking-widest mb-2">
                 {kopje}
               </p>
             )}
@@ -125,14 +129,14 @@ export function Klusuitvoering({
                 voortgang === 100 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white')}>
                 {voortgang}%
               </div>
-              <div className="text-xs text-gray-400 dark:text-white/40">{aantalKlaar}/{taken.length} punten</div>
+              <div className="text-xs text-tekst-gedempt dark:text-white/55">{aantalKlaar}/{taken.length} punten</div>
             </div>
           )}
         </div>
         {!zonderVoortgang && (
-          <div className="mt-3"><ProgressBar value={voortgang} size="md" variant={voortgang === 100 ? 'green' : 'yellow'} /></div>
+          <div className="mt-3"><ProgressBar value={voortgang} size="md" variant={k.badge} /></div>
         )}
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 pt-3 border-t border-gray-50 dark:border-white/5 text-xs text-gray-400 dark:text-white/40">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 pt-3 border-t border-gray-50 dark:border-white/5 text-xs text-tekst-gedempt dark:text-white/55">
           {/* Met "start" ervoor, anders leest een datum uit het verleden
               als een fout in plaats van als de startdatum. */}
           <span className="flex items-center gap-1">
@@ -216,8 +220,17 @@ export function Klusuitvoering({
         {/* Het bijschrift stond náást de kop. Op een telefoon van 390
             pixels duwde die zin van tien woorden "Uit te voeren punten"
             over drie regels uiteen. Eronder leest het in één regel. */}
-        <SectionHeading title={`Uit te voeren punten (${taken.length})`} className="mb-1.5" />
-        <p className="text-xs text-gray-400 dark:text-white/40 mb-4">
+        {/* De kop telt wat er nog moet, niet hoeveel punten er zijn.
+            "Uit te voeren punten (30)" op een bon waarvan er 28 af zijn
+            is geen antwoord op de vraag die je stelt als je hierheen
+            scrolt. */}
+        <SectionHeading
+          title={open.length > 0
+            ? `Uit te voeren punten (${open.length})`
+            : `Punten (${taken.length})`}
+          className="mb-1.5"
+        />
+        <p className="text-xs text-tekst-gedempt dark:text-white/55 mb-4">
           {bijschrift ?? 'Maak een foto vóór je afvinkt'}
         </p>
         {/* Wachten tot de foto's er zijn. Zonder dit tekent hij eerst de
@@ -227,18 +240,52 @@ export function Klusuitvoering({
         {laden ? (
           <div className="flex justify-center py-6"><Spinner className="w-5 h-5" /></div>
         ) : taken.length === 0 ? (
-          <p className="text-sm text-gray-400 dark:text-white/40 text-center py-4">Geen punten op deze bon.</p>
+          <p className="text-sm text-tekst-gedempt dark:text-white/55 text-center py-4">Geen punten op deze bon.</p>
         ) : (
-          taken.map((taak) => (
-            <TaakItem
-              key={taak.id}
-              taak={taak}
-              werkbonId={werkbon.id}
-              readOnly={readOnly || werkbon.status === 'voltooid'}
-              gesloten={Boolean(werkbon.opgeleverd_op)}
-              onRefresh={onRefresh}
-            />
-          ))
+          <>
+            {open.map((taak) => (
+              <TaakItem
+                key={taak.id}
+                taak={taak}
+                werkbonId={werkbon.id}
+                readOnly={readOnly || werkbon.status === 'voltooid'}
+                gesloten={Boolean(werkbon.opgeleverd_op)}
+                onRefresh={onRefresh}
+              />
+            ))}
+
+            {/* Wat af is, onder een streep. Punten worden niet in de
+                volgorde van de bon afgewerkt — de ploeg pakt wat er op
+                dat moment kan — dus "het volgende punt" bestaat niet.
+                Waar het wél om gaat is dat wat nog openstaat bij elkaar
+                staat, in plaats van verspreid tussen afgeronde punten
+                in. Elk afgerond punt staat bovendien dichtgeklapt (zie
+                TaakItem), dus dit blok is kort. */}
+            {klaar.length > 0 && (
+              <>
+                {open.length > 0 && (
+                  <div className="flex items-center gap-3 mt-5 mb-3">
+                    <span className="h-px flex-1 bg-gray-100 dark:bg-white/10" />
+                    <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-tekst-gedempt dark:text-white/55">
+                      <IconCircleCheck className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
+                      {klaar.length} afgerond
+                    </span>
+                    <span className="h-px flex-1 bg-gray-100 dark:bg-white/10" />
+                  </div>
+                )}
+                {klaar.map((taak) => (
+                  <TaakItem
+                    key={taak.id}
+                    taak={taak}
+                    werkbonId={werkbon.id}
+                    readOnly={readOnly || werkbon.status === 'voltooid'}
+                    gesloten={Boolean(werkbon.opgeleverd_op)}
+                    onRefresh={onRefresh}
+                  />
+                ))}
+              </>
+            )}
+          </>
         )}
 
         {/* Meerwerk dat op de klus zelf wordt afgesproken. Alleen voor

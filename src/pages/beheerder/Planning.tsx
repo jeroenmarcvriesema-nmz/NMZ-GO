@@ -114,9 +114,30 @@ export default function Planning() {
   // van een volle week een lijstje van vier klussen die stilliggen of
   // over hun opleverdatum heen zijn.
   const [stand, setStand] = useState<'alle' | 'uitloop' | 'asbest' | Klusstand>('alle')
-  const dagen = weekDagen(maandagVerschoven(week))
   const vandaag = new Date()
   vandaag.setHours(0, 0, 0, 0)
+
+  const alleDagen = weekDagen(maandagVerschoven(week))
+
+  /**
+   * Zaterdag alleen tonen als er zaterdag iets staat.
+   *
+   * Zes kolommen op een laptop van 1440 is ongeveer 150 pixels per dag,
+   * en dat is precies waar adressen middenin een woord gaan afbreken. In
+   * de meeste weken is de zesde kolom bovendien leeg: dan wordt de week
+   * smaller gemaakt voor een dag waar niets gebeurt.
+   *
+   * Vandaag wint altijd. Is het zaterdag, dan is dat de dag waarvoor je
+   * dit scherm opent, ook als er niets op staat.
+   */
+  const dagen = (() => {
+    const zaterdag = alleDagen[ZATERDAG]
+    if (!zaterdag) return alleDagen
+    const zaterdagStr = isoDatum(zaterdag)
+    const heeftWerk = planning.some((x) => x.datum <= zaterdagStr && (x.eind ?? x.datum) >= zaterdagStr)
+    const isVandaagZaterdag = zaterdag.getTime() === vandaag.getTime()
+    return heeftWerk || isVandaagZaterdag ? alleDagen : alleDagen.slice(0, ZATERDAG)
+  })()
 
   // Iedereen die deze maand ergens op staat, één keer, op alfabet.
   const ploegen = [...new Set(planning.flatMap((p) => p.medewerkers))].sort((a, b) => a.localeCompare(b))
@@ -182,6 +203,31 @@ export default function Planning() {
     return new Set([...geteld].filter(([, n]) => n > 1).map(([naam]) => naam))
   }
 
+  /**
+   * Dezelfde overlappingen, maar één keer voor de hele week.
+   *
+   * Het waarschuwingsvlak stond per dagkolom, dus wie drie dagen dubbel
+   * stond kreeg drie identieke oranje blokken naast elkaar te zien —
+   * dezelfde zin, drie keer, en samen meer aandacht dan de klussen
+   * eronder. Terwijl de vraag die je stelt niet "welke kolom" is maar
+   * "staat er iemand dubbel, en wanneer".
+   *
+   * Eén regel per persoon dus, met de dagen erachter. Dat is rustiger én
+   * completer dan wat er stond: je ziet nu in één blik dat het om drie
+   * dagen van dezelfde man gaat en niet om drie losse problemen.
+   */
+  const dubbelInWeek = (): { naam: string; dagen: string[] }[] => {
+    const perPersoon = new Map<string, string[]>()
+    dagen.forEach((dag, i) => {
+      const dagStr = isoDatum(dag)
+      const dagItems = zichtbaar.filter((x) => x.datum <= dagStr && (x.eind ?? x.datum) >= dagStr)
+      for (const naam of dubbelOpDag(dagItems)) {
+        perPersoon.set(naam, [...(perPersoon.get(naam) ?? []), DAG_NAMEN[i].slice(0, 2).toLowerCase()])
+      }
+    })
+    return [...perPersoon].map(([naam, d]) => ({ naam, dagen: d }))
+  }
+
   if (loading) {
     return (
       <PageWrapper title="Planning">
@@ -199,15 +245,23 @@ export default function Planning() {
         className="mb-4"
       />
 
-      <div className="flex flex-col sm:flex-row gap-3 mb-5">
-        <div className="relative flex-1 sm:max-w-sm">
-          <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-white/40" />
+      {/* `flex-wrap` plus een ondergrens op het zoekveld. Zonder allebei
+          werd dit op een tablet in staand formaat onbruikbaar: de zijbalk
+          pakt 240 pixels, de twee keuzelijsten samen 448, en wat er voor
+          het zoekveld overbleef was een vakje van vijftig pixels met alleen
+          het vergrootglas erin — niet meer herkenbaar als invoerveld.
+          PROJECT.md zegt met zoveel woorden dat kantoor ook op een tablet
+          moet kunnen werken. Nu wijkt de rij uit naar een tweede regel in
+          plaats van het zoekveld plat te drukken. */}
+      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 mb-5">
+        <div className="relative flex-1 sm:min-w-[240px] sm:max-w-sm">
+          <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tekst-gedempt dark:text-white/55" />
           <input
             type="text"
             value={zoek}
             onChange={(e) => setZoek(e.target.value)}
             placeholder="Adres, plaats of bonnummer…"
-            className="w-full min-h-[44px] pl-9 pr-4 text-sm text-gray-900 dark:text-white bg-white dark:bg-surface-dark-2 border border-gray-200 dark:border-white/10 rounded-sm outline-none placeholder:text-gray-400 dark:placeholder:text-white/30 focus:border-brand-yellow focus:ring-2 focus:ring-brand-yellow/20"
+            className="w-full min-h-[44px] pl-9 pr-4 text-sm text-gray-900 dark:text-white bg-white dark:bg-surface-dark-2 border border-gray-200 dark:border-white/10 rounded-sm outline-none placeholder:text-tekst-fijn dark:placeholder:text-white/45 focus:border-brand-yellow focus:ring-2 focus:ring-brand-yellow/20"
           />
         </div>
 
@@ -266,7 +320,7 @@ export default function Planning() {
       {/* Zonder deze regel lijkt een lege week een lege week, terwijl er
           een filter aan staat die je twee schermen geleden hebt gezet. */}
       {filtersAan && (
-        <p className="text-xs text-gray-400 dark:text-white/40 -mt-2 mb-4">
+        <p className="text-xs text-tekst-gedempt dark:text-white/55 -mt-2 mb-4">
           Je ziet {dezeWeek.length} van de {planning.filter((p) => p.datum <= totWeek && (p.eind ?? p.datum) >= vanWeek).length} klussen in deze week.
           {ploeg !== 'alle' && ` Alleen waar ${ploeg} op staat.`}
           {stand === 'uitloop' && ' Alleen wat over de opleverdatum heen is.'}
@@ -276,8 +330,41 @@ export default function Planning() {
         </p>
       )}
 
+      {/* Wie er deze week dubbel staat — één keer, boven de week.
+          Stond hiervoor als los oranje vlak in elke dagkolom waar het
+          gold, dus dezelfde zin tot drie keer naast elkaar. */}
+      {(() => {
+        const overlap = dubbelInWeek()
+        if (overlap.length === 0) return null
+        return (
+          <div className="flex items-start gap-2 mb-4 px-3 py-2.5 rounded-sm bg-orange-50 dark:bg-orange-500/10 border border-orange-300 dark:border-orange-500/30">
+            <IconAlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-orange-600 dark:text-orange-400" />
+            <div className="min-w-0 text-xs leading-relaxed text-orange-800 dark:text-orange-300">
+              <span className="font-bold">Dubbel ingepland deze week.</span>{' '}
+              {overlap.map((o, n) => (
+                <span key={o.naam}>
+                  {n > 0 && ' · '}
+                  <span className="font-semibold">{o.naam}</span> op {o.dagen.join(', ')}
+                </span>
+              ))}
+            </div>
+          </div>
+        )
+      })()}
+
       {/* Desktop: 5-kolommen grid */}
-      <div className="hidden md:grid md:grid-cols-3 xl:grid-cols-6 gap-4">
+      {/* Kolommen met een ondergrens, en de rij schuift opzij als ze niet
+          allemaal passen.
+          Als raster werden zes dagen op een laptop van 1440 zo'n 150 pixels
+          breed, en daar past geen adres in: er stond "Meidoornstraa / t 4"
+          en "Karolingens / traat 29". Afbreken op lettergrepen lost dat niet
+          op — `hyphens: auto` werkt alleen als de browser een Nederlands
+          afbreekwoordenboek heeft, en dat is lang niet overal zo.
+          Een dag is dus minstens 190 pixels breed en de week schuift
+          desnoods opzij. Dat is precies de uitzondering die
+          DESIGN_SYSTEM.md toestaat: horizontale scroll binnen één bewust
+          element, niet op de pagina. */}
+      <div className="hidden md:flex gap-4 overflow-x-auto pb-2">
         {dagen.map((dag, i) => {
           const dagStr = isoDatum(dag)
           const isVandaag = dag.getTime() === vandaag.getTime()
@@ -294,7 +381,8 @@ export default function Planning() {
                 // vlakken die tegen elkaar aan liggen: zo is een dag
                 // zichtbaar één ding, en kan vandaag als geheel oplichten
                 // in plaats van alleen een gele hoed te krijgen.
-                'flex flex-col rounded-xl border overflow-hidden shadow-sm',
+                'flex flex-col rounded-lg border overflow-hidden shadow-sm',
+                'flex-1 min-w-[190px]',
                 isVandaag ? 'border-brand-yellow ring-1 ring-brand-yellow/40'
                   : isZaterdag ? ZATERDAGTINT.rand
                   : 'border-gray-100 dark:border-white/10'
@@ -304,18 +392,21 @@ export default function Planning() {
               <div
                 className={cn(
                   'px-3 py-2.5 border-b',
-                  isVandaag ? 'bg-brand-yellow border-brand-yellow-dark'
+                  // Zachte tint, geen volvlak: dat gele blok las als een
+                  // knop en gebruikte hetzelfde vlak als de primaire actie.
+                  // De gele ring om de kolom markeert vandaag al.
+                  isVandaag ? 'bg-brand-yellow-light dark:bg-brand-yellow/15 border-brand-yellow'
                     : isZaterdag ? ZATERDAGTINT.kop
                     // Stond in hetzelfde wit als de inhoud eronder, en
                     // las daardoor niet als kop.
                     : 'bg-surface-2 dark:bg-surface-dark-3 border-gray-100 dark:border-white/10'
                 )}
               >
-                <div className={cn('text-sm font-bold', isVandaag ? 'text-gray-900' : 'text-gray-700 dark:text-white/80')}>
+                <div className={cn('text-sm font-bold', 'text-gray-900 dark:text-white')}>
                   {DAG_NAMEN[i]}
                 </div>
                 <div className="flex items-center justify-between gap-2">
-                  <span className={cn('text-xs', isVandaag ? 'text-gray-700' : 'text-gray-400 dark:text-white/40')}>
+                  <span className={cn('text-xs', 'text-tekst-gedempt dark:text-white/55')}>
                     {formatDatumKort(dag)}
                   </span>
                   {/* De telling stond alleen op de telefoon. Op een
@@ -356,23 +447,11 @@ export default function Planning() {
                 'flex-1 p-2 space-y-2 min-h-[120px]',
                 isZaterdag ? ZATERDAGTINT.vlak : 'bg-white dark:bg-surface-dark-2'
               )}>
-                {(() => {
-                  const dubbel = dubbelOpDag(dagItems)
-                  return dubbel.size > 0 ? (
-                    <div className="flex items-start gap-1.5 px-2 py-1.5 rounded-sm bg-orange-50 dark:bg-orange-500/10 border border-orange-300 dark:border-orange-500/30">
-                      <IconAlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-orange-600 dark:text-orange-400" />
-                      <span className="text-[11px] leading-snug text-orange-800 dark:text-orange-300">
-                        {[...dubbel].join(', ')} op meerdere klussen
-                      </span>
-                    </div>
-                  ) : null
-                })()}
-
                 {dagItems.length === 0 ? (
                   <div className="flex items-center justify-center h-full py-6">
                     {/* "Vrij" met een filter aan is onwaar: er staat
                         misschien van alles, alleen niet van deze man. */}
-                    <span className="text-xs text-gray-300 dark:text-white/30">
+                    <span className="text-xs text-tekst-fijn dark:text-white/40">
                       {filtersAan ? 'Niets in dit filter' : 'Vrij'}
                     </span>
                   </div>
@@ -403,7 +482,7 @@ export default function Planning() {
 
           return (
             <div className={cn(
-              'rounded-xl border shadow-sm overflow-hidden',
+              'rounded-lg border shadow-sm overflow-hidden',
               isZaterdag ? ZATERDAGTINT.vlak : 'bg-white dark:bg-surface-dark-2',
               isVandaag ? 'border-brand-yellow ring-1 ring-brand-yellow/40'
                 : isZaterdag ? ZATERDAGTINT.rand
@@ -411,15 +490,15 @@ export default function Planning() {
             )} key={i}>
               <div className={cn(
                 'px-4 py-3 flex items-center justify-between',
-                isVandaag ? 'bg-brand-yellow'
+                isVandaag ? 'bg-brand-yellow-light dark:bg-brand-yellow/15 border-b border-brand-yellow'
                   : isZaterdag ? cn(ZATERDAGTINT.kop, 'border-b')
                   : 'bg-surface-2 dark:bg-surface-dark-3 border-b border-gray-100 dark:border-white/10'
               )}>
                 <div>
-                  <span className={cn('text-sm font-bold', isVandaag ? 'text-gray-900' : 'text-gray-700 dark:text-white/80')}>
+                  <span className={cn('text-sm font-bold', 'text-gray-900 dark:text-white')}>
                     {DAG_NAMEN[i]}
                   </span>
-                  <span className={cn('text-xs ml-2', isVandaag ? 'text-gray-700' : 'text-gray-400 dark:text-white/40')}>
+                  <span className={cn('text-xs ml-2', 'text-tekst-gedempt dark:text-white/55')}>
                     {formatDatumKort(dag)}
                   </span>
                 </div>
@@ -430,22 +509,11 @@ export default function Planning() {
                 )}
               </div>
               {dagItems.length === 0 ? (
-                <div className="px-4 py-5 text-sm text-gray-300 dark:text-white/30 text-center">
+                <div className="px-4 py-5 text-sm text-tekst-fijn dark:text-white/40 text-center">
                   {filtersAan ? 'Niets in dit filter' : 'Niets ingepland'}
                 </div>
               ) : (
                 <div className="p-3 space-y-2">
-                  {(() => {
-                    const dubbel = dubbelOpDag(dagItems)
-                    return dubbel.size > 0 ? (
-                      <div className="flex items-start gap-1.5 px-2.5 py-2 rounded-sm bg-orange-50 dark:bg-orange-500/10 border border-orange-300 dark:border-orange-500/30">
-                        <IconAlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-orange-600 dark:text-orange-400" />
-                        <span className="text-[11px] leading-snug text-orange-800 dark:text-orange-300">
-                          {[...dubbel].join(', ')} op meerdere klussen
-                        </span>
-                      </div>
-                    ) : null
-                  })()}
                   {dagItems.map((item) => (
                     <PlanningKaart
                       key={item.id}

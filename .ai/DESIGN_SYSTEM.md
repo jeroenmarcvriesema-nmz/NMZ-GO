@@ -22,11 +22,12 @@ Alle design tokens staan in `tailwind.config.ts` — dit is de **enige** bron vo
 - Merk: `brand.yellow` (`#F0B420`) met `-dark` (`#C8930D`) en `-light` (`#FEF3CC`) — primaire acties, én een zichtbaar terugkerend merkelement (kicker-balk in `SectionHeading`, Topbar-accentlijn).
 - Merk secundair: `brand.red` (`#BC2934`) met `-dark`/`-light` — waarschuwingen/kritieke acties.
 - Ondergrond (light): `surface` (wit) / `surface-2` (`#ECEAE4`) / `surface-3` (`#E0DDD5`) — gelaagde achtergronden. App-achtergrond: `#F4F3EF` (`index.css` → `body`).
-- Ondergrond (dark): `surface-dark` (`#0d1117`) / `surface-dark-2` (`#161b22`) / `surface-dark-3` (`#1c2129`).
+- Ondergrond (dark): `surface-dark` (`#0d1117`, het canvas) / `surface-dark-2` (`#161b22`, kaarten én de chrome: zijbalk, topbalk, mobiele balk) / `surface-dark-3` (`#1c2129`). De chrome staat bewust een tint boven het canvas, zodat donker dezelfde drie lagen heeft als licht (wit / `#F4F3EF` / wit) — schaduw doet in donker vrijwel niets, dus de gelaagdheid moet uit de tint komen.
+- Tekst: `tekst-gedempt` (`#6B7280`) voor bijschriften/meta, `tekst-zwak` (`#4B5563`) voor labels, `tekst-fijn` (`#7E8794`) **uitsluitend** voor decoratie (chevrons, placeholders). Contrastverhoudingen en het waarom staan in `UI_GUIDELINES.md` → Typography.
 
 **Typografie:** `Inter` als sans-serif (primair lettertype voor de hele app), `JetBrains Mono` voor eventuele monospace-behoefte (bv. bonnummers). Zie `UI_GUIDELINES.md` → Typography voor de schaal (paginatitels `text-3xl`, sectiekoppen via `SectionHeading` `text-lg`, KPI-waarden `text-4xl`).
 
-**Radius-schaal:** `sm` (8px), `DEFAULT` (14px), `lg` (20px) — geen arbitrary radius-waarden tenzij er echt geen passende token is.
+**Radius-schaal:** `sm` (8px), `DEFAULT` (14px), `lg` (20px) — en verder alleen `rounded-full`. Gebruik géén `rounded-md`/`-xl`/`-2xl`: dat zijn Tailwind-standaardwaarden (6/12/16px) die de config niet overschrijft, en ze vallen precies tússen de tokens. Er stonden er twaalf in de codebase, waardoor de app zes verschillende hoeken had waar er drie gedefinieerd zijn.
 
 **Shadow-schaal:** `sm` / `DEFAULT` / `md` / `lg`, oplopend in diepte — gebruikt om hiërarchie tussen kaarten, modals en de pagina-achtergrond aan te geven.
 

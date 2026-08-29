@@ -263,10 +263,10 @@ export default function Medewerkers() {
         <Card>
           <SectionHeading
             title={`Accounts (${medewerkers.length})`}
-            actions={<span className="text-xs text-gray-400 dark:text-white/40">Wie kan inloggen</span>}
+            actions={<span className="text-xs text-tekst-gedempt dark:text-white/55">Wie kan inloggen</span>}
           />
           {loading ? (
-            <div className="text-center py-8 text-gray-400 dark:text-white/40">Laden…</div>
+            <div className="text-center py-8 text-tekst-gedempt dark:text-white/55">Laden…</div>
           ) : medewerkers.length === 0 ? (
             <EmptyState
               icon={<IconUsers />}
@@ -301,13 +301,17 @@ export default function Medewerkers() {
                       ) : (
                         <div className="text-sm font-semibold truncate text-gray-900 dark:text-white">{m.naam}</div>
                       )}
-                      <div className="text-xs text-gray-400 dark:text-white/40 truncate">
+                      <div className="text-xs text-tekst-gedempt dark:text-white/55 truncate">
                         {m.functie || m.email || '—'}
                       </div>
                     </div>
                     <Badge variant={m.actief ? 'green' : 'red'}>{m.actief ? 'Actief' : 'Inactief'}</Badge>
+                    {/* Neutraal, niet geel. Het gele volvlak is de primaire
+                        knop; een rolbadge in datzelfde vlak ziet eruit als iets
+                        waarop je moet drukken, pal naast een groene
+                        statusbadge die er wél uitziet als een badge. */}
                     {!(magGebruikersBeheren && m.id !== profile?.id) && (
-                      <Badge variant={m.rol === 'medewerker' ? 'gray' : 'yellow'}>{rolLabel(m.rol)}</Badge>
+                      <Badge variant="gray">{rolLabel(m.rol)}</Badge>
                     )}
                   </div>
 
@@ -332,7 +336,7 @@ export default function Medewerkers() {
                           het weglaten: je denkt dat je iets regelt.
                           Koppelen gebeurt in De ploeg hieronder, of
                           automatisch via de uitnodiging. */}
-                      <span className="text-xs text-gray-400 dark:text-white/40 self-center">
+                      <span className="text-xs text-tekst-gedempt dark:text-white/55 self-center">
                         {(() => {
                           const persoon = ploeg.find((p) => p.profile_id === m.id)
                           if (!persoon) return 'Niet aan een naam uit de ploeg gekoppeld'
@@ -375,7 +379,7 @@ export default function Medewerkers() {
             title={`De ploeg (${ploeg.length})`}
             actions={
               <>
-                <span className="text-xs text-gray-400 dark:text-white/40">
+                <span className="text-xs text-tekst-gedempt dark:text-white/55">
                   {ploeg.filter((p) => !p.profile_id).length} zonder account
                 </span>
                 {magGebruikersBeheren && (
@@ -410,7 +414,7 @@ export default function Medewerkers() {
                     <div className="text-sm font-semibold truncate text-gray-900 dark:text-white">
                       {p.naam}
                     </div>
-                    <div className="text-xs text-gray-400 dark:text-white/40 truncate">
+                    <div className="text-xs text-tekst-gedempt dark:text-white/55 truncate">
                       {/* Eerste of tweede man stond hier als etiket. Dat
                           is een werkafspraak die per klus verschilt en
                           niets verandert aan rechten of aan wat iemand
@@ -419,7 +423,7 @@ export default function Medewerkers() {
                       {p.clickup_label ? `ClickUp "${p.clickup_label}"` : 'geen ClickUp-naam'}
                     </div>
                   </div>
-                  <IconChevronRight className="w-4 h-4 flex-shrink-0 text-gray-300 dark:text-white/25" />
+                  <IconChevronRight className="w-4 h-4 flex-shrink-0 text-tekst-fijn dark:text-white/40" />
                 </button>
 
                 {magGebruikersBeheren && clickupLabels.length > 0 && (
@@ -562,7 +566,7 @@ export default function Medewerkers() {
             onKies={(v) => setKandidaatRol(v as Rol)}
             opties={ROL_OPTIES}
           />
-          <p className="text-xs text-gray-400 dark:text-white/40">
+          <p className="text-xs text-tekst-gedempt dark:text-white/55">
             De rol zit in de uitnodiging, niet in het formulier dat hij invult.
             Wat iemand bij het aanmelden intikt komt uit zijn eigen browser en
             zou hij dus zelf kunnen kiezen.
@@ -620,7 +624,7 @@ export default function Medewerkers() {
           <Button variant="primary" fullWidth onClick={kopieer}>
             {gekopieerd ? <><IconCheck className="w-4 h-4" /> Gekopieerd!</> : <><IconCopy className="w-4 h-4" /> Kopiëren</>}
           </Button>
-          <p className="text-xs text-gray-400 dark:text-white/40 text-center">
+          <p className="text-xs text-tekst-gedempt dark:text-white/55 text-center">
             Stuur via WhatsApp of e-mail. Deze link geldt alleen voor
             {uitnodigingVoor ? ` ${uitnodigingVoor.naam}` : ' deze persoon'} en werkt één keer.
           </p>

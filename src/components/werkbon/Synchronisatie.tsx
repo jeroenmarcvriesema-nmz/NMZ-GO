@@ -105,7 +105,7 @@ export function Synchronisatie({ onKlaar }: { onKlaar?: () => void }) {
             autoFocus
           />
 
-          <p className="text-xs text-gray-400 dark:text-white/40">
+          <p className="text-xs text-tekst-gedempt dark:text-white/55">
             Staat de klus er al in, dan gebeurt er niets dubbels — hij wordt dan
             alleen bijgewerkt.
           </p>

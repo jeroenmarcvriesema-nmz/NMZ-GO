@@ -6,6 +6,7 @@ import { useThemeStore } from '@/store/themeStore'
 import { rolLabel } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
 import {
+  IconActivity,
   IconLayoutDashboard,
   IconCalendarWeek,
   IconMapPin,
@@ -25,19 +26,47 @@ import {
   IconBug,
 } from '@tabler/icons-react'
 
-function MobileNavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) {
+/**
+ * Eén tab in de balk onderin.
+ *
+ * De actieve staat was `text-brand-yellow` — het merkgeel als tékst, op
+ * een witte balk. Dat is 1,87:1: in de zon op een telefoonscherm is dat
+ * geen accent maar een onleesbaar woord, precies bij de doelgroep die
+ * buiten staat. Nu draagt een gele balk bovenaan de tab de markering en
+ * blijft de tekst zelf op volle sterkte. Dat is ook wat elke app doet
+ * die je dagelijks gebruikt: een indicator, geen gekleurd label.
+ *
+ * `exact` om dezelfde reden als in de zijbalk: zonder die vlag licht een
+ * tab ook op bij elk onderliggend pad.
+ */
+function MobileNavItem({ to, icon, label, exact }: {
+  to: string; icon: React.ReactNode; label: string; exact?: boolean
+}) {
   return (
     <NavLink
       to={to}
+      end={exact}
       className={({ isActive }) =>
         cn(
-          'flex flex-col items-center gap-1 flex-1 min-w-0 px-1 py-1.5 rounded-lg text-[10px] font-semibold tracking-wide transition-all',
-          isActive ? 'text-brand-yellow' : 'text-gray-400 dark:text-white/40 hover:text-gray-700 dark:hover:text-white/70'
+          'relative flex flex-col items-center gap-1 flex-1 min-w-0 px-1 py-1.5 rounded-lg text-[10px] font-semibold tracking-wide transition-all',
+          // De balk zit in beide standen in de boom en is alleen
+          // doorzichtig als de tab niet actief is, zodat er niets
+          // verspringt bij het wisselen.
+          'before:absolute before:top-0 before:h-0.5 before:w-8 before:rounded-full before:transition-colors',
+          isActive
+            ? 'text-gray-900 dark:text-white before:bg-brand-yellow'
+            : 'text-tekst-gedempt dark:text-white/55 hover:text-gray-700 dark:hover:text-white/70 before:bg-transparent'
         )
       }
     >
-      <span className="text-[22px] leading-none">{icon}</span>
-      <span className="truncate max-w-full">{label}</span>
+      {({ isActive }) => (
+        <>
+          <span className={cn('text-[22px] leading-none', isActive && 'text-brand-yellow-dark dark:text-brand-yellow')}>
+            {icon}
+          </span>
+          <span className="truncate max-w-full">{label}</span>
+        </>
+      )}
     </NavLink>
   )
 }
@@ -55,7 +84,7 @@ function MeerRegel({ icon, label, onClick, gevaarlijk }: {
           : 'text-gray-900 dark:text-white hover:bg-surface-2 dark:hover:bg-white/5'
       )}
     >
-      <span className="text-[20px] leading-none flex-shrink-0 text-gray-400 dark:text-white/40">{icon}</span>
+      <span className="text-[20px] leading-none flex-shrink-0 text-tekst-gedempt dark:text-white/55">{icon}</span>
       <span className="flex-1 min-w-0 truncate">{label}</span>
     </button>
   )
@@ -120,7 +149,7 @@ export function MobileNav() {
             role="dialog"
             aria-modal="true"
             aria-label="Meer"
-            className="fixed inset-x-0 bottom-0 z-50 rounded-t-2xl border-t-[3px] border-t-brand-yellow bg-white dark:bg-surface-dark-2 shadow-lg animate-page-in pb-[max(1rem,env(safe-area-inset-bottom))]"
+            className="fixed inset-x-0 bottom-0 z-50 rounded-t-lg border-t-[3px] border-t-brand-yellow bg-white dark:bg-surface-dark-2 shadow-lg animate-page-in pb-[max(1rem,env(safe-area-inset-bottom))]"
           >
             <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-100 dark:border-white/10">
               {profile && <Avatar naam={profile.naam} size="sm" />}
@@ -128,14 +157,14 @@ export function MobileNav() {
                 <div className="text-sm font-bold text-gray-900 dark:text-white truncate">
                   {profile?.naam ?? '—'}
                 </div>
-                <div className="text-xs text-gray-400 dark:text-white/40 truncate">
+                <div className="text-xs text-tekst-gedempt dark:text-white/55 truncate">
                   {profile?.functie || rolLabel(profile?.rol)}
                 </div>
               </div>
               <button
                 onClick={() => setMeerOpen(false)}
                 aria-label="Sluiten"
-                className="flex items-center justify-center w-10 h-10 rounded-lg text-gray-400 dark:text-white/40 hover:bg-surface-2 dark:hover:bg-white/5 transition-colors"
+                className="flex items-center justify-center w-10 h-10 rounded-lg text-tekst-gedempt dark:text-white/55 hover:bg-surface-2 dark:hover:bg-white/5 transition-colors"
               >
                 <IconX className="w-5 h-5" />
               </button>
@@ -147,6 +176,11 @@ export function MobileNav() {
                   {magGebruikersBeheren && (
                     <MeerRegel icon={<IconUsers />} label="Team" onClick={() => ga('/medewerkers')} />
                   )}
+                  {/* Stond alleen in de zijbalk, en die is `hidden md:block`.
+                      Wie op een telefoon wilde zien wie er nú op welke klus
+                      staat, kon daar niet komen — precies het scherm dat een
+                      uitvoerder onderweg wil. */}
+                  <MeerRegel icon={<IconActivity />} label="Lopende klussen" onClick={() => ga('/lopend')} />
                   <MeerRegel icon={<IconTruck />} label="Containers &amp; dixi's" onClick={() => ga('/voorzieningen')} />
                   <MeerRegel icon={<IconArchive />} label="Archief" onClick={() => ga('/archief')} />
                   <MeerRegel icon={<IconFileExport />} label="Rapporten" onClick={() => ga('/rapporten')} />
@@ -170,12 +204,12 @@ export function MobileNav() {
         </>
       )}
 
-      <nav className="fixed bottom-0 left-0 right-0 z-40 flex justify-around items-center gap-0.5 px-1 py-2 pb-safe bg-white dark:bg-surface-dark border-t border-gray-100 dark:border-white/10">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 flex justify-around items-center gap-0.5 px-1 py-2 pb-safe bg-white dark:bg-surface-dark-2 border-t border-gray-100 dark:border-white/10">
         {magWerkBeheren ? (
           <>
             <MobileNavItem to="/dashboard"  icon={<IconLayoutDashboard />}  label="Dashboard" />
             <MobileNavItem to="/planning"   icon={<IconCalendarWeek />}     label="Planning" />
-            <MobileNavItem to="/werkbonnen" icon={<IconMapPin />}           label="Bonnen" />
+            <MobileNavItem to="/werkbonnen" icon={<IconMapPin />}           label="Bonnen" exact />
             <MobileNavItem to="/uitloop"    icon={<IconClockExclamation />} label="Uitloop" />
           </>
         ) : (
@@ -191,11 +225,14 @@ export function MobileNav() {
           aria-label="Meer"
           aria-expanded={meerOpen}
           className={cn(
-            'flex flex-col items-center gap-1 flex-1 min-w-0 px-1 py-1.5 rounded-lg text-[10px] font-semibold tracking-wide transition-all',
-            meerOpen ? 'text-brand-yellow' : 'text-gray-400 dark:text-white/40 hover:text-gray-700 dark:hover:text-white/70'
+            'relative flex flex-col items-center gap-1 flex-1 min-w-0 px-1 py-1.5 rounded-lg text-[10px] font-semibold tracking-wide transition-all',
+            'before:absolute before:top-0 before:h-0.5 before:w-8 before:rounded-full before:transition-colors',
+            meerOpen
+              ? 'text-gray-900 dark:text-white before:bg-brand-yellow'
+              : 'text-tekst-gedempt dark:text-white/55 hover:text-gray-700 dark:hover:text-white/70 before:bg-transparent'
           )}
         >
-          <span className="text-[22px] leading-none"><IconDotsCircleHorizontal /></span>
+          <span className={cn('text-[22px] leading-none', meerOpen && 'text-brand-yellow-dark dark:text-brand-yellow')}><IconDotsCircleHorizontal /></span>
           <span className="truncate max-w-full">Meer</span>
         </button>
       </nav>

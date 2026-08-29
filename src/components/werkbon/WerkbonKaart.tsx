@@ -75,7 +75,7 @@ export function WerkbonKaart({ werkbon, linkPrefix = '/werkbonnen', looptDoor }:
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-gray-500 dark:text-white/60 mt-0.5">
             <span>{werkbon.projectnaam}</span>
             {werkbon.bonnummer && (
-              <span className="text-gray-400 dark:text-white/40">· Bon {werkbon.bonnummer}</span>
+              <span className="text-tekst-gedempt dark:text-white/55">· Bon {werkbon.bonnummer}</span>
             )}
           </div>
         </div>
@@ -118,7 +118,7 @@ export function WerkbonKaart({ werkbon, linkPrefix = '/werkbonnen', looptDoor }:
           Bij de ploeg gold hetzelfde zodra er drie namen op een klus
           stonden. De andere kaarten in de app deden dit al goed; deze
           was blijven staan. */}
-      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-400 dark:text-white/40 mb-3">
+      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-tekst-gedempt dark:text-white/55 mb-3">
         {/* Het weeknummer erbij. In een lijst met dertig bonnen zeggen
             twee losse datums weinig; "wk 33" is waar in gepland wordt en
             wat er in ClickUp staat. Loopt een klus over meer weken, dan
@@ -183,8 +183,12 @@ export function WerkbonKaart({ werkbon, linkPrefix = '/werkbonnen', looptDoor }:
         )}
       </div>
 
-      <ProgressBar value={voortgang} variant={voortgang === 100 ? 'green' : 'yellow'} />
-      <div className="text-[11px] text-gray-400 dark:text-white/40 font-semibold mt-1">
+      {/* De balk draagt de stand, net als de badge erboven. Hier stond
+          geel, en groen zodra alles was afgevinkt — dus een bon die nog
+          afgerond moest worden kreeg een violette badge met een groene
+          balk eronder. */}
+      <ProgressBar value={voortgang} variant={k.badge} />
+      <div className="text-[11px] text-tekst-gedempt dark:text-white/55 font-semibold mt-1">
         {voortgang}% voltooid
       </div>
     </Card>

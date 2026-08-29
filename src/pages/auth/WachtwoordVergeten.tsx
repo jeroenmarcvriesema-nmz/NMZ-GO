@@ -49,7 +49,7 @@ export default function WachtwoordVergeten() {
           <div className="w-9 h-9 rounded-sm bg-brand-yellow flex items-center justify-center">
             <IconClipboardCheck className="w-5 h-5 text-gray-900" />
           </div>
-          <span className="text-xs font-bold text-gray-400 dark:text-white/40 tracking-widest uppercase">NMZ GO</span>
+          <span className="text-xs font-bold text-tekst-gedempt dark:text-white/55 tracking-widest uppercase">NMZ GO</span>
         </div>
 
         {verstuurd ? (

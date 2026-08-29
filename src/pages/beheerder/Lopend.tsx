@@ -146,7 +146,7 @@ function Klusblok({ klus, open, onKlap, onOpen }: {
               {klus.adres}
             </span>
             {klus.bonnummer && (
-              <span className="text-xs text-gray-400 dark:text-white/40">Bon {klus.bonnummer}</span>
+              <span className="text-xs text-tekst-gedempt dark:text-white/55">Bon {klus.bonnummer}</span>
             )}
           </div>
 
@@ -164,7 +164,7 @@ function Klusblok({ klus, open, onKlap, onOpen }: {
                 <IconBiohazard className="w-3 h-3 flex-shrink-0" /> asbest
               </span>
             )}
-            <span className="text-[11px] text-gray-400 dark:text-white/40">
+            <span className="text-[11px] text-tekst-gedempt dark:text-white/55">
               {formatDatumKort(klus.start)}
               {klus.eind !== klus.start && ` – ${formatDatumKort(klus.eind)}`}
             </span>
@@ -174,7 +174,7 @@ function Klusblok({ klus, open, onKlap, onOpen }: {
         <button
           onClick={onOpen}
           aria-label="Werkbon openen"
-          className="flex-shrink-0 min-h-[44px] px-2 text-gray-400 dark:text-white/40 hover:text-gray-900 dark:hover:text-white transition-colors"
+          className="flex-shrink-0 min-h-[44px] px-2 text-tekst-gedempt dark:text-white/55 hover:text-gray-900 dark:hover:text-white transition-colors"
         >
           <IconExternalLink className="w-4 h-4" />
         </button>
@@ -275,14 +275,14 @@ function Klusblok({ klus, open, onKlap, onOpen }: {
                 {/* Het verloop, niet de toestand. De bon zelf laat zien
                     wélke punten af zijn; hier staat wannéér, in welke
                     volgorde, en of er halverwege iets is gewijzigd. */}
-                <h4 className="text-[11px] font-bold uppercase tracking-wide text-gray-400 dark:text-white/40 mb-1.5">
+                <h4 className="text-[11px] font-bold uppercase tracking-wide text-tekst-gedempt dark:text-white/55 mb-1.5">
                   Activiteit
                 </h4>
                 <Klusactiviteit werkbonId={klus.id} />
               </div>
 
               <div className="min-w-0">
-                <h4 className="text-[11px] font-bold uppercase tracking-wide text-gray-400 dark:text-white/40 mb-1.5">
+                <h4 className="text-[11px] font-bold uppercase tracking-wide text-tekst-gedempt dark:text-white/55 mb-1.5">
                   Punten
                 </h4>
                 <ul className="space-y-1">
@@ -294,13 +294,13 @@ function Klusblok({ klus, open, onKlap, onOpen }: {
                       <span className={cn(
                         'break-words min-w-0 flex-1',
                         p.voltooid
-                          ? 'text-gray-400 dark:text-white/40 line-through'
+                          ? 'text-tekst-gedempt dark:text-white/55 line-through'
                           : 'text-gray-700 dark:text-white/70',
                       )}>
                         {p.titel}
                       </span>
                       {p.aantalFotos > 0 ? (
-                        <span className="flex items-center gap-0.5 flex-shrink-0 text-gray-400 dark:text-white/40 tabular-nums">
+                        <span className="flex items-center gap-0.5 flex-shrink-0 text-tekst-gedempt dark:text-white/55 tabular-nums">
                           <IconPhoto className="w-3 h-3" />{p.aantalFotos}
                         </span>
                       ) : p.fotoVereist ? (

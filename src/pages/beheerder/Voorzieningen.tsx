@@ -271,7 +271,7 @@ function Regel({ regel, stapel, onZet, onOpen }: {
               )}
             </div>
 
-            <div className="text-xs text-gray-400 dark:text-white/40 mt-1.5">
+            <div className="text-xs text-tekst-gedempt dark:text-white/55 mt-1.5">
               {formatDatumKort(regel.start)}
               {regel.eind !== regel.start && ` – ${formatDatumKort(regel.eind)}`}
               {regel.bonnummer && ` · bon ${regel.bonnummer}`}
@@ -282,7 +282,7 @@ function Regel({ regel, stapel, onZet, onOpen }: {
             onClick={onOpen}
             aria-label="Werkbon openen"
             title="Werkbon openen"
-            className="flex-shrink-0 p-2 -m-1 rounded-lg text-gray-300 dark:text-white/25 hover:text-gray-900 dark:hover:text-white hover:bg-surface-2 dark:hover:bg-white/10 transition-colors"
+            className="flex-shrink-0 p-2 -m-1 rounded-lg text-tekst-fijn dark:text-white/40 hover:text-gray-900 dark:hover:text-white hover:bg-surface-2 dark:hover:bg-white/10 transition-colors"
           >
             <IconExternalLink className="w-4 h-4" />
           </button>

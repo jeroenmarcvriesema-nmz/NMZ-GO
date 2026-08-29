@@ -18,7 +18,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import { Modal } from '@/components/ui/Modal'
 import { useWerkbon } from '@/hooks/useWerkbonnen'
 import { useTaken } from '@/hooks/useTaken'
-import { berekenVoortgang, formatDatum } from '@/lib/utils'
+import { berekenVoortgang, formatDatum, cn } from '@/lib/utils'
 import { standkleur } from '@/lib/klusstand'
 import { supabase } from '@/lib/supabase'
 import { IconArrowLeft, IconPlus, IconCalendar, IconMapPin, IconUsers, IconFileText, IconAlertCircle, IconCheck, IconArrowBackUp } from '@tabler/icons-react'
@@ -34,7 +34,7 @@ export default function WerkbonDetail() {
   const [statusFout, setStatusFout] = useState<string | null>(null)
 
   if (loading) return <PageWrapper title="Werkbon"><div className="flex justify-center py-20"><Spinner className="w-8 h-8" /></div></PageWrapper>
-  if (!werkbon) return <PageWrapper title="Werkbon"><div className="text-center py-16 text-gray-400 dark:text-white/40">Werkbon niet gevonden.</div></PageWrapper>
+  if (!werkbon) return <PageWrapper title="Werkbon"><div className="text-center py-16 text-tekst-gedempt dark:text-white/55">Werkbon niet gevonden.</div></PageWrapper>
 
   const voortgang = berekenVoortgang(werkbon.taken || [])
   // Dezelfde stand en kleur als op de lijstschermen en de planning.
@@ -86,12 +86,15 @@ export default function WerkbonDetail() {
       </div>
     }>
       <div className="max-w-4xl space-y-4">
-        <Card accent="yellow">
+        {/* De rand links droeg altijd geel, wat de stand ook was — terwijl
+            de badge rechts in de kaart hem wél goed toont. Nu dezelfde
+            bron als overal: `standkleur(werkbon)`. */}
+        <Card className={cn('border-l-4', k.rand)}>
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
               <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">{werkbon.adres}</h1>
               <p className="text-sm text-gray-500 dark:text-white/60 mt-0.5">{werkbon.projectnaam}</p>
-              <div className="flex flex-wrap gap-3 mt-3 text-xs text-gray-400 dark:text-white/40">
+              <div className="flex flex-wrap gap-3 mt-3 text-xs text-tekst-gedempt dark:text-white/55">
                 <span className="flex items-center gap-1"><IconFileText className="w-3.5 h-3.5" />{werkbon.bonnummer}</span>
                 <span className="flex items-center gap-1"><IconCalendar className="w-3.5 h-3.5" />{formatDatum(werkbon.datum)}</span>
                 {werkbon.opdrachtgever && <span className="flex items-center gap-1"><IconMapPin className="w-3.5 h-3.5" />{werkbon.opdrachtgever}</span>}
@@ -105,7 +108,7 @@ export default function WerkbonDetail() {
               <div className="text-2xl font-extrabold mt-2 text-gray-900 dark:text-white">{voortgang}%</div>
             </div>
           </div>
-          <div className="mt-4"><ProgressBar value={voortgang} size="md" variant={voortgang === 100 ? 'green' : 'yellow'} /></div>
+          <div className="mt-4"><ProgressBar value={voortgang} size="md" variant={k.badge} /></div>
           {/* Eén handeling, en alleen als hij kan. De database weigert
               'voltooid' zolang er een punt openstaat — dat hoorde je
               hiervoor pas ná het klikken, als foutmelding. Nu staat er
@@ -117,7 +120,7 @@ export default function WerkbonDetail() {
                 knop hoort niet — hier stond er wél een, mét de tekst
                 "kan zolang hij nog niet is opgeleverd" eronder. */}
             {werkbon.opgeleverd_op ? (
-              <span className="text-xs text-gray-400 dark:text-white/40">
+              <span className="text-xs text-tekst-gedempt dark:text-white/55">
                 Deze klus is opgeleverd en ligt daarmee vast.
               </span>
             ) : werkbon.status === 'voltooid' ? (
@@ -125,12 +128,12 @@ export default function WerkbonDetail() {
                 <Button variant="secondary" size="sm" onClick={() => handleStatus('open')}>
                   <IconArrowBackUp className="w-4 h-4" /> Heropenen
                 </Button>
-                <span className="text-xs text-gray-400 dark:text-white/40">
+                <span className="text-xs text-tekst-gedempt dark:text-white/55">
                   Deze bon staat op afgerond. Heropenen kan zolang hij nog niet is opgeleverd.
                 </span>
               </>
             ) : puntenOpen > 0 ? (
-              <span className="text-xs text-gray-400 dark:text-white/40">
+              <span className="text-xs text-tekst-gedempt dark:text-white/55">
                 Nog {puntenOpen} van de {(werkbon.taken || []).length} punten open — afronden kan
                 zodra de ploeg alles heeft afgevinkt.
               </span>
@@ -139,7 +142,7 @@ export default function WerkbonDetail() {
                 <Button variant="primary" size="sm" onClick={() => handleStatus('voltooid')}>
                   <IconCheck className="w-4 h-4" /> Werkbon afronden
                 </Button>
-                <span className="text-xs text-gray-400 dark:text-white/40">
+                <span className="text-xs text-tekst-gedempt dark:text-white/55">
                   Alle punten zijn afgevinkt.
                 </span>
               </>
@@ -200,7 +203,7 @@ export default function WerkbonDetail() {
               onRefresh={refetch}
             />
           ))}
-          {!werkbon.taken?.length && <p className="text-sm text-gray-400 dark:text-white/40 text-center py-6">Nog geen taken.</p>}
+          {!werkbon.taken?.length && <p className="text-sm text-tekst-gedempt dark:text-white/55 text-center py-6">Nog geen taken.</p>}
         </Card>
       </div>
 

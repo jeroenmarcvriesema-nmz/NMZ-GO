@@ -23,7 +23,7 @@ export function ErrorState({ titel = 'Er ging iets mis', melding, onOpnieuw, cla
         <IconAlertTriangle className="w-6 h-6" />
       </div>
       <div className="mt-4 font-semibold text-gray-700 dark:text-white/80">{titel}</div>
-      <p className="mt-1.5 text-sm text-gray-400 dark:text-white/40 max-w-sm leading-relaxed">{melding}</p>
+      <p className="mt-1.5 text-sm text-tekst-gedempt dark:text-white/55 max-w-sm leading-relaxed">{melding}</p>
       {onOpnieuw && (
         <Button variant="secondary" size="sm" className="mt-5" onClick={onOpnieuw}>
           <IconRefresh className="w-4 h-4" /> Opnieuw proberen

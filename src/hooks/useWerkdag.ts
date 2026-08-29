@@ -200,15 +200,39 @@ export function useWerkdag(werkbonId: string | null) {
   return { state, loading, bezig, startWerkdag, stopWerkdag, hervatWerkdag }
 }
 
+/**
+ * Een tijdstip, of een streepje als er geen is.
+ *
+ * `new Date('onzin')` levert geen fout op maar een Date waarvan
+ * `getTime()` NaN is, en `toLocaleTimeString` maakt daar keurig de
+ * tekst "Invalid Date" van. Die stond hierdoor gewoon op het scherm te
+ * lezen, naast "NaN:NaN u" uit `geefUren` hieronder — terwijl
+ * DESIGN_SYSTEM.md zegt dat er geen technisch jargon in de UI hoort.
+ *
+ * Een tijd die er niet is en een tijd die niet klopt zijn voor de
+ * gebruiker hetzelfde geval: er valt niets te tonen. Dus allebei een
+ * streepje.
+ */
+function geldig(d: Date | null | undefined): d is Date {
+  return d instanceof Date && !Number.isNaN(d.getTime())
+}
+
 export function formatTijd(d: Date | null): string {
-  if (!d) return '—'
+  if (!geldig(d)) return '—'
   return d.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })
 }
 
 export function geefUren(start: Date | null, stop: Date | null): string {
-  if (!start) return '0:00'
+  // Gaf '0:00' terug als er geen starttijd was. Dat leest als "er is
+  // nul uur gewerkt" terwijl het betekent "we weten het niet", en dat
+  // zijn twee verschillende dingen op een urenoverzicht.
+  if (!geldig(start)) return '—'
   const eind = stop ?? new Date()
+  if (!geldig(eind)) return '—'
   const ms = eind.getTime() - start.getTime()
+  // Een stoptijd vóór de starttijd is geen negatief aantal uren maar
+  // een kapotte registratie.
+  if (ms < 0) return '—'
   const h = Math.floor(ms / 3600000)
   const m = Math.floor((ms % 3600000) / 60000)
   return `${h}:${String(m).padStart(2, '0')}`

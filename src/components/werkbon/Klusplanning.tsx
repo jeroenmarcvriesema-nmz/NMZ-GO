@@ -82,7 +82,7 @@ export function Klusplanning({ werkbon, onKlaar }: { werkbon: Werkbon; onKlaar: 
             het helemaal niet meer. Een waarschuwing die niet waar is
             houdt mensen van de knop af. */}
         {werkbon.clickup_taak_id && (
-          <p className="flex items-start gap-1.5 text-xs text-gray-400 dark:text-white/40 min-w-0">
+          <p className="flex items-start gap-1.5 text-xs text-tekst-gedempt dark:text-white/55 min-w-0">
             <IconInfoCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
             <span className="break-words">
               Wordt ook in ClickUp gezet, als start- en opleverdatum.

@@ -81,7 +81,7 @@ export function Werktijden({ werkbonId }: { werkbonId: string }) {
           De werktijden konden niet worden opgehaald.
         </p>
       ) : regels.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-white/40">
+        <p className="text-sm text-tekst-gedempt dark:text-white/55">
           Er is op deze klus nog geen werkdag gestart.
         </p>
       ) : (
@@ -95,13 +95,13 @@ export function Werktijden({ werkbonId }: { werkbonId: string }) {
               <div key={r.id} className="flex items-center gap-3 py-2.5 min-w-0">
                 {loopt
                   ? <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0 animate-pulse" />
-                  : <IconClock className="w-3.5 h-3.5 flex-shrink-0 text-gray-300 dark:text-white/25" />}
+                  : <IconClock className="w-3.5 h-3.5 flex-shrink-0 text-tekst-fijn dark:text-white/40" />}
 
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">
                     {r.medewerker?.naam ?? 'Onbekend'}
                   </div>
-                  <div className="text-xs text-gray-400 dark:text-white/40">
+                  <div className="text-xs text-tekst-gedempt dark:text-white/55">
                     {formatDatumKort(r.datum)}
                     {/* Een dag die door de nachtelijke opruiming is
                         dichtgezet is geen gewerkte tijd maar een
@@ -120,7 +120,7 @@ export function Werktijden({ werkbonId }: { werkbonId: string }) {
                   <div className="text-sm font-semibold text-gray-900 dark:text-white">
                     {geefUren(start, stop)} u
                   </div>
-                  <div className="text-xs text-gray-400 dark:text-white/40">
+                  <div className="text-xs text-tekst-gedempt dark:text-white/55">
                     {formatTijd(start)}–{loopt ? 'nu' : formatTijd(stop)}
                   </div>
                 </div>

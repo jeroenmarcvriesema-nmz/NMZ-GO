@@ -312,11 +312,22 @@ export function Klusacties({ werkbon, onKlaar }: Props) {
             </div>
           )}
 
+          {/* De knop volgt nu de regel die er onder staat.
+              Hij zag er volledig bruikbaar uit terwijl de zin eronder
+              uitlegt dat opleveren pas kan als de ploeg de bon heeft
+              afgerond — dus je drukte, en kreeg een foutmelding als
+              antwoord op iets wat de app al wist. De uitleg blijft
+              staan; die is nu de reden waarom hij uit staat in plaats
+              van de waarschuwing achteraf. */}
           {!opgeleverd && (
             <Button
               variant="primary"
               className="min-h-[44px] sm:ml-auto"
               loading={bezig}
+              disabled={werkbon.status !== 'voltooid'}
+              title={werkbon.status !== 'voltooid'
+                ? 'Kan pas als de zwamsaneerder de bon heeft afgerond'
+                : undefined}
               onClick={opleveren}
             >
               <IconCircleCheck className="w-4 h-4" /> Opleveren
@@ -325,7 +336,7 @@ export function Klusacties({ werkbon, onKlaar }: Props) {
         </div>
 
         {!opgeleverd && werkbon.status !== 'voltooid' && (
-          <p className="flex items-start gap-1.5 mt-3 text-xs text-gray-400 dark:text-white/40">
+          <p className="flex items-start gap-1.5 mt-3 text-xs text-tekst-gedempt dark:text-white/55">
             <IconInfoCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
             Opleveren kan pas als de zwamsaneerder de bon heeft afgerond — dan
             staat vast dat elk punt met fotoplicht een foto heeft.
@@ -406,14 +417,14 @@ export function Klusacties({ werkbon, onKlaar }: Props) {
               rows={3}
               autoFocus
               placeholder={modal ? SOORTEN[modal].voorbeeld : ''}
-              className="w-full rounded-sm border border-gray-200 dark:border-white/10 bg-white dark:bg-surface-dark-2 px-3 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:border-brand-yellow transition-all"
+              className="w-full rounded-sm border border-gray-200 dark:border-white/10 bg-white dark:bg-surface-dark-2 px-3 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-tekst-fijn dark:placeholder:text-white/45 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:border-brand-yellow transition-all"
             />
             {/* Geen keuzelijst: wie een klus stillegt heeft haast. Wel
                 deze hint, want één woord stuurt de ClickUp-status. */}
             {/* Alleen bij de vrije variant. Bij de andere drie staat het
                 woord al vast en is deze uitleg ruis. */}
             {modal === 'stilleggen' && (
-              <p className="text-xs text-gray-400 dark:text-white/40 mt-1.5">
+              <p className="text-xs text-tekst-gedempt dark:text-white/55 mt-1.5">
                 Deze knop legt de klus écht stil — hij wordt overal als
                 stilgelegd geteld. Moet er alleen nog gespoten of geïsoleerd
                 worden, of komt er een nieuwe datum? Gebruik dan de blauwe

@@ -56,7 +56,7 @@ export function Voortgangsring({
           {label ?? `${veilig}%`}
         </span>
         {onder && (
-          <span className="text-[10px] text-gray-400 dark:text-white/40 mt-1 leading-none">{onder}</span>
+          <span className="text-[10px] text-tekst-gedempt dark:text-white/55 mt-1 leading-none">{onder}</span>
         )}
       </div>
     </div>

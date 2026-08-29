@@ -37,6 +37,17 @@ function padenUit(bron: string): string[] {
   return [...bron.matchAll(/to="(\/[^"]*)"/g)].map((m) => m[1])
 }
 
+/**
+ * Alles waar de mobiele navigatie heen kan: de tabs onderin (`to="/pad"`)
+ * plus de regels in het "Meer"-blad, die met `ga('/pad')` navigeren.
+ */
+function mobielePaden(bron: string): string[] {
+  return [
+    ...padenUit(bron),
+    ...[...bron.matchAll(/ga\('(\/[^']*)'\)/g)].map((m) => m[1]),
+  ]
+}
+
 describe('bevoegdheden', () => {
   it('geeft kantoor werkbeheer en de zwamsaneerder niet', () => {
     for (const rol of KANTOOR) expect(magWerkBeheren(rol)).toBe(true)
@@ -162,6 +173,40 @@ describe('de mobiele balk stuurt niemand weg', () => {
     expect(paden.length).toBeGreaterThan(0)
     for (const pad of paden) {
       expect(ROUTE_SLOT, `mobiele balk verwijst naar onbekend pad ${pad}`).toHaveProperty(pad)
+    }
+  })
+
+  /**
+   * De omgekeerde vraag, en de reden dat deze erbij komt.
+   *
+   * De tests hierboven controleren of elk pad in een menu naar een
+   * bestaande route wijst. Ze stellen niet de andere vraag: is elke
+   * route eigenlijk érgens aan te tikken? `/lopend` was dat niet — hij
+   * stond alleen in de zijbalk, en die is `hidden md:block`. Op een
+   * telefoon kon je er dus niet komen, terwijl "wie staat er nu op welke
+   * klus" juist het scherm is dat een uitvoerder onderweg wil.
+   *
+   * Een route zonder ingang is geen fout die je opmerkt: er gebeurt
+   * niets, er gaat niets stuk, hij is er gewoon niet. Precies het soort
+   * ding dat een test moet vangen.
+   */
+  const ZONDER_EIGEN_KNOP: string[] = [
+    // Zit als knop in de balk bovenin op /werkbonnen en op het
+    // dashboard, en hoort geen eigen regel in het "Meer"-blad te
+    // krijgen — dat is een lijst om iets op te zoeken, niet om iets aan
+    // te maken.
+    '/werkbonnen/nieuw',
+  ]
+
+  it('elke kantoorroute is op een telefoon te bereiken', () => {
+    const bereikbaar = mobielePaden(bron)
+    for (const [pad, slot] of Object.entries(ROUTE_SLOT)) {
+      if (slot !== 'kantoor' || pad.includes(':')) continue
+      if (ZONDER_EIGEN_KNOP.includes(pad)) continue
+      expect(
+        bereikbaar,
+        `${pad} staat in geen enkele mobiele navigatie — op een telefoon is dat scherm niet te bereiken`,
+      ).toContain(pad)
     }
   })
 

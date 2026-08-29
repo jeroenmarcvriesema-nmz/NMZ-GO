@@ -83,13 +83,13 @@ export default function Projecten() {
     >
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1 sm:max-w-md">
-          <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-white/40" />
+          <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tekst-gedempt dark:text-white/55" />
           <input
             type="text"
             placeholder="Adres, plaats, postcode, opdrachtnummer of naam…"
             value={zoek}
             onChange={(e) => setZoek(e.target.value)}
-            className="w-full min-h-[44px] pl-9 pr-4 py-2.5 text-sm text-gray-900 dark:text-white bg-white dark:bg-surface-dark-2 border border-gray-200 dark:border-white/10 rounded-sm outline-none placeholder:text-gray-400 dark:placeholder:text-white/30 focus:border-brand-yellow focus:ring-2 focus:ring-brand-yellow/20"
+            className="w-full min-h-[44px] pl-9 pr-4 py-2.5 text-sm text-gray-900 dark:text-white bg-white dark:bg-surface-dark-2 border border-gray-200 dark:border-white/10 rounded-sm outline-none placeholder:text-tekst-fijn dark:placeholder:text-white/45 focus:border-brand-yellow focus:ring-2 focus:ring-brand-yellow/20"
           />
         </div>
         <div className="flex gap-1 bg-surface-2 dark:bg-white/5 p-1 rounded-sm flex-wrap">
@@ -180,7 +180,7 @@ function Groepkaart({ groep, open, onKlap, onOpenBon }: GroepkaartProps) {
       // Dezelfde kleurwas als de werkbonkaarten en de planning, met
       // dezelfde schakelaar: KLEURWAS uit betekent overal tegelijk een
       // witte kaart met alleen een gekleurde rand.
-      'border border-l-4 rounded-xl shadow-sm overflow-hidden transition-shadow hover:shadow-md',
+      'border border-l-4 rounded-lg shadow-sm overflow-hidden transition-shadow hover:shadow-md',
       KLEURWAS ? k.vlak : 'bg-white dark:bg-surface-dark-2',
       KLEURWAS ? k.omlijsting : 'border-gray-100 dark:border-white/10',
       k.rand,
@@ -216,7 +216,7 @@ function Groepkaart({ groep, open, onKlap, onOpenBon }: GroepkaartProps) {
           </span>
         </div>
 
-        <div className="flex flex-wrap gap-x-3 gap-y-1.5 text-xs text-gray-400 dark:text-white/40 mt-3">
+        <div className="flex flex-wrap gap-x-3 gap-y-1.5 text-xs text-tekst-gedempt dark:text-white/55 mt-3">
           {plaatsen.length > 0 && (
             <span className="flex items-center gap-1 min-w-0">
               <IconMapPin className="w-3.5 h-3.5 flex-shrink-0" />
@@ -235,7 +235,7 @@ function Groepkaart({ groep, open, onKlap, onOpenBon }: GroepkaartProps) {
 
         {groep.punten > 0 && (
           <div className="mt-3">
-            <div className="flex justify-between text-xs text-gray-400 dark:text-white/40 mb-1.5">
+            <div className="flex justify-between text-xs text-tekst-gedempt dark:text-white/55 mb-1.5">
               <span>{groep.puntenKlaar} van {groep.punten} punten</span>
               <span className="font-semibold text-gray-700 dark:text-white/70">{voortgang}%</span>
             </div>
@@ -252,7 +252,7 @@ function Groepkaart({ groep, open, onKlap, onOpenBon }: GroepkaartProps) {
         )}
 
         <div className="flex items-center justify-between gap-3 mt-3">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400 dark:text-white/40 min-w-0">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-tekst-gedempt dark:text-white/55 min-w-0">
             <span className="flex items-center gap-1">
               <IconListCheck className="w-3.5 h-3.5 flex-shrink-0" />
               {groep.bonnen.length} {groep.bonnen.length === 1 ? 'bon' : 'bonnen'}
@@ -265,9 +265,9 @@ function Groepkaart({ groep, open, onKlap, onOpenBon }: GroepkaartProps) {
             )}
           </div>
           {isProject ? (
-            <IconChevronDown className={cn('w-4 h-4 flex-shrink-0 text-gray-300 dark:text-white/30 transition-transform', open && 'rotate-180')} />
+            <IconChevronDown className={cn('w-4 h-4 flex-shrink-0 text-tekst-fijn dark:text-white/40 transition-transform', open && 'rotate-180')} />
           ) : (
-            <IconChevronRight className="w-4 h-4 flex-shrink-0 text-gray-300 dark:text-white/30 group-hover:text-brand-yellow transition-colors" />
+            <IconChevronRight className="w-4 h-4 flex-shrink-0 text-tekst-fijn dark:text-white/40 group-hover:text-brand-yellow transition-colors" />
           )}
         </div>
       </button>
@@ -282,11 +282,11 @@ function Groepkaart({ groep, open, onKlap, onOpenBon }: GroepkaartProps) {
             >
               <div className="min-w-0">
                 <div className="text-sm font-semibold text-gray-900 dark:text-white break-words">{bon.adres}</div>
-                <div className="text-xs text-gray-400 dark:text-white/40">
+                <div className="text-xs text-tekst-gedempt dark:text-white/55">
                   {[bon.plaats, bon.bonnummer].filter(Boolean).join(' · ')}
                 </div>
               </div>
-              <IconChevronRight className="w-4 h-4 flex-shrink-0 text-gray-300 dark:text-white/30" />
+              <IconChevronRight className="w-4 h-4 flex-shrink-0 text-tekst-fijn dark:text-white/40" />
             </button>
           ))}
         </div>

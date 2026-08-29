@@ -84,7 +84,7 @@ export function Klusploeg({ werkbon, onKlaar }: { werkbon: Werkbon; onKlaar: () 
       {ploeg === null ? (
         <div className="flex justify-center py-6"><Spinner className="w-5 h-5" /></div>
       ) : ploeg.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-white/40">
+        <p className="text-sm text-tekst-gedempt dark:text-white/55">
           Er staat nog niemand in het personenregister.
         </p>
       ) : (
@@ -132,7 +132,7 @@ export function Klusploeg({ werkbon, onKlaar }: { werkbon: Werkbon; onKlaar: () 
         </Button>
 
         {werkbon.clickup_taak_id && (
-          <p className="flex items-start gap-1.5 text-xs text-gray-400 dark:text-white/40 min-w-0">
+          <p className="flex items-start gap-1.5 text-xs text-tekst-gedempt dark:text-white/55 min-w-0">
             <IconInfoCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
             <span className="break-words">Wordt ook in ClickUp gezet, onder Medewerkers.</span>
           </p>

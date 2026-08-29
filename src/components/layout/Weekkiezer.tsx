@@ -72,7 +72,7 @@ export function Weekkiezer({ week, onWissel, telling, className }: WeekkiezerPro
           'flex items-center justify-center w-11 h-11 rounded-lg flex-shrink-0',
           isNu
             ? 'bg-brand-yellow text-gray-900'
-            : 'bg-surface-2 dark:bg-white/5 text-gray-400 dark:text-white/40'
+            : 'bg-surface-2 dark:bg-white/5 text-tekst-gedempt dark:text-white/55'
         )}>
           <IconCalendarWeek className="w-5 h-5" />
         </div>
@@ -83,12 +83,12 @@ export function Weekkiezer({ week, onWissel, telling, className }: WeekkiezerPro
             </span>
             <span className={cn(
               'text-xs font-bold uppercase tracking-widest',
-              isNu ? 'text-brand-yellow-dark dark:text-brand-yellow' : 'text-gray-400 dark:text-white/40'
+              isNu ? 'text-brand-yellow-tekst dark:text-brand-yellow' : 'text-tekst-gedempt dark:text-white/55'
             )}>
               {weekLabel(week)}
             </span>
           </div>
-          <div className="text-xs text-gray-400 dark:text-white/40">
+          <div className="text-xs text-tekst-gedempt dark:text-white/55">
             {periode(dagen[0], dagen[dagen.length - 1])}
             {telling && <> · {telling}</>}
           </div>

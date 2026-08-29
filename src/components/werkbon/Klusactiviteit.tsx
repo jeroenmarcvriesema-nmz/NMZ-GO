@@ -37,17 +37,17 @@ interface Gebeurtenis {
 /** Welk pictogram en welke kleur bij welke soort hoort. */
 const STIJL: Record<string, { icoon: typeof IconCheck; kleur: string }> = {
   gestart:            { icoon: IconPlayerPlay,   kleur: 'text-green-600 dark:text-green-400' },
-  gestopt:            { icoon: IconPlayerStop,   kleur: 'text-gray-400 dark:text-white/40' },
+  gestopt:            { icoon: IconPlayerStop,   kleur: 'text-tekst-gedempt dark:text-white/55' },
   afgevinkt:          { icoon: IconCheck,        kleur: 'text-green-600 dark:text-green-400' },
   fotos:              { icoon: IconPhoto,        kleur: 'text-blue-600 dark:text-blue-400' },
   stilgelegd:         { icoon: IconPlayerPause,  kleur: 'text-brand-red dark:text-red-400' },
   hervat:             { icoon: IconPlayerPlay,   kleur: 'text-green-600 dark:text-green-400' },
   opgeleverd:         { icoon: IconCircleCheck,  kleur: 'text-green-600 dark:text-green-400' },
-  planning_gewijzigd: { icoon: IconCalendarRepeat, kleur: 'text-gray-400 dark:text-white/40' },
-  ploeg_gewijzigd:    { icoon: IconUsers,        kleur: 'text-gray-400 dark:text-white/40' },
-  punt_toegevoegd:    { icoon: IconPlus,         kleur: 'text-gray-400 dark:text-white/40' },
-  punt_verwijderd:    { icoon: IconTrash,        kleur: 'text-gray-400 dark:text-white/40' },
-  voorziening:        { icoon: IconTruck,        kleur: 'text-gray-400 dark:text-white/40' },
+  planning_gewijzigd: { icoon: IconCalendarRepeat, kleur: 'text-tekst-gedempt dark:text-white/55' },
+  ploeg_gewijzigd:    { icoon: IconUsers,        kleur: 'text-tekst-gedempt dark:text-white/55' },
+  punt_toegevoegd:    { icoon: IconPlus,         kleur: 'text-tekst-gedempt dark:text-white/55' },
+  punt_verwijderd:    { icoon: IconTrash,        kleur: 'text-tekst-gedempt dark:text-white/55' },
+  voorziening:        { icoon: IconTruck,        kleur: 'text-tekst-gedempt dark:text-white/55' },
   // Vervolgwerk is geen stilstand (migratie 035), dus ook niet rood.
   // Blauw: er loopt nog iets, en het is bekend wát.
   vervolg_gemeld:     { icoon: IconSpray,        kleur: 'text-blue-600 dark:text-blue-400' },
@@ -183,7 +183,7 @@ export function Klusactiviteit({ werkbonId }: { werkbonId: string }) {
 
   if (rijen.length === 0) {
     return (
-      <p className="text-xs text-gray-400 dark:text-white/40 py-2">
+      <p className="text-xs text-tekst-gedempt dark:text-white/55 py-2">
         Er is op deze klus nog niets gebeurd.
       </p>
     )
@@ -192,16 +192,16 @@ export function Klusactiviteit({ werkbonId }: { werkbonId: string }) {
   return (
     <ul className="space-y-1.5">
       {rijen.slice(0, 30).map((r, n) => {
-        const stijl = STIJL[r.soort] ?? { icoon: IconCheck, kleur: 'text-gray-400 dark:text-white/40' }
+        const stijl = STIJL[r.soort] ?? { icoon: IconCheck, kleur: 'text-tekst-gedempt dark:text-white/55' }
         const Icoon = stijl.icoon
         return (
           <li key={n} className="flex items-start gap-2 text-xs min-w-0">
             <Icoon className={cn('w-3.5 h-3.5 flex-shrink-0 mt-0.5', stijl.kleur)} />
             <span className="min-w-0 flex-1 break-words text-gray-700 dark:text-white/70">
               {r.tekst}
-              {r.wie && <span className="text-gray-400 dark:text-white/40"> · {r.wie}</span>}
+              {r.wie && <span className="text-tekst-gedempt dark:text-white/55"> · {r.wie}</span>}
             </span>
-            <span className="flex-shrink-0 text-gray-400 dark:text-white/40 tabular-nums">
+            <span className="flex-shrink-0 text-tekst-gedempt dark:text-white/55 tabular-nums">
               {tijdstip(r.tijd)}
             </span>
           </li>
@@ -209,7 +209,7 @@ export function Klusactiviteit({ werkbonId }: { werkbonId: string }) {
       })}
 
       {rijen.length > 30 && (
-        <li className="text-xs text-gray-400 dark:text-white/40 pt-1">
+        <li className="text-xs text-tekst-gedempt dark:text-white/55 pt-1">
           en {rijen.length - 30} eerder
         </li>
       )}

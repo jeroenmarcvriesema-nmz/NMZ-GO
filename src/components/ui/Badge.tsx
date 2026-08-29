@@ -17,7 +17,7 @@ export function Badge({ variant = 'gray', className, children }: BadgeProps) {
     orange: 'bg-amber-50 dark:bg-amber-500/10 text-amber-800 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30',
   }
   return (
-    <span className={cn('inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-md', variants[variant], className)}>
+    <span className={cn('inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-sm', variants[variant], className)}>
       {children}
     </span>
   )

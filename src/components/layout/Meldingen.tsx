@@ -75,7 +75,7 @@ export function Meldingen() {
       <button
         onClick={() => { setOpen(!open); if (!open) markeerGelezen() }}
         title="Meldingen"
-        className="relative flex items-center justify-center w-10 h-10 rounded-lg text-gray-400 dark:text-white/40 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+        className="relative flex items-center justify-center w-10 h-10 rounded-lg text-tekst-gedempt dark:text-white/55 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
       >
         <IconBell className="w-5 h-5" />
         {ongelezen > 0 && (
@@ -93,8 +93,8 @@ export function Meldingen() {
 
           {meldingen.length === 0 ? (
             <div className="px-4 py-8 text-center">
-              <IconCheck className="w-6 h-6 mx-auto mb-2 text-gray-300 dark:text-white/20" />
-              <p className="text-sm text-gray-400 dark:text-white/40">
+              <IconCheck className="w-6 h-6 mx-auto mb-2 text-tekst-fijn dark:text-white/40" />
+              <p className="text-sm text-tekst-gedempt dark:text-white/55">
                 Niets bijzonders. Je krijgt hier bericht als een stilgelegde
                 klus met een andere klus in de knel komt.
               </p>
@@ -115,7 +115,7 @@ export function Meldingen() {
                   )}
                 >
                   <p className="text-sm leading-snug text-gray-700 dark:text-white/70 break-words">{m.tekst}</p>
-                  <p className="text-xs text-gray-400 dark:text-white/40 mt-1">
+                  <p className="text-xs text-tekst-gedempt dark:text-white/55 mt-1">
                     {new Date(m.created_at).toLocaleString('nl-NL', {
                       day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
                     })}

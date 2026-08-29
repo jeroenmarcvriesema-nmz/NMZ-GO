@@ -48,7 +48,7 @@ export function Standbalk({ verdeling, legenda = true, rijen, dik, className, le
     return (
       <div className={className}>
         <div className={cn('w-full rounded-full bg-surface-2 dark:bg-white/5', dik ? 'h-3' : 'h-2')} />
-        {leeg && <p className="text-xs text-gray-400 dark:text-white/40 mt-2">{leeg}</p>}
+        {leeg && <p className="text-xs text-tekst-gedempt dark:text-white/55 mt-2">{leeg}</p>}
       </div>
     )
   }
@@ -85,7 +85,7 @@ export function Standbalk({ verdeling, legenda = true, rijen, dik, className, le
               <span className="text-sm font-extrabold text-gray-900 dark:text-white tabular-nums flex-shrink-0">
                 {aantal}
               </span>
-              <span className="text-[11px] text-gray-400 dark:text-white/40 tabular-nums w-9 text-right flex-shrink-0">
+              <span className="text-[11px] text-tekst-gedempt dark:text-white/55 tabular-nums w-9 text-right flex-shrink-0">
                 {Math.round((aantal / totaal) * 100)}%
               </span>
             </div>

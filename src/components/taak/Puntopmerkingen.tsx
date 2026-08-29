@@ -62,7 +62,7 @@ export function Puntopmerkingen({ taakId, werkbonId }: { taakId: string; werkbon
                         <span className="text-xs font-bold text-gray-900 dark:text-white">
                           {o.auteur?.naam ?? 'Onbekend'}
                         </span>
-                        <span className="text-[11px] text-gray-400 dark:text-white/40 tabular-nums">
+                        <span className="text-[11px] text-tekst-gedempt dark:text-white/55 tabular-nums">
                           {wanneer(o.created_at)}
                         </span>
                       </div>
@@ -78,7 +78,7 @@ export function Puntopmerkingen({ taakId, werkbonId }: { taakId: string; werkbon
                       <button
                         onClick={() => weg(o.id)}
                         title="Deze opmerking weghalen"
-                        className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-sm text-gray-300 dark:text-white/25 hover:text-brand-red transition-colors"
+                        className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-sm text-tekst-fijn dark:text-white/40 hover:text-brand-red transition-colors"
                       >
                         <IconTrash className="w-3.5 h-3.5" />
                       </button>
@@ -95,7 +95,7 @@ export function Puntopmerkingen({ taakId, werkbonId }: { taakId: string; werkbon
               value={tekst}
               onChange={(e) => setTekst(e.target.value)}
               placeholder="Iets doorgeven over dit punt…"
-              className="flex-1 min-w-0 rounded-sm border border-gray-200 dark:border-white/10 bg-white dark:bg-surface-dark-2 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:border-brand-yellow transition-all resize-y"
+              className="flex-1 min-w-0 rounded-sm border border-gray-200 dark:border-white/10 bg-white dark:bg-surface-dark-2 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder:text-tekst-fijn dark:placeholder:text-white/45 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:border-brand-yellow transition-all resize-y"
             />
             <button
               onClick={stuur}
@@ -104,7 +104,7 @@ export function Puntopmerkingen({ taakId, werkbonId }: { taakId: string; werkbon
                 'flex-shrink-0 min-h-[44px] px-3 rounded-sm border font-semibold text-xs flex items-center gap-1.5 transition-all duration-150 ease-brand',
                 tekst.trim()
                   ? 'border-brand-yellow bg-brand-yellow text-gray-900'
-                  : 'border-gray-200 dark:border-white/10 text-gray-300 dark:text-white/25 cursor-not-allowed'
+                  : 'border-gray-200 dark:border-white/10 text-tekst-fijn dark:text-white/40 cursor-not-allowed'
               )}
             >
               <IconSend className="w-3.5 h-3.5" />

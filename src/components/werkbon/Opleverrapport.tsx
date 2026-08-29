@@ -156,13 +156,13 @@ export function Opleverrapport({ werkbon, onKlaar }: Props) {
             <label className="block text-sm font-semibold text-gray-700 dark:text-white/70">
               {veld.label}
             </label>
-            <p className="text-xs text-gray-400 dark:text-white/40 mt-0.5 mb-1.5">{veld.hint}</p>
+            <p className="text-xs text-tekst-gedempt dark:text-white/55 mt-0.5 mb-1.5">{veld.hint}</p>
             <textarea
               rows={2}
               value={tekst[veld.naam]}
               onChange={(e) => setTekst((t) => ({ ...t, [veld.naam]: e.target.value }))}
               placeholder={veld.plaatshouder}
-              className="w-full rounded-sm border border-gray-200 dark:border-white/10 bg-white dark:bg-surface-dark-2 px-3 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:border-brand-yellow transition-all resize-y"
+              className="w-full rounded-sm border border-gray-200 dark:border-white/10 bg-white dark:bg-surface-dark-2 px-3 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-tekst-fijn dark:placeholder:text-white/45 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:border-brand-yellow transition-all resize-y"
             />
           </div>
         ))}
@@ -202,7 +202,7 @@ export function Opleverrapport({ werkbon, onKlaar }: Props) {
               <IconFileText className="w-4 h-4" /> Opleverrapport aanvragen
             </Button>
 
-            <p className="flex items-start gap-1.5 mt-3 text-xs text-gray-400 dark:text-white/40">
+            <p className="flex items-start gap-1.5 mt-3 text-xs text-tekst-gedempt dark:text-white/55">
               <IconInfoCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
               {fotos === 0
                 ? 'Een rapport zonder foto’s is een lege huls met een briefhoofd. Zodra de ploeg de eerste foto heeft geüpload kan het rapport aangevraagd worden.'
@@ -253,7 +253,7 @@ function RapportPdfKnop({ werkbonId, fotos }: { werkbonId: string; fotos: number
       <Button variant="primary" className="min-h-[44px]" loading={bezig} disabled={fotos === 0} onClick={maak}>
         <IconDownload className="w-4 h-4" /> {bezig ? 'Rapport maken…' : 'Download als PDF'}
       </Button>
-      <p className="text-xs text-gray-400 dark:text-white/40 mt-2">
+      <p className="text-xs text-tekst-gedempt dark:text-white/55 mt-2">
         {fotos === 0
           ? 'Zodra er een foto bij de klus staat, kan het rapport gemaakt worden.'
           : 'Wordt hier gemaakt met de laatste stand van de klus. Bij veel foto’s duurt dat even.'}
@@ -297,7 +297,7 @@ function Rapportagestand({ rapportage }: { rapportage: Rapportage }) {
 
   return (
     <div className="flex items-start gap-2 p-3 rounded-sm bg-surface-2 dark:bg-white/5 border border-gray-200 dark:border-white/10">
-      <IconClock className="w-4 h-4 flex-shrink-0 mt-0.5 text-gray-400 dark:text-white/40" />
+      <IconClock className="w-4 h-4 flex-shrink-0 mt-0.5 text-tekst-gedempt dark:text-white/55" />
       <div className="min-w-0">
         <div className="text-sm font-bold text-gray-700 dark:text-white/80">
           Aangevraagd op {formatDatum(rapportage.aangevraagd_op)}

@@ -46,26 +46,26 @@ export default function Archief() {
             Waar hebben we gewerkt?
           </label>
           <div className="relative">
-            <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-white/40" />
+            <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tekst-gedempt dark:text-white/55" />
             <input
               type="search"
               autoFocus
               value={term}
               onChange={(e) => setTerm(e.target.value)}
               placeholder="Adres, plaats of opdrachtnummer…"
-              className="w-full min-h-[44px] pl-9 pr-9 text-sm text-gray-900 dark:text-white bg-white dark:bg-surface-dark-2 border border-gray-200 dark:border-white/10 rounded-sm outline-none placeholder:text-gray-400 dark:placeholder:text-white/30 focus:border-brand-yellow focus:ring-2 focus:ring-brand-yellow"
+              className="w-full min-h-[44px] pl-9 pr-9 text-sm text-gray-900 dark:text-white bg-white dark:bg-surface-dark-2 border border-gray-200 dark:border-white/10 rounded-sm outline-none placeholder:text-tekst-fijn dark:placeholder:text-white/45 focus:border-brand-yellow focus:ring-2 focus:ring-brand-yellow"
             />
             {term && (
               <button
                 onClick={() => setTerm('')}
                 title="Wissen"
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-sm text-gray-400 dark:text-white/40 hover:text-gray-900 dark:hover:text-white"
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-sm text-tekst-gedempt dark:text-white/55 hover:text-gray-900 dark:hover:text-white"
               >
                 <IconX className="w-4 h-4" />
               </button>
             )}
           </div>
-          <p className="mt-2 text-xs text-gray-400 dark:text-white/40">
+          <p className="mt-2 text-xs text-tekst-gedempt dark:text-white/55">
             Zoekt door alle bonnen, ook die van vorig jaar. Een deel van de
             straatnaam is genoeg.
           </p>
@@ -106,7 +106,7 @@ export default function Archief() {
 
         {!loading && resultaten.length > 0 && (
           <>
-            <p className="text-xs text-gray-400 dark:text-white/40">
+            <p className="text-xs text-tekst-gedempt dark:text-white/55">
               {resultaten.length} {resultaten.length === 1 ? 'bon' : 'bonnen'} gevonden
             </p>
             <div className="space-y-3">
@@ -137,11 +137,11 @@ function BonRegel({ bon, open, onToggle }: { bon: ArchiefBon; open: boolean; onT
         onClick={onToggle}
         className="w-full flex items-start gap-3 p-4 text-left hover:bg-brand-yellow-light/30 dark:hover:bg-white/5 transition-colors"
       >
-        <IconMapPin className="w-4 h-4 flex-shrink-0 mt-1 text-gray-400 dark:text-white/40" />
+        <IconMapPin className="w-4 h-4 flex-shrink-0 mt-1 text-tekst-gedempt dark:text-white/55" />
 
         <div className="flex-1 min-w-0">
           <div className="font-semibold text-gray-900 dark:text-white truncate">{bon.adres}</div>
-          <div className="text-xs text-gray-400 dark:text-white/40 mt-0.5">
+          <div className="text-xs text-tekst-gedempt dark:text-white/55 mt-0.5">
             {[bon.plaats, formatDatum(bon.opgeleverd_op ?? bon.datum), bon.opdrachtnummer && `opdracht ${bon.opdrachtnummer}`]
               .filter(Boolean).join(' · ')}
           </div>
@@ -154,14 +154,14 @@ function BonRegel({ bon, open, onToggle }: { bon: ArchiefBon; open: boolean; onT
               const k = standkleur({ status: bon.status, opgeleverd_op: bon.opgeleverd_op, puntenKlaar: klaar })
               return <Badge variant={k.badge}>{k.label}</Badge>
             })()}
-            <span className="text-xs text-gray-400 dark:text-white/40">
+            <span className="text-xs text-tekst-gedempt dark:text-white/55">
               {klaar}/{punten.length} punten
             </span>
-            <span className="flex items-center gap-1 text-xs text-gray-400 dark:text-white/40">
+            <span className="flex items-center gap-1 text-xs text-tekst-gedempt dark:text-white/55">
               <IconPhoto className="w-3.5 h-3.5" />{fotos.length}
             </span>
             {bon.medewerkers.length > 0 && (
-              <span className="flex items-center gap-1 text-xs text-gray-400 dark:text-white/40 min-w-0">
+              <span className="flex items-center gap-1 text-xs text-tekst-gedempt dark:text-white/55 min-w-0">
                 <IconUsers className="w-3.5 h-3.5 flex-shrink-0" />
                 <span className="truncate">{bon.medewerkers.map((m) => m.naam).join(', ')}</span>
               </span>
@@ -170,7 +170,7 @@ function BonRegel({ bon, open, onToggle }: { bon: ArchiefBon; open: boolean; onT
         </div>
 
         <IconChevronDown className={cn(
-          'w-4 h-4 flex-shrink-0 mt-1 text-gray-300 dark:text-white/25 transition-transform duration-150',
+          'w-4 h-4 flex-shrink-0 mt-1 text-tekst-fijn dark:text-white/40 transition-transform duration-150',
           open && 'rotate-180'
         )} />
       </button>
@@ -179,7 +179,7 @@ function BonRegel({ bon, open, onToggle }: { bon: ArchiefBon; open: boolean; onT
         <div className="border-t border-gray-100 dark:border-white/10 p-4 space-y-5">
           {bon.werkvoorbereiding && (
             <details className="text-sm">
-              <summary className="cursor-pointer text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-white/40">
+              <summary className="cursor-pointer text-xs font-semibold uppercase tracking-widest text-tekst-gedempt dark:text-white/55">
                 Werkvoorbereiding
               </summary>
               <p className="mt-2 whitespace-pre-wrap leading-relaxed text-gray-600 dark:text-white/60">
@@ -189,27 +189,27 @@ function BonRegel({ bon, open, onToggle }: { bon: ArchiefBon; open: boolean; onT
           )}
 
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-white/40 mb-2">
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-tekst-gedempt dark:text-white/55 mb-2">
               Uitgevoerd
             </h3>
             {punten.length === 0 ? (
-              <p className="text-sm text-gray-400 dark:text-white/40">Geen punten op deze bon.</p>
+              <p className="text-sm text-tekst-gedempt dark:text-white/55">Geen punten op deze bon.</p>
             ) : (
               <ul className="space-y-2">
                 {punten.map((p) => (
                   <li key={p.id} className="flex items-start gap-2 text-sm">
                     {p.voltooid
                       ? <IconCircleCheck className="w-4 h-4 flex-shrink-0 mt-0.5 text-green-500" />
-                      : <IconCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-gray-300 dark:text-white/20" />}
+                      : <IconCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-tekst-fijn dark:text-white/40" />}
                     <span className="min-w-0">
                       <span className={cn(
                         'leading-snug',
-                        p.voltooid ? 'text-gray-700 dark:text-white/70' : 'text-gray-400 dark:text-white/40'
+                        p.voltooid ? 'text-gray-700 dark:text-white/70' : 'text-tekst-gedempt dark:text-white/55'
                       )}>
                         {p.titel}
                       </span>
                       {p.opmerking && (
-                        <span className="block text-xs text-gray-400 dark:text-white/40 mt-0.5">
+                        <span className="block text-xs text-tekst-gedempt dark:text-white/55 mt-0.5">
                           {p.opmerking}
                         </span>
                       )}
@@ -262,7 +262,7 @@ function Fotostrook({ fotos }: { fotos: ArchiefFoto[] }) {
 
   if (fotos.length === 0) {
     return (
-      <p className="text-sm text-gray-400 dark:text-white/40">
+      <p className="text-sm text-tekst-gedempt dark:text-white/55">
         Geen foto's bij deze bon.
       </p>
     )
@@ -270,7 +270,7 @@ function Fotostrook({ fotos }: { fotos: ArchiefFoto[] }) {
 
   return (
     <div>
-      <h3 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-white/40 mb-2">
+      <h3 className="text-xs font-semibold uppercase tracking-widest text-tekst-gedempt dark:text-white/55 mb-2">
         Foto's ({fotos.length})
       </h3>
       {bezig ? (
@@ -288,8 +288,8 @@ function Fotostrook({ fotos }: { fotos: ArchiefFoto[] }) {
                   key={f.id}
                   className="aspect-square rounded-sm border border-gray-100 dark:border-white/10 bg-surface-2 dark:bg-white/5 flex flex-col items-center justify-center gap-1.5 p-2 text-center"
                 >
-                  <IconArchive className="w-5 h-5 text-gray-400 dark:text-white/40" />
-                  <span className="text-[11px] leading-tight text-gray-400 dark:text-white/40">
+                  <IconArchive className="w-5 h-5 text-tekst-gedempt dark:text-white/55" />
+                  <span className="text-[11px] leading-tight text-tekst-gedempt dark:text-white/55">
                     Opgeruimd — staat bij de ClickUp-taak
                   </span>
                 </div>

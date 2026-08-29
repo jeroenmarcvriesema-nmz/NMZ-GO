@@ -32,16 +32,16 @@ export function Weekkop({ maandag, nummer, aantal }: { maandag: Date; nummer?: n
     <div className="flex items-baseline gap-2.5 pt-2 pb-1">
       <span className={cn(
         'text-sm font-extrabold tracking-tight',
-        nu ? 'text-brand-yellow-dark dark:text-brand-yellow' : 'text-gray-900 dark:text-white'
+        nu ? 'text-brand-yellow-tekst dark:text-brand-yellow' : 'text-gray-900 dark:text-white'
       )}>
         Week {wk}
       </span>
-      <span className="text-xs text-gray-400 dark:text-white/40">
+      <span className="text-xs text-tekst-gedempt dark:text-white/55">
         {periode(dagen[0], dagen[dagen.length - 1])}
         {aantal !== undefined && ` · ${aantal} ${aantal === 1 ? 'klus' : 'klussen'}`}
       </span>
       {nu && (
-        <span className="text-[10px] font-bold uppercase tracking-widest text-brand-yellow-dark dark:text-brand-yellow">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-brand-yellow-tekst dark:text-brand-yellow">
           nu
         </span>
       )}

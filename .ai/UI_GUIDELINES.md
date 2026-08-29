@@ -31,8 +31,10 @@ Lettertype: `Inter` (sans), `JetBrains Mono` voor monospace-behoefte (bonnummers
 | Sectiekop | via `SectionHeading` (`text-lg font-bold` + gele kicker-balk) | Elke sectiekop binnen een pagina/kaart — geen losse `<h2>` meer, zie `components/ui/SectionHeading.tsx` |
 | Kaarttitel | `text-base font-bold tracking-tight` | Titel binnen een kaart (zie `WerkbonKaart`) |
 | Body | `text-sm` | Standaardtekst, formulierlabels, kaartinhoud |
-| Caption / meta | `text-xs text-gray-400 dark:text-white/40` | Secundaire info: datums, aantallen, hints |
+| Caption / meta | `text-xs text-tekst-gedempt dark:text-white/55` | Secundaire info: datums, aantallen, hints |
 | Micro-label | `text-[10px] font-bold uppercase tracking-widest` | Sectielabels in navigatie (zie `Sidebar` → `NavSection`) |
+
+**Regel — contrast gaat vóór terughoudendheid.** Gedempte tekst gebruikt `text-tekst-gedempt` (`#6B7280`, 4,83:1 op wit) met `dark:text-white/55`. Gebruik **nooit** `text-gray-400`/`text-gray-300` of een donkere variant onder `white/50` voor tekst: die zaten hiervoor op 191 plekken en halen met 2,54:1 (licht) en 3,79:1 (donker) de WCAG-norm van 4,5:1 niet. Dat botst rechtstreeks met de toetssteen uit `PROJECT.md` — een monteur die dit in fel zonlicht moet lezen. `text-tekst-fijn` (3,63:1) bestaat uitsluitend voor decoratie: chevrons, placeholders, een leeg fotovakje. Zet daar nooit een zin in.
 
 **Regel:** maximaal twee gewichten per scherm naast elkaar (bv. `font-semibold` voor labels, `font-bold`/`font-extrabold` voor nadruk) — geen wildgroei aan font-weights.
 
@@ -156,7 +158,7 @@ Lettertype: `Inter` (sans), `JetBrains Mono` voor monospace-behoefte (bonnummers
 
 ## Skeleton loaders
 
-*(Nog niet in de codebase — richtlijn voor toekomstige implementatie, zie `FEATURE_BACKLOG.md`.)*
+*(Geïmplementeerd in `components/ui/Skelet.tsx`: `Skelet`, `SkeletKaart`, `SkeletLijst`, `SkeletDashboard`. In gebruik op het dashboard en de werkbonnenlijst.)*
 
 - Voor content die merkbare tijd nodig heeft om te laden (dashboardlijsten, tabellen): een skeleton-vorm die de uiteindelijke layout benadert, in plaats van een centrale spinner die de hele pagina blokkeert.
 - Skeletons gebruiken een subtiele pulse-animatie, in neutrale surface-tinten — geen merkkleur in een skeleton.

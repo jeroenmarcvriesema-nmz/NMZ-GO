@@ -95,9 +95,9 @@ export default function Storingen() {
         <Card>
           <SectionHeading
             title={loading ? 'Storingen' : `Storingen (${fouten.length})`}
-            actions={<IconBug className="w-4 h-4 text-gray-400 dark:text-white/40" />}
+            actions={<IconBug className="w-4 h-4 text-tekst-gedempt dark:text-white/55" />}
           />
-          <p className="text-xs text-gray-400 dark:text-white/40 -mt-2">
+          <p className="text-xs text-tekst-gedempt dark:text-white/55 -mt-2">
             Crashes van de afgelopen {DAGEN_TERUG} dagen, gemeld door de app zelf
             vanaf het toestel waar het misging. Wie hier staat hoeft niets door te
             geven. Alleen jij ziet deze pagina.
@@ -140,7 +140,7 @@ export default function Storingen() {
                       </div>
                       <div className="flex flex-wrap items-center gap-2 mt-1.5">
                         <Badge variant="red">{BRON_LABEL[f.bron] ?? f.bron}</Badge>
-                        <span className="text-xs text-gray-400 dark:text-white/40 break-words">
+                        <span className="text-xs text-tekst-gedempt dark:text-white/55 break-words">
                           {[
                             f.melder?.naam,
                             f.pad,
@@ -152,7 +152,7 @@ export default function Storingen() {
                       </div>
                     </div>
                     <IconChevronDown className={cn(
-                      'w-4 h-4 flex-shrink-0 mt-1 text-gray-300 dark:text-white/25 transition-transform duration-150',
+                      'w-4 h-4 flex-shrink-0 mt-1 text-tekst-fijn dark:text-white/40 transition-transform duration-150',
                       open === f.id && 'rotate-180'
                     )} />
                   </button>
@@ -160,7 +160,7 @@ export default function Storingen() {
                   {open === f.id && (
                     <div className="mt-2 space-y-2">
                       {f.useragent && (
-                        <p className="text-xs text-gray-400 dark:text-white/40 break-words">
+                        <p className="text-xs text-tekst-gedempt dark:text-white/55 break-words">
                           {f.useragent}
                         </p>
                       )}

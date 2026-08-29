@@ -65,7 +65,7 @@ export default function Registreer() {
           <div className="w-9 h-9 rounded-sm bg-brand-yellow flex items-center justify-center">
             <IconClipboardCheck className="w-5 h-5 text-gray-900" />
           </div>
-          <span className="text-xs font-bold text-gray-400 dark:text-white/40 tracking-widest uppercase">NMZ GO</span>
+          <span className="text-xs font-bold text-tekst-gedempt dark:text-white/55 tracking-widest uppercase">NMZ GO</span>
         </div>
         <h2 className="text-2xl font-extrabold tracking-tight mb-1 text-gray-900 dark:text-white">Account aanmaken</h2>
         <p className="text-sm text-gray-500 dark:text-white/60 mb-6">Je bent uitgenodigd voor NMZ GO</p>

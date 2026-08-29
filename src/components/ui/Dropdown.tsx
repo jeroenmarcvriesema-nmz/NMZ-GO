@@ -67,7 +67,7 @@ export function Dropdown({
         >
           {opties.map((o) => <option key={o.waarde} value={o.waarde}>{o.label}</option>)}
         </select>
-        <IconChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-white/40" />
+        <IconChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tekst-gedempt dark:text-white/55" />
       </div>
 
       {/* ── Laptop: onze eigen lijst ── */}
@@ -89,7 +89,7 @@ export function Dropdown({
         >
           <span className="flex-1 truncate font-medium">{gekozen?.label ?? '—'}</span>
           <IconChevronDown className={cn(
-            'w-4 h-4 flex-shrink-0 text-gray-400 dark:text-white/40 transition-transform duration-150',
+            'w-4 h-4 flex-shrink-0 text-tekst-gedempt dark:text-white/55 transition-transform duration-150',
             open && 'rotate-180'
           )} />
         </button>
@@ -117,7 +117,7 @@ export function Dropdown({
                   <span className="min-w-0">
                     <span className="block truncate">{o.label}</span>
                     {o.toelichting && (
-                      <span className="block text-xs text-gray-400 dark:text-white/40 mt-0.5">
+                      <span className="block text-xs text-tekst-gedempt dark:text-white/55 mt-0.5">
                         {o.toelichting}
                       </span>
                     )}
