@@ -269,7 +269,16 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
             is dan het scherm ("bodemafsluiterconstructie"). Zonder dit
             duwt zo'n woord de hele kaart uit beeld. */}
         <div className="flex-1 min-w-0">
-          <div className={cn('text-sm font-semibold leading-snug text-gray-900 dark:text-white break-words', taak.voltooid && 'line-through text-tekst-gedempt dark:text-white/55')}>
+          {/* Dicht: één regel, afgekapt. Een afvinkpunt is bij ons vaak een
+              hele zin uit de werkopdracht en brak dichtgeklapt alsnog over
+              drie regels — dan is een punt van 110 pixels hoog nog steeds
+              het meeste van wat je ziet, terwijl het alleen hoeft te
+              bevestigen dát het af is. Openklappen geeft de hele zin. */}
+          <div className={cn(
+            'text-sm font-semibold leading-snug text-gray-900 dark:text-white',
+            dicht ? 'truncate' : 'break-words',
+            taak.voltooid && 'line-through text-tekst-gedempt dark:text-white/55',
+          )}>
             {taak.titel}
           </div>
           {/* Uitleg vóóraf. Bij een punt dat al af is voegt hij niets
@@ -278,10 +287,20 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
             <div className="text-xs text-gray-500 dark:text-white/50 mt-1 leading-relaxed break-words">{taak.omschrijving}</div>
           )}
         </div>
+        {/* Dicht gaat het bewijs mee op de titelregel in plaats van op een
+            eigen regel eronder. De titel is dan toch één regel, dus die
+            ruimte staat er al — en het scheelt bij achttien afgeronde
+            punten een paar honderd pixels scrollen. */}
+        {dicht && heeftFoto && (
+          <span className="flex items-center gap-1 flex-shrink-0 text-[11px] font-semibold text-tekst-gedempt dark:text-white/55">
+            <IconPhoto className="w-3.5 h-3.5" />
+            {fotos.length}
+          </span>
+        )}
         {taak.voltooid && (
           <IconChevronDown className={cn(
-            'w-4 h-4 flex-shrink-0 mt-2 text-tekst-fijn dark:text-white/40 transition-transform duration-150',
-            uitgeklapt && 'rotate-180'
+            'w-4 h-4 flex-shrink-0 text-tekst-fijn dark:text-white/40 transition-transform duration-150',
+            uitgeklapt ? 'rotate-180 mt-2' : 'mt-1.5'
           )} />
         )}
       </Kop>
@@ -291,8 +310,10 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
           wijzigen" — op de werkbon van kantoor was de hele
           fotorapportage daardoor onzichtbaar, en na afronden voor de
           ploeg ook. */}
-      {(heeftFoto || (!readOnly && !dicht)) && (
-        <div className={cn('flex items-center gap-2 mt-3 pl-10 flex-wrap', dicht && 'gap-1.5')}>
+      {/* Dicht schuift de strook strak onder de titel aan in plaats van
+          op een eigen regel met volle tussenruimte. */}
+      {((heeftFoto && !dicht) || (!readOnly && !dicht)) && (
+        <div className={cn('flex items-center flex-wrap pl-10', dicht ? 'gap-1.5 mt-1.5' : 'gap-2 mt-3')}>
           {fotos.map((foto, n) => foto.opgeruimd_op ? (
             // Het bestand is weg, de foto niet: die staat als bijlage
             // bij de ClickUp-taak. Dat is beter nieuws dan een gebroken
