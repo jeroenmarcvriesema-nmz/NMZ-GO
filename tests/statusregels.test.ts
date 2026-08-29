@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { statusUitReden, type Statussen } from '../supabase/functions/verwerker/statusregels'
+import {
+  standUitStatus, statusUitReden,
+  type Standregels, type Statussen,
+} from '../supabase/functions/verwerker/statusregels'
 
 // Dezelfde namen als in clickup_instellingen staan.
 const S: Statussen = {
@@ -94,5 +97,80 @@ describe('statusUitReden — nog spuiten/isoleren', () => {
   it('valt terug op stilgelegd als de status niet is ingesteld', () => {
     expect(statusUitReden('nog spuiten', { ...S, status_spuiten_isoleren: null }))
       .toBe(S.status_stilgelegd)
+  })
+})
+
+// ── De andere kant op ─────────────────────────────────────────
+// Dit is de regel waar de negen bonnen op stukliepen: ClickUp zei
+// "opgeleverd", NMZ GO zei "nog niet gestart", en niemand vertaalde
+// het een naar het ander. Gaat deze regel te ver, dan overschrijft de
+// koppeling werk dat iemand in de app heeft vastgelegd; gaat hij niet
+// ver genoeg, dan blijft het bord liegen.
+
+const R: Standregels = {
+  ...S,
+  trigger_status: 'deze week',
+  trigger_statussen: ['volgende week', 'deze week'],
+}
+
+describe('standUitStatus', () => {
+  it('herkent de statussen die over de uitvoering gaan', () => {
+    expect(standUitStatus('opgeleverd', R)).toBe('opgeleverd')
+    expect(standUitStatus('on hold', R)).toBe('stilgelegd')
+    expect(standUitStatus('nog spuiten/isoleren', R)).toBe('spuiten_isoleren')
+    expect(standUitStatus('opnieuw inplannen/later', R)).toBe('opnieuw_inplannen')
+  })
+
+  // Asbest is in ClickUp een eigen status, maar NMZ GO kent alleen
+  // "ligt stil" met een reden erbij. De reden houdt het woord asbest
+  // vast, zodat `statusUitReden` hem later weer op de juiste kolom
+  // terugzet als de klus alsnog via de app loopt.
+  it('vertaalt asbest naar stilgelegd', () => {
+    expect(standUitStatus('onhold door asbest', R)).toBe('stilgelegd')
+  })
+
+  it('noemt de triggerstatussen "loopt"', () => {
+    expect(standUitStatus('deze week', R)).toBe('loopt')
+    expect(standUitStatus('volgende week', R)).toBe('loopt')
+  })
+
+  // Dit is de belangrijkste test van het stel. Zonder deze regel leest
+  // NMZ GO zijn eigen echo terug: bij het opleveren zonder fotobewijs
+  // zet GO deze status zélf op het bord.
+  it("leest \"wacht op foto's\" niet terug", () => {
+    expect(standUitStatus("wacht op foto's", R)).toBeNull()
+  })
+
+  it("trekt zich niets aan van een kromme apostrof", () => {
+    expect(standUitStatus('wacht op foto’s', R)).toBeNull()
+  })
+
+  // De lijst heeft veertien statussen. De negen die hier niet in staan
+  // zijn planning van kantoor en zeggen niets over de uitvoering.
+  // `null` betekent: laat de werkbon met rust. Een gok is hier erger
+  // dan geen antwoord.
+  it('laat de planningsstatussen met rust', () => {
+    for (const s of ['toekomst', 'niet af', 'update vereist', 'lopende projecten',
+                     'afmaken prio', 'nog isoleren', '']) {
+      expect(standUitStatus(s, R)).toBeNull()
+    }
+  })
+
+  it('kijkt niet naar hoofdletters of losse spaties', () => {
+    expect(standUitStatus('  OPGELEVERD ', R)).toBe('opgeleverd')
+    expect(standUitStatus('On  Hold', R)).toBe('stilgelegd')
+  })
+
+  it('negeert een status die deze tenant niet heeft ingevuld', () => {
+    // Een lege kolom is geen status. Zonder deze controle zou een taak
+    // zonder status ('' ) op elke lege instelling matchen en zou de
+    // eerste de beste bon worden stilgelegd.
+    expect(standUitStatus('', { ...R, status_stilgelegd: null })).toBeNull()
+    expect(standUitStatus('on hold', { ...R, status_stilgelegd: null })).toBeNull()
+  })
+
+  it('valt terug op de enkele triggerstatus als er geen lijst is', () => {
+    expect(standUitStatus('deze week', { ...R, trigger_statussen: null })).toBe('loopt')
+    expect(standUitStatus('volgende week', { ...R, trigger_statussen: null })).toBeNull()
   })
 })

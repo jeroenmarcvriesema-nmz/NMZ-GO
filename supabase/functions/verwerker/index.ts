@@ -19,6 +19,7 @@ import { createClient, SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 import {
   fotosUploaden,
   importeerTaak,
+  standenOphalen,
   statusBijwerken,
   synchroniseer,
   tekstproef,
@@ -117,6 +118,32 @@ const HANDLERS: Record<string, Handler> = {
       throw new OnverwerkbaarError('tenant_id ontbreekt in de payload')
     }
     return await synchroniseer(db, tenantId)
+  },
+
+  // De andere kant op: wat er in ClickUp met een bekende klus gebeurt,
+  // overnemen in NMZ GO. Opgeleverd, stilgelegd, vervolgwerk.
+  //
+  // Bewust náást `clickup.synchroniseren` en niet erin. Die ronde
+  // zoekt nieuwe klussen en máákt werkbonnen; deze kijkt alleen naar
+  // bonnen die er al zijn en maakt er nooit een bij. Zou je ze samen
+  // nemen, dan levert "ook opgeleverde taken ophalen" in één ronde
+  // tweehonderd historische werkbonnen op — zie de kop van
+  // `standenOphalen`.
+  //
+  // Met `"droogloop": true` in de payload rapporteert hij wat hij zou
+  // aanraken zonder iets te schrijven. Handmatig aan te vragen met:
+  //
+  //   select public.taak_aanmaken(
+  //     'clickup.standen_ophalen',
+  //     jsonb_build_object('tenant_id', '<uuid>', 'droogloop', true));
+  //
+  // De hartslag zet hem nooit aan — die draait altijd echt.
+  'clickup.standen_ophalen': async (taak, db) => {
+    const tenantId = String(taak.payload.tenant_id ?? '')
+    if (!tenantId) {
+      throw new OnverwerkbaarError('tenant_id ontbreekt in de payload')
+    }
+    return await standenOphalen(db, tenantId, taak.payload.droogloop === true)
   },
 
   // Eén taak met de hand binnenhalen, ongeacht status.

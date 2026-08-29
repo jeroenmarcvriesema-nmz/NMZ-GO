@@ -30,7 +30,7 @@
 
 import { SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 import { leesPdf, ontleed } from './werkopdracht.ts'
-import { statusUitReden, type Statussen } from './statusregels.ts'
+import { standUitStatus, statusUitReden, type Statussen } from './statusregels.ts'
 import { datumInWerkzone } from './datums.ts'
 import { veldOpties, werkRegisterBij } from './register.ts'
 
@@ -55,6 +55,12 @@ interface Instellingen {
   medewerker_labels: string[]
   uitgesloten_punten: string[]
   actief: boolean
+  /**
+   * Tot waar de standenronde de statussen heeft nagelopen. Leeg bij de
+   * eerste ronde: dan kijkt hij één keer naar alles, daarna alleen nog
+   * naar wat sindsdien in ClickUp is aangeraakt.
+   */
+  standen_gesynct_tot: string | null
 }
 
 interface Bevinding {
@@ -88,18 +94,28 @@ async function haal(pad: string, token: string): Promise<any> {
  * De bovengrens is een noodrem tegen een eindeloze lus als ClickUp
  * `last_page` niet meestuurt. Wordt hij geraakt, dan zeggen we dat —
  * stil afkappen is precies de fout die dit repareert.
+ *
+ * `gesloten` bepaalt of taken op een status van het type *closed*
+ * mee terugkomen. Standaard niet: de synchronisatie zoekt nieuwe
+ * klussen en die staan nooit op "opgeleverd". De standenronde zoekt
+ * juist wél naar afgeronde klussen en zet hem aan. Dit stond hier als
+ * `include_closed=false` hardgecodeerd in de URL, en dat is precies
+ * waarom "voeg opgeleverd toe aan de statuslijst" in zijn eentje
+ * niets zou opleveren: de filter verderop in de keten gooit ze er
+ * alsnog uit, zonder melding.
  */
 async function haalTaken(
   lijst: string,
   vraag: string,
   token: string,
+  gesloten = false,
 ): Promise<{ taken: any[]; afgekapt: boolean }> {
   const MAX_PAGINAS = 50
   const taken: any[] = []
 
   for (let pagina = 0; pagina < MAX_PAGINAS; pagina++) {
     const res = await haal(
-      `/list/${lijst}/task?${vraag}&subtasks=false&include_closed=false&page=${pagina}`,
+      `/list/${lijst}/task?${vraag}&subtasks=false&include_closed=${gesloten}&page=${pagina}`,
       token,
     )
     const brok = res.tasks ?? []
@@ -847,6 +863,253 @@ export async function synchroniseer(
       [...ctx.perLabel.values()].filter((p) => !p.heeftAccount).map((p) => p.naam),
     )],
     ...(droogloop ? { proef } : {}),
+  }
+}
+
+/**
+ * Wat de standenronde met één werkbon heeft gedaan.
+ *
+ * `botsing` is geen fout: het is het geval waarin ClickUp en NMZ GO
+ * allebei iets beweren en ze het oneens zijn. Dan wordt er niets
+ * overschreven en gaat er een melding naar kantoor — zie
+ * `clickup_stand_overnemen()` in migratie 043.
+ */
+type Standuitkomst =
+  | 'opgeleverd'
+  | 'stilgelegd'
+  | 'hervat'
+  | 'vervolg_gemeld'
+  | 'vervolg_afgerond'
+  | 'ongewijzigd'
+  | 'botsing'
+
+/** Het moment waarop ClickUp deze taak voor het laatst verzette. */
+function statusmoment(taak: any): string {
+  const ms = taak.date_closed ?? taak.date_updated
+  const n = Number(ms)
+  if (!Number.isFinite(n) || n <= 0) return new Date().toISOString()
+  return new Date(n).toISOString()
+}
+
+/**
+ * De standen uit ClickUp overnemen in NMZ GO.
+ *
+ * ── Waarom dit een aparte ronde is ──
+ *
+ * Niet iedereen werkt in de app. Kantoor vinkt in ClickUp af, en die
+ * klus bleef in NMZ GO op "nog niet gestart" staan — bij de eerste
+ * telling negen stuks, waarvan de oudste tien dagen. Het bord loog dus
+ * over het werk, en precies daar wordt op gestuurd.
+ *
+ * Dat kwam door drie dingen achter elkaar, en het derde is de reden
+ * dat dit niet in `synchroniseer()` past:
+ *
+ *   1. Die ronde vraagt ClickUp alleen om taken op de triggerstatussen
+ *      ("deze week", "volgende week"). Een taak die op "opgeleverd"
+ *      gaat staan valt uit die vraag en wordt nooit meer bekeken.
+ *   2. `haalTaken` weigerde gesloten taken sowieso — zie daar.
+ *   3. En `verwerkTaak()` maakt van elke taak die hij ziet een
+ *      werkbon. Zou je daar "opgeleverd" aan de statuslijst toevoegen,
+ *      dan komen er in één ronde ruim tweehonderd historische taken
+ *      binnen die stuk voor stuk een PDF-download en een nieuwe bon
+ *      opleveren. Van vierenzeventig bonnen naar driehonderd, en het
+ *      overgrote deel over werk van maanden geleden.
+ *
+ * Vandaar de harde regel hier: **deze ronde maakt nooit een werkbon
+ * aan.** Kent NMZ GO de taak niet, dan slaat hij hem over. Nieuwe
+ * klussen binnenhalen blijft het werk van `synchroniseer()`; dit is
+ * alleen het bijhouden van wat er met de bekende klussen gebeurt.
+ *
+ * Daardoor is de ronde ook goedkoop: één lijstquery, geen PDF's, geen
+ * bijlagen. Met `date_updated_gt` op de vorige ronde komt er meestal
+ * niets terug.
+ */
+export async function standenOphalen(
+  db: SupabaseClient,
+  tenantId: string,
+  droogloop = false,
+): Promise<Record<string, unknown>> {
+  const i = await geefInstellingen(db, tenantId)
+  const token = await geefToken(db)
+
+  // Het moment waarop deze ronde begon, en niet het moment waarop hij
+  // klaar is. Wat er tijdens de ronde in ClickUp verandert hoort de
+  // volgende keer alsnog langs te komen.
+  const begonnen = new Date()
+
+  // De statussen die iets over de uitvoering zeggen. Alleen wat de
+  // tenant heeft ingevuld: een lege kolom is geen status en hoort niet
+  // als lege string in de vraag te belanden.
+  //
+  // "wacht op foto's" staat er bewust niet bij. Die zet NMZ GO zelf op
+  // het bord bij het opleveren; hem terugvragen en teruglezen is je
+  // eigen echo achterna lopen.
+  const gevraagd = [
+    i.status_opgeleverd,
+    i.status_stilgelegd,
+    i.status_asbest,
+    i.status_spuiten_isoleren,
+    i.status_opnieuw_inplannen,
+    ...(i.trigger_statussen?.length ? i.trigger_statussen : [i.trigger_status]),
+  ].filter((s): s is string => Boolean(s && s.trim()))
+
+  // Dubbele statussen kosten een extra queryparameter en leveren
+  // niets op — een tenant mag twee kolommen op dezelfde tekst zetten.
+  const statussen = [...new Set(gevraagd)]
+  if (statussen.length === 0) {
+    return { overgeslagen: 'geen enkele status ingevuld in clickup_instellingen' }
+  }
+
+  // Alle bonnen die uit ClickUp komen, in één keer. Het zijn er
+  // tientallen; een taak-voor-taak-vraag zou per ronde net zoveel
+  // databaseverkeer kosten als de hele lijst.
+  const { data: bonnen, error: bonfout } = await db
+    .from('werkbonnen')
+    .select('id, adres, clickup_taak_id, clickup_status, status, ' +
+            'opgeleverd_op, stilgelegd_op, vervolg_soort')
+    .eq('tenant_id', tenantId)
+    .not('clickup_taak_id', 'is', null)
+
+  if (bonfout) throw new Error(`werkbonnen lezen mislukt: ${bonfout.message}`)
+
+  interface Bekend {
+    id: string
+    adres: string
+    clickup_status: string | null
+    /** Genoeg om in de droogloop te laten zien waar de bon nu staat. */
+    nu: string
+  }
+
+  const perTaak = new Map<string, Bekend>()
+  for (const b of bonnen ?? []) {
+    perTaak.set(b.clickup_taak_id as string, {
+      id: b.id as string,
+      adres: (b.adres as string) ?? '(zonder adres)',
+      clickup_status: (b.clickup_status as string) ?? null,
+      nu: b.opgeleverd_op ? 'opgeleverd'
+        : b.stilgelegd_op ? 'stilgelegd'
+        : b.vervolg_soort ? String(b.vervolg_soort)
+        : String(b.status ?? 'open'),
+    })
+  }
+
+  const sinds = i.standen_gesynct_tot ? Date.parse(i.standen_gesynct_tot) : NaN
+  const vanafDeel = Number.isFinite(sinds) ? `&date_updated_gt=${sinds}` : ''
+
+  let gezien = 0
+  let onbekend = 0
+  const uitkomsten: Record<string, number> = {}
+  const botsingen: Bevinding[] = []
+  const overgeslagen: Bevinding[] = []
+  const zouAanraken: Record<string, string>[] = []
+
+  for (const lijst of i.lijst_ids) {
+    const vraag = statussen
+      .map((st) => `statuses[]=${encodeURIComponent(st)}`)
+      .join('&') + vanafDeel
+
+    const { taken, afgekapt } = await haalTaken(lijst, vraag, token, true)
+    if (afgekapt) {
+      overgeslagen.push({
+        taak: lijst,
+        adres: `(lijst ${lijst})`,
+        reden: 'Meer dan 5000 taken opgehaald zonder einde; de rest van deze lijst is niet bekeken.',
+      })
+    }
+
+    for (const taak of taken) {
+      const bon = perTaak.get(taak.id)
+      // Een taak die NMZ GO niet kent. Meestal werk van vóór de
+      // koppeling, soms een klus die nooit is binnengehaald omdat de
+      // werkopdracht ontbrak. Hier gebeurt daar niets mee — zie de kop.
+      if (!bon) { onbekend++; continue }
+
+      gezien++
+      const status = taak.status?.status ?? null
+      const stand = standUitStatus(status ?? '', i)
+
+      // Droogloop: laat zien wát hij zou aanraken en schrijf niets.
+      // Bewust alleen de vertaling en de huidige stand, niet de
+      // uitkomst — die beslissing staat in `clickup_stand_overnemen()`
+      // en hoort op één plek te staan. Hem hier nabouwen om een
+      // voorspelling te kunnen doen levert twee regels op die uit
+      // elkaar gaan lopen, en dan voorspelt de droogloop iets anders
+      // dan er gebeurt.
+      if (droogloop) {
+        if (stand) {
+          zouAanraken.push({
+            adres: bon.adres,
+            taak: taak.id,
+            clickup: status ?? '(geen)',
+            nu_in_go: bon.nu,
+            wordt: stand,
+          })
+        }
+        continue
+      }
+
+      // De spiegel altijd bijwerken, ook als de status niets over de
+      // stand zegt. Juist dát veld liep vast: bon 6070 stond tien dagen
+      // op "deze week" terwijl ClickUp hem allang had gesloten, want
+      // niemand keek nog naar die taak.
+      if (status !== bon.clickup_status) {
+        await db.from('werkbonnen')
+          .update({ clickup_status: status, laatst_gesynct: new Date().toISOString() })
+          .eq('id', bon.id)
+      }
+
+      if (!stand) continue
+
+      const { data: uit, error } = await db.rpc('clickup_stand_overnemen', {
+        p_werkbon: bon.id,
+        p_stand: stand,
+        p_moment: statusmoment(taak),
+        p_status: status ?? stand,
+      })
+
+      if (error) {
+        // Nooit stil overslaan: één bon die klapt mag de ronde niet
+        // omgooien, maar hij hoort wel in het resultaat te staan.
+        overgeslagen.push({ taak: taak.id, adres: bon.adres, reden: error.message })
+        continue
+      }
+
+      const soort = String((uit as Record<string, unknown>)?.uitkomst ?? 'ongewijzigd') as Standuitkomst
+      uitkomsten[soort] = (uitkomsten[soort] ?? 0) + 1
+
+      if (soort === 'botsing') {
+        const reden = String((uit as Record<string, unknown>)?.reden ?? 'onbekend verschil')
+        botsingen.push({ taak: taak.id, adres: bon.adres, reden })
+        await db.rpc('clickup_botsing_melden', {
+          p_werkbon: bon.id,
+          p_tekst: `ClickUp en NMZ GO spreken elkaar tegen — ${bon.adres}: ${reden}`,
+        })
+      }
+    }
+  }
+
+  // Een droogloop verzet het stempel niet. Anders kijkt de echte ronde
+  // erna naar een leeg venster en gebeurt er alsnog niets — een
+  // proefdraai die het werk stilletjes opeet.
+  if (!droogloop) {
+    // Pas bijwerken als de ronde eromheen is gelukt. Klapt hij
+    // halverwege, dan blijft het oude stempel staan en kijkt de
+    // volgende ronde opnieuw naar hetzelfde venster. Liever twee keer
+    // hetzelfde bekeken dan één taak overgeslagen — elke stap
+    // hierboven is idempotent.
+    await db.from('clickup_instellingen')
+      .update({ standen_gesynct_tot: begonnen.toISOString() })
+      .eq('tenant_id', tenantId)
+  }
+
+  return {
+    droogloop,
+    venster: i.standen_gesynct_tot ?? 'alles (eerste ronde)',
+    gezien,
+    onbekend,
+    ...uitkomsten,
+    ...(droogloop ? { zou_aanraken: zouAanraken } : { botsingen }),
+    overgeslagen,
   }
 }
 

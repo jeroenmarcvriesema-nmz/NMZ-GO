@@ -81,3 +81,98 @@ function normaliseer(tekst: string): string {
  * gaat dat altijd over hetzelfde werk.
  */
 const SPUITEN_ISOLEREN = /spuit|spoot|spoten|isole/
+
+// ── De andere kant op ─────────────────────────────────────────
+
+/**
+ * Wat een ClickUp-status over de stand van de klus zegt.
+ *
+ * `loopt` is niet "bezig": het zegt alleen dat de klus gewoon op de
+ * planning staat en dus niet stilligt. Wat er in GO wél gebeurt is aan
+ * de zwamsaneerder — dit is de afwezigheid van een bijzonderheid.
+ */
+export type Stand =
+  | 'opgeleverd'
+  | 'stilgelegd'
+  | 'spuiten_isoleren'
+  | 'opnieuw_inplannen'
+  | 'loopt'
+
+export interface Standregels extends Statussen {
+  trigger_status: string
+  trigger_statussen: string[] | null
+}
+
+/**
+ * Van een ClickUp-status naar een stand in NMZ GO — de omgekeerde weg
+ * van `statusUitReden`.
+ *
+ * Nodig omdat niet iedereen in de app werkt. Kantoor zet een taak in
+ * ClickUp op "opgeleverd" en die klus blijft in GO op "nog niet
+ * gestart" staan, want de synchronisatie las de status wel maar deed
+ * er niets mee. Dat verschil werd alleen groter.
+ *
+ * Twee dingen die deze functie bewust *niet* doet:
+ *
+ *   1. Gokken. Alleen de statussen die in `clickup_instellingen` staan
+ *      krijgen een betekenis. Een lijst met veertien statussen bevat
+ *      er een stuk of vijf die iets over de uitvoering zeggen; de
+ *      rest ("toekomst", "niet af", "update vereist") is planning van
+ *      kantoor en gaat NMZ GO niet aan. Die leveren `null` op, en
+ *      `null` betekent hier: laat de werkbon met rust.
+ *
+ *   2. `wacht op foto's` teruglezen. Die status zet GO zélf op het
+ *      bord bij het opleveren, als het fotobewijs nog niet bij ClickUp
+ *      staat (zie `statusBijwerken`). Hem terugvertalen naar een stand
+ *      betekent je eigen echo inlezen en daarmee een lus bouwen die
+ *      bij elke ronde een rondje verder draait.
+ *
+ * De volgorde is die van `statusUitReden`, om dezelfde reden: het
+ * bijzondere geval eerst. Zou een tenant twee kolommen op dezelfde
+ * tekst zetten, dan wint hier de zwaarste betekenis in plaats van
+ * toevallig de eerste in het record.
+ */
+export function standUitStatus(status: string, s: Standregels): Stand | null {
+  const t = normaliseerStatus(status)
+  if (t === '') return null
+
+  const gelijk = (waarde: string | null): boolean =>
+    waarde != null && normaliseerStatus(waarde) === t
+
+  // Eerst de echo van onszelf wegfilteren, vóór alle andere regels.
+  // Staat "wacht op foto's" bij een tenant per ongeluk op dezelfde
+  // tekst als "opgeleverd", dan is niets doen de veilige uitkomst.
+  if (gelijk(s.status_wacht_op_fotos)) return null
+
+  if (gelijk(s.status_opgeleverd)) return 'opgeleverd'
+  if (gelijk(s.status_asbest)) return 'stilgelegd'
+  if (gelijk(s.status_spuiten_isoleren)) return 'spuiten_isoleren'
+  if (gelijk(s.status_opnieuw_inplannen)) return 'opnieuw_inplannen'
+  if (gelijk(s.status_stilgelegd)) return 'stilgelegd'
+
+  const triggers = s.trigger_statussen?.length
+    ? s.trigger_statussen
+    : [s.trigger_status]
+  if (triggers.some(gelijk)) return 'loopt'
+
+  return null
+}
+
+/**
+ * Statussen vergelijkbaar maken.
+ *
+ * Bovenop wat `normaliseer` doet: de kromme apostrof gelijkschakelen
+ * aan de rechte. ClickUp geeft "wacht op foto's" terug zoals het is
+ * ingetypt, en of daar een ' of een ’ staat hangt af van het
+ * toetsenbord van wie de status heeft aangemaakt. Twee statussen die
+ * op het scherm identiek zijn horen hier niet uit elkaar te vallen.
+ */
+function normaliseerStatus(tekst: string): string {
+  return (tekst ?? '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\u2018\u2019\u02bc]/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim()
+}
