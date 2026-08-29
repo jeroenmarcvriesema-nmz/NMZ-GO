@@ -45,7 +45,7 @@ export function Puntopmerkingen({ taakId, werkbonId }: { taakId: string; werkbon
       {!schrijven ? (
         <button
           onClick={() => setOpen(true)}
-          className="text-xs font-semibold flex items-center gap-1.5 min-h-[36px] px-2.5 rounded-sm border border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50 hover:border-brand-yellow hover:text-brand-yellow-dark dark:hover:text-brand-yellow transition-all duration-150 ease-brand"
+          className="text-xs font-semibold flex items-center gap-1.5 min-h-[44px] px-2.5 rounded-sm border border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50 hover:border-brand-yellow hover:text-brand-yellow-dark dark:hover:text-brand-yellow transition-all duration-150 ease-brand"
         >
           <IconMessage className="w-3.5 h-3.5" /> Opmerking plaatsen
         </button>

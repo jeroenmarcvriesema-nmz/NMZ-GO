@@ -75,6 +75,7 @@ export function Meldingen() {
       <button
         onClick={() => { setOpen(!open); if (!open) markeerGelezen() }}
         title="Meldingen"
+        aria-label={ongelezen > 0 ? `Meldingen, ${ongelezen} ongelezen` : 'Meldingen'}
         className="relative flex items-center justify-center w-10 h-10 rounded-lg text-tekst-gedempt dark:text-white/55 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
       >
         <IconBell className="w-5 h-5" />

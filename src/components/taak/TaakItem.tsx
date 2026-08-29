@@ -54,7 +54,9 @@ function Kop({ alsKnop, open, onClick, children }: {
       type="button"
       onClick={onClick}
       aria-expanded={open}
-      className="flex items-start gap-3 w-full text-left rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow/60"
+      // min-h: dichtgeklapt is deze knop de enige manier om het punt weer
+      // open te krijgen, en dan hoort hij ook een echt aanraakvlak te zijn.
+      className="flex items-start gap-3 w-full min-h-[44px] text-left rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow/60"
     >
       {children}
     </button>
@@ -478,7 +480,7 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
             <button
               onClick={heropen}
               disabled={heropenBezig}
-              className="text-xs font-semibold flex items-center gap-1.5 min-h-[36px] px-2.5 rounded-sm border border-gray-200 dark:border-white/10 text-gray-600 dark:text-white/60 hover:border-brand-yellow hover:text-brand-yellow-dark dark:hover:text-brand-yellow transition-all duration-150 ease-brand disabled:opacity-50"
+              className="text-xs font-semibold flex items-center gap-1.5 min-h-[44px] px-2.5 rounded-sm border border-gray-200 dark:border-white/10 text-gray-600 dark:text-white/60 hover:border-brand-yellow hover:text-brand-yellow-dark dark:hover:text-brand-yellow transition-all duration-150 ease-brand disabled:opacity-50"
               title="Zet dit punt weer open, zodat de ploeg er foto's bij kan zetten"
             >
               <IconRotate className="w-3.5 h-3.5" />
@@ -490,7 +492,7 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
             onClick={wisselFotoplicht}
             disabled={fotoplichtBezig}
             className={cn(
-              'text-xs font-semibold flex items-center gap-1.5 min-h-[36px] px-2.5 rounded-sm border transition-all duration-150 ease-brand disabled:opacity-50',
+              'text-xs font-semibold flex items-center gap-1.5 min-h-[44px] px-2.5 rounded-sm border transition-all duration-150 ease-brand disabled:opacity-50',
               taak.foto_vereist
                 ? 'border-brand-yellow bg-brand-yellow-light dark:bg-brand-yellow/10 text-brand-yellow-dark dark:text-brand-yellow'
                 : 'border-gray-200 dark:border-white/10 text-tekst-gedempt dark:text-white/55'
@@ -512,14 +514,14 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
               <button
                 onClick={verwijderPunt}
                 disabled={verwijderBezig}
-                className="text-xs font-bold flex items-center gap-1.5 min-h-[36px] px-2.5 rounded-sm border border-brand-red bg-brand-red text-white transition-all duration-150 ease-brand disabled:opacity-50"
+                className="text-xs font-bold flex items-center gap-1.5 min-h-[44px] px-2.5 rounded-sm border border-brand-red bg-brand-red text-white transition-all duration-150 ease-brand disabled:opacity-50"
               >
                 <IconTrash className="w-3.5 h-3.5" />
                 {verwijderBezig ? 'Bezig…' : 'Definitief weg'}
               </button>
               <button
                 onClick={() => setBevestigWeg(false)}
-                className="text-xs font-semibold min-h-[36px] px-2.5 rounded-sm border border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50"
+                className="text-xs font-semibold min-h-[44px] px-2.5 rounded-sm border border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50"
               >
                 Annuleren
               </button>
@@ -528,7 +530,7 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
             <button
               onClick={() => setBevestigWeg(true)}
               title="Dit punt van de werkbon halen"
-              className="text-xs font-semibold flex items-center gap-1.5 min-h-[36px] px-2.5 rounded-sm border border-gray-200 dark:border-white/10 text-tekst-gedempt dark:text-white/55 hover:border-brand-red hover:text-brand-red hover:bg-brand-red-light dark:hover:bg-brand-red/10 transition-all duration-150 ease-brand"
+              className="text-xs font-semibold flex items-center gap-1.5 min-h-[44px] px-2.5 rounded-sm border border-gray-200 dark:border-white/10 text-tekst-gedempt dark:text-white/55 hover:border-brand-red hover:text-brand-red hover:bg-brand-red-light dark:hover:bg-brand-red/10 transition-all duration-150 ease-brand"
             >
               <IconTrash className="w-3.5 h-3.5" /> Punt weg
             </button>
