@@ -282,7 +282,21 @@ export async function bouwRapportPdf(g: Rapportgegevens): Promise<Uint8Array> {
   doc.setProducer('NMZ GO')
   doc.setCreator('NMZ GO')
 
-  const balk = await leesLogobalk(doc)
+  // De logobalk staat uit. Twee keer op rij is de worker op zijn
+  // resource-limiet afgeschoten (HTTP 546) op precies de ronde die het
+  // document bouwt, en dit is de enige grote, constante post in die
+  // stap: een PDF van een megabyte met zevenendertig afbeeldingen en
+  // maskerlagen, die `embedPdf` volledig moet inlezen.
+  //
+  // Dit is een meting, geen ontwerpkeuze. Komt het rapport er nu wél
+  // uit, dan is de balk de oorzaak en gaat hij terug als een compacte
+  // afbeelding in plaats van een ingesloten PDF-pagina. Blijft het
+  // omvallen, dan zit het in de foto's en moet het document in porties
+  // opgebouwd worden.
+  //
+  // Tot die tijd: liever een rapport zonder logo dan geen rapport.
+  const LOGOBALK_AAN = Deno.env.get('RAPPORT_LOGOBALK') === 'aan'
+  const balk = LOGOBALK_AAN ? await leesLogobalk(doc) : null
   const pen: Pen = { doc, pagina: doc.addPage([BREEDTE, HOOGTE]), y: HOOGTE - MARGE, gewoon, vet, adres }
 
   // ── Titelblad ──
