@@ -6,15 +6,38 @@ interface BadgeProps {
   children: React.ReactNode
 }
 
+/**
+ * De statusbadge, in volle kleur.
+ *
+ * Hier stonden zeven varianten in twee verschillende talen naast elkaar:
+ * geel en rood waren een vol vlak met contrasterende tekst, maar groen,
+ * blauw, violet en oranje waren een bleek vlakje met een randje en
+ * donkere letters. Op één kaart stond dus een verzadigde rode badge
+ * naast een uitgewassen blauwe, terwijl ze allebei hetzelfde soort ding
+ * zeggen. Dat las als "half doorzichtig" — en dat was het ook.
+ *
+ * Nu draagt elke variant zijn kleur voluit. Dat is ook de taal van
+ * ClickUp, waar dezelfde klussen op het andere bord staan: volle
+ * statuspillen op een rustige kaart. De kleur zit in de badge, niet in
+ * het vlak eronder — een kaart die zelf helemaal blauw is maakt van een
+ * weekplanning een kleurenkaart waarop je de adressen niet meer leest.
+ *
+ * Elke combinatie is nagerekend op leesbaarheid: de donkerste tint van
+ * elke kleur waarop witte tekst boven 4,5:1 uitkomt. Daarom green-700
+ * en niet green-600 (3,30:1), en orange-700 en niet orange-600 (3,56:1).
+ *
+ * `gray` blijft bewust zacht: dat is "nog niet gestart", en wat nog niet
+ * begonnen is hoort niet de meeste kleur van het scherm te krijgen.
+ */
 export function Badge({ variant = 'gray', className, children }: BadgeProps) {
   const variants = {
     yellow: 'bg-brand-yellow text-gray-900',
     red:    'bg-brand-red text-white',
-    green:  'bg-green-100 dark:bg-green-500/10 text-green-800 dark:text-green-400 border border-green-300 dark:border-green-500/30',
-    gray:   'bg-brand-yellow-light/40 dark:bg-white/5 text-gray-600 dark:text-white/60 border border-gray-200 dark:border-white/10',
-    blue:   'bg-blue-50 dark:bg-blue-500/10 text-blue-800 dark:text-blue-400 border border-blue-200 dark:border-blue-500/30',
-    violet: 'bg-violet-50 dark:bg-violet-500/10 text-violet-800 dark:text-violet-400 border border-violet-200 dark:border-violet-500/30',
-    orange: 'bg-amber-50 dark:bg-amber-500/10 text-amber-800 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30',
+    green:  'bg-green-700 text-white',
+    blue:   'bg-blue-600 text-white',
+    violet: 'bg-violet-600 text-white',
+    orange: 'bg-orange-700 text-white',
+    gray:   'bg-surface-2 dark:bg-white/10 text-tekst-zwak dark:text-white/70',
   }
   return (
     <span className={cn('inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-sm', variants[variant], className)}>
