@@ -392,21 +392,21 @@ export default function Planning() {
               <div
                 className={cn(
                   'px-3 py-2.5 border-b',
-                  // Vol geel, op verzoek van de eigenaar. Stond even op een
-                  // zachte tint omdat het blok als knop las; de volle kleur
-                  // is een merkkeuze en die is aan hem.
-                  isVandaag ? 'bg-brand-yellow border-brand-yellow-dark'
+                  // Zachte tint, geen volvlak: dat gele blok las als een
+                  // knop en gebruikte hetzelfde vlak als de primaire actie.
+                  // De gele ring om de kolom markeert vandaag al.
+                  isVandaag ? 'bg-brand-yellow-light dark:bg-brand-yellow/15 border-brand-yellow'
                     : isZaterdag ? ZATERDAGTINT.kop
                     // Stond in hetzelfde wit als de inhoud eronder, en
                     // las daardoor niet als kop.
                     : 'bg-surface-2 dark:bg-surface-dark-3 border-gray-100 dark:border-white/10'
                 )}
               >
-                <div className={cn('text-sm font-bold', isVandaag ? 'text-gray-900' : 'text-gray-900 dark:text-white')}>
+                <div className={cn('text-sm font-bold', 'text-gray-900 dark:text-white')}>
                   {DAG_NAMEN[i]}
                 </div>
                 <div className="flex items-center justify-between gap-2">
-                  <span className={cn('text-xs', isVandaag ? 'text-gray-700' : 'text-tekst-gedempt dark:text-white/55')}>
+                  <span className={cn('text-xs', 'text-tekst-gedempt dark:text-white/55')}>
                     {formatDatumKort(dag)}
                   </span>
                   {/* De telling stond alleen op de telefoon. Op een
@@ -490,15 +490,15 @@ export default function Planning() {
             )} key={i}>
               <div className={cn(
                 'px-4 py-3 flex items-center justify-between',
-                isVandaag ? 'bg-brand-yellow border-b border-brand-yellow-dark'
+                isVandaag ? 'bg-brand-yellow-light dark:bg-brand-yellow/15 border-b border-brand-yellow'
                   : isZaterdag ? cn(ZATERDAGTINT.kop, 'border-b')
                   : 'bg-surface-2 dark:bg-surface-dark-3 border-b border-gray-100 dark:border-white/10'
               )}>
                 <div>
-                  <span className={cn('text-sm font-bold', isVandaag ? 'text-gray-900' : 'text-gray-900 dark:text-white')}>
+                  <span className={cn('text-sm font-bold', 'text-gray-900 dark:text-white')}>
                     {DAG_NAMEN[i]}
                   </span>
-                  <span className={cn('text-xs ml-2', isVandaag ? 'text-gray-700' : 'text-tekst-gedempt dark:text-white/55')}>
+                  <span className={cn('text-xs ml-2', 'text-tekst-gedempt dark:text-white/55')}>
                     {formatDatumKort(dag)}
                   </span>
                 </div>
