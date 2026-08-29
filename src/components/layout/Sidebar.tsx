@@ -58,20 +58,22 @@ function NavItem({ to, icon, label, exact }: {
           // verspringt de tekst twee pixels bij het wisselen van scherm.
           'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ease-brand border-l-2 border-transparent',
           isActive
-            // Geen vol geel meer. Dat volvlak is de primaire knop, en die
-            // betekenis moet het houden — hetzelfde vlak stond ook op de
-            // rolbadge, de avatar en de dagkolom van vandaag, en dan zegt
-            // geel niets meer. UI_GUIDELINES.md beschreef bovendien altijd
-            // al "merkgeel accent op tekst/icoon", geen gevulde pil; de
-            // code was daarvan afgedwaald.
-            ? 'bg-brand-yellow-light dark:bg-brand-yellow/15 border-l-brand-yellow text-gray-900 dark:text-white font-semibold'
+            // Vol geel, op verzoek. Een zachte tint stond hier even — om
+            // te voorkomen dat hetzelfde volvlak zowel "primaire knop" als
+            // "je bent hier" betekent — maar de eigenaar vindt de volle
+            // kleur mooier, en dat is een merkkeuze en geen norm.
+            // Wat wél is gebleven van die ronde: de rolbadge is neutraal
+            // (die las als een knop) en de mobiele tab gebruikt geel niet
+            // als tékst — 1,87:1 is in de zon onleesbaar, en dat is geen
+            // smaakkwestie.
+            ? 'bg-brand-yellow border-l-brand-yellow-dark text-gray-900 font-semibold shadow-sm'
             : 'text-tekst-gedempt dark:text-white/60 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10'
         )
       }
     >
       {({ isActive }) => (
         <>
-          <span className={cn('text-[19px] flex-shrink-0', isActive && 'text-brand-yellow-dark dark:text-brand-yellow')}>
+          <span className={cn('text-[19px] flex-shrink-0', isActive && 'text-gray-900')}>
             {icon}
           </span>
           <span className="flex-1">{label}</span>

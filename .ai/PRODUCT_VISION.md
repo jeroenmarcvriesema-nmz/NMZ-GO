@@ -60,6 +60,12 @@ Elk nieuw scherm en elke nieuwe component wordt getoetst aan deze eigenschappen:
 - **NMZ Rood** (`brand.red`) blijft voor waarschuwingen en kritieke/destructieve acties, maar mag daarbinnen ook duidelijker/prominenter zichtbaar zijn dan voorheen (bv. sterker verzadigde achtergronden bij kritieke meldingen) — rood communiceert nog steeds uitsluitend urgentie, nooit puur decoratief.
 - **Geel en rood zijn een herkenbaar, terugkerend merkelement**, niet langer uitsluitend spaarzaam-functioneel. De basis van elk scherm blijft neutraal (surface-tinten), maar merkkleur mag vaker en zichtbaarder terugkomen dan in de eerste, zeer terughoudende versie van dit document.
 - **Kleur blijft betekenisvol** — ook als merkkleur nu vaker zichtbaar is, communiceert elke toepassing nog iets (merk/identiteit, actie, status, waarschuwing). Het verschil met de vorige versie van deze richtlijn: merkidentiteit (geel als "dit is NMZ GO") is nu zelf een geldige reden, niet alleen status/actie.
+- **Volle kleuren boven halftransparante tinten.** Waar een vlak merkkleur draagt — het actieve menu-item, de dagkolom van vandaag — is dat vol geel met donkere tekst, niet een zachte tint of een laagje met dekking eronder. Dat is een expliciete keuze van de eigenaar: ClickUp, het systeem waar NMZ GO dagelijks naast staat, doet het ook zo, en twee borden die naast elkaar liggen horen dezelfde taal te spreken.
+
+  Er is één ronde geweest waarin dit zachter is gemaakt, met het argument dat hetzelfde gele volvlak dan zowel "primaire knop" als "je bent hier" betekent. Dat argument klopt op zichzelf, maar het weegt niet op tegen de merkkeuze. Draai dit niet terug zonder dat er opnieuw om gevraagd wordt.
+
+  Wat hier **niet** onder valt, en wat geen smaakkwestie is: merkgeel als **tekstkleur**. `brand-yellow` op een witte balk is 1,87:1 en in fel zonlicht onleesbaar — dat is precies de situatie waarin deze app gebruikt wordt. Een woord in merkgeel gebruikt daarom `brand-yellow-tekst` (5,11:1); vlakken en iconen mogen vol geel zijn.
+
 - Secundaire statuskleuren (groen voor "voltooid", blauw/oranje voor tussenliggende statussen) blijven functioneel en worden nooit de dominante kleur van een scherm — de basis blijft neutraal, geel/rood zijn de herkenbare accenten daarbovenop.
 
 ---
