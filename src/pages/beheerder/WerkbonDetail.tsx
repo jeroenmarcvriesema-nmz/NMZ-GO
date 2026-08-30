@@ -89,7 +89,7 @@ export default function WerkbonDetail() {
         {/* De rand links droeg altijd geel, wat de stand ook was — terwijl
             de badge rechts in de kaart hem wél goed toont. Nu dezelfde
             bron als overal: `standkleur(werkbon)`. */}
-        <Card className={cn('border-l-4', k.rand)}>
+        <Card className={cn('border-l-[6px]', k.rand)}>
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
               <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">{werkbon.adres}</h1>

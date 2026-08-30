@@ -64,7 +64,7 @@ export function WerkbonKaart({ werkbon, linkPrefix = '/werkbonnen', looptDoor }:
   return (
     <Card
       vlak={KLEURWAS ? cn(k.vlak, k.omlijsting) : undefined}
-      className={cn('border-l-4', accent ? accent.rand : k.rand)}
+      className={cn('border-l-[6px]', accent ? accent.rand : k.rand)}
       onClick={() => navigate(`${linkPrefix}/${werkbon.id}`)}
     >
       <div className="flex items-start justify-between gap-3 mb-2">

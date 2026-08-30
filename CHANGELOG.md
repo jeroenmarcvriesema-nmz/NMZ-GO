@@ -1,5 +1,13 @@
 # NMZ GO — Changelog
 
+## Vollere statuskleur, en zaterdag hoort er weer bij
+
+- **[WIJZIGING]** **De statusrand op een kaart is een echte kleurbalk geworden**, van 3–4 naar 6 pixels, op alle zes de plekken waar hij staat: de werkbonkaart, de planningkaart, Mijn bonnen, Mijn week, Projecten en de kop van een werkbon. Sinds de kleurwas uit staat is die rand samen met de badge de drager van de stand, en op een planbord van een meter afstand was drie pixels te weinig om iets te zeggen.
+
+  Bewust niet het hele kaartvlak vol: dan kan een kaart nog maar één ding zeggen, terwijl er hier vaak drie tegelijk moeten staan — de stand, of hij uitloopt, en of er asbest in het spel is. Dat is ook hoe ClickUp het doet: volle kleur in de balken en de pillen, een rustige kaart eronder.
+- **[WIJZIGING]** **Zaterdag staat weer altijd in de weekplanning.** Hij is een tijdlang alleen getoond als er zaterdag werk stond, om ruimte te winnen op een smalle laptop. Dat probleem is bij de bron opgelost — elke dagkolom is minstens 190 pixels breed en de week schuift desnoods opzij — en zaterdag is bij NMZ inmiddels een bijna gewone werkdag. Een week die er de ene keer uit vijf en de andere keer uit zes kolommen bestaat, is verwarrender dan een lege kolom.
+
+
 ## De ontwerpaudit uitgevoerd — leesbaarheid, kleur en de bon op een telefoon
 
 Achttien bevindingen uit een volledige audit van de UI, doorgevoerd in één ronde. Bijna allemaal gevallen waarin de code een regel overtrad die in `.ai/` al stond opgeschreven.

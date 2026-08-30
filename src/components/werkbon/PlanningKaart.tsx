@@ -75,7 +75,7 @@ export function PlanningKaart({ item, onOpen, loopIn, loopUit, ruim }: PlanningK
     <button
       onClick={onOpen}
       className={cn(
-        'group w-full text-left rounded-lg border border-l-[3px] shadow-sm',
+        'group w-full text-left rounded-lg border border-l-[6px] shadow-sm',
         'hover:shadow-md hover:-translate-y-px active:translate-y-0',
         'transition-all duration-150 ease-brand',
         // Het hele vlak in de kleur van de stand, niet alleen het

@@ -120,24 +120,19 @@ export default function Planning() {
   const alleDagen = weekDagen(maandagVerschoven(week))
 
   /**
-   * Zaterdag alleen tonen als er zaterdag iets staat.
+   * Zaterdag staat er altijd bij.
    *
-   * Zes kolommen op een laptop van 1440 is ongeveer 150 pixels per dag,
-   * en dat is precies waar adressen middenin een woord gaan afbreken. In
-   * de meeste weken is de zesde kolom bovendien leeg: dan wordt de week
-   * smaller gemaakt voor een dag waar niets gebeurt.
+   * Hij is een tijdlang alleen getoond als er zaterdag werk stond, om
+   * ruimte te winnen: zes kolommen op een laptop van 1440 laten zo'n 150
+   * pixels per dag over, en daar breken adressen in af. Dat probleem is
+   * nu bij de bron opgelost — elke dagkolom is minstens 190 pixels breed
+   * en de week schuift desnoods opzij.
    *
-   * Vandaag wint altijd. Is het zaterdag, dan is dat de dag waarvoor je
-   * dit scherm opent, ook als er niets op staat.
+   * En belangrijker: zaterdag is bij NMZ inmiddels een bijna gewone
+   * werkdag. Een week die er de ene keer uit vijf en de andere keer uit
+   * zes kolommen bestaat, is dan verwarrender dan een lege kolom.
    */
-  const dagen = (() => {
-    const zaterdag = alleDagen[ZATERDAG]
-    if (!zaterdag) return alleDagen
-    const zaterdagStr = isoDatum(zaterdag)
-    const heeftWerk = planning.some((x) => x.datum <= zaterdagStr && (x.eind ?? x.datum) >= zaterdagStr)
-    const isVandaagZaterdag = zaterdag.getTime() === vandaag.getTime()
-    return heeftWerk || isVandaagZaterdag ? alleDagen : alleDagen.slice(0, ZATERDAG)
-  })()
+  const dagen = alleDagen
 
   // Iedereen die deze maand ergens op staat, één keer, op alfabet.
   const ploegen = [...new Set(planning.flatMap((p) => p.medewerkers))].sort((a, b) => a.localeCompare(b))

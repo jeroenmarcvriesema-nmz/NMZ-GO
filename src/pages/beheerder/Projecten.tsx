@@ -180,7 +180,7 @@ function Groepkaart({ groep, open, onKlap, onOpenBon }: GroepkaartProps) {
       // Dezelfde kleurwas als de werkbonkaarten en de planning, met
       // dezelfde schakelaar: KLEURWAS uit betekent overal tegelijk een
       // witte kaart met alleen een gekleurde rand.
-      'border border-l-4 rounded-lg shadow-sm overflow-hidden transition-shadow hover:shadow-md',
+      'border border-l-[6px] rounded-lg shadow-sm overflow-hidden transition-shadow hover:shadow-md',
       KLEURWAS ? k.vlak : 'bg-white dark:bg-surface-dark-2',
       KLEURWAS ? k.omlijsting : 'border-gray-100 dark:border-white/10',
       k.rand,

@@ -133,7 +133,7 @@ function BonRegel({ werkbon, onOpen, looptDoor }: { werkbon: Werkbon; onOpen: ()
     <button
       onClick={onOpen}
       className={cn(
-        'w-full text-left rounded-lg border border-l-4 p-4 sm:p-5 shadow-sm',
+        'w-full text-left rounded-lg border border-l-[6px] p-4 sm:p-5 shadow-sm',
         'hover:border-brand-yellow transition-colors duration-150 ease-brand',
         KLEURWAS ? k.vlak : 'bg-white dark:bg-surface-dark-2',
         KLEURWAS ? k.omlijsting : 'border-gray-100 dark:border-white/10',
