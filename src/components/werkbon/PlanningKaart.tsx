@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils'
-import { klusstand, looptUit, isAsbest, STANDEN, KLEURWAS, UITLOOP, ASBEST } from '@/lib/klusstand'
+import { klusstand, looptUit, isAsbest, STANDEN, UITLOOP, ASBEST } from '@/lib/klusstand'
 import type { PlanningItem } from '@/types'
 import {
   IconUsers, IconListCheck, IconKey, IconPlayerPause,
@@ -78,13 +78,26 @@ export function PlanningKaart({ item, onOpen, loopIn, loopUit, ruim }: PlanningK
         'group w-full text-left rounded-lg border border-l-[6px] shadow-sm',
         'hover:shadow-md hover:-translate-y-px active:translate-y-0',
         'transition-all duration-150 ease-brand',
-        // Het hele vlak in de kleur van de stand, niet alleen het
-        // randje links. In een week van dertig blokjes zie je zo van een
-        // meter afstand welke kolom loopt en welke stilligt, zonder één
-        // woord te lezen. Zacht genoeg om de tekst leesbaar te houden —
-        // de kleur is de achtergrond, niet de boodschap.
-        KLEURWAS ? (asbest ? ASBEST.vlak : k.vlak) : 'bg-white dark:bg-surface-dark-2',
-        KLEURWAS ? (asbest ? ASBEST.omlijsting : k.omlijsting) : 'border-gray-100 dark:border-white/10',
+        // Een verloop van links naar rechts in de kleur van de stand.
+        //
+        // Hiervoor stond hier de keuze tussen twee uitersten: het hele
+        // vlak in een zachte tint (KLEURWAS), of een wit kaartje met
+        // alleen een randje. Het eerste maakte van een week dertig
+        // gekleurde blokken waarop je de adressen niet meer las; het
+        // tweede zei van een meter afstand te weinig.
+        //
+        // Het verloop doet allebei. Links, waar de rand zit en waar het
+        // oog toch al naar de kleur zoekt, draagt het vlak de stand; op
+        // de helft is de kleur op, en daar staan de namen en de
+        // aantallen op een rustige ondergrond. Een kaart kan bovendien
+        // nog steeds meer dan één ding zeggen — de rand mag intussen de
+        // uitloop of het asbest dragen.
+        asbest ? ASBEST.verloop : laat ? UITLOOP.verloop : k.verloop,
+        // Een neutrale rand: het verloop draagt de kleur nu, en een
+        // gekleurde rand eromheen zou er een tweede keer hetzelfde
+        // zeggen. `KLEURWAS` gaat over de zachte tint op de lijstkaarten
+        // elders en raakt deze kaart niet meer.
+        'border-gray-100 dark:border-white/10',
         accent ? accent.rand : k.rand,
         ruim ? 'p-3.5' : 'p-2.5',
       )}
@@ -124,7 +137,10 @@ export function PlanningKaart({ item, onOpen, loopIn, loopUit, ruim }: PlanningK
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1.5">
         <span className="flex items-center gap-1.5 min-w-0">
           <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', k.bol)} />
-          <span className={cn('text-[11px] font-semibold truncate', k.tekst)}>{k.kort}</span>
+          {/* `tekstDiep` en niet `tekst`: dit woord staat op het verloop van
+              zijn eigen kleur, en daar zakt de gewone tint onder de norm.
+              Zie de toelichting in lib/klusstand.ts. */}
+          <span className={cn('text-[11px] font-semibold truncate', k.tekstDiep)}>{k.kort}</span>
         </span>
 
         {item.punten > 0 && (
@@ -146,13 +162,13 @@ export function PlanningKaart({ item, onOpen, loopIn, loopUit, ruim }: PlanningK
             het zwaarst: dat is het ene bericht dat niet mag afhangen
             van of iemand oranje van amber onderscheidt. */}
         {asbest && (
-          <span className={cn('flex items-center gap-1 text-[11px] font-bold', ASBEST.tekst)}>
+          <span className={cn('flex items-center gap-1 text-[11px] font-bold', ASBEST.tekstDiep)}>
             <IconBiohazard className="w-3 h-3 flex-shrink-0" /> asbest
           </span>
         )}
 
         {laat && (
-          <span className={cn('flex items-center gap-1 text-[11px] font-bold', UITLOOP.tekst)}>
+          <span className={cn('flex items-center gap-1 text-[11px] font-bold', UITLOOP.tekstDiep)}>
             <IconClockExclamation className="w-3 h-3 flex-shrink-0" /> loopt uit
           </span>
         )}
@@ -177,13 +193,13 @@ export function PlanningKaart({ item, onOpen, loopIn, loopUit, ruim }: PlanningK
       )}
 
       {stand === 'stilgelegd' && (
-        <div className="flex items-center gap-1 mt-2 text-[11px] font-semibold text-brand-red dark:text-red-400">
+        <div className={cn('flex items-center gap-1 mt-2 text-[11px] font-semibold', STANDEN.stilgelegd.tekstDiep)}>
           <IconPlayerPause className="w-3 h-3 flex-shrink-0" /> wacht op een besluit
         </div>
       )}
 
       {stand === 'af_te_ronden' && (
-        <div className="flex items-center gap-1 mt-2 text-[11px] font-semibold text-violet-700 dark:text-violet-400">
+        <div className={cn('flex items-center gap-1 mt-2 text-[11px] font-semibold', STANDEN.af_te_ronden.tekstDiep)}>
           <IconCircleCheck className="w-3 h-3 flex-shrink-0" /> wacht op afronden
         </div>
       )}

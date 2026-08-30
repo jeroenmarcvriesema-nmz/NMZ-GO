@@ -143,12 +143,42 @@ interface Standkleur {
   bol: string
   /** Zachte tint over het hele kaartje. Alleen met `KLEURWAS` aan. */
   vlak: string
+  /**
+   * Een verloop over het hele kaartje, van links vol naar rechts weg.
+   *
+   * Dit is de tussenweg tussen een randje van zes pixels — dat van een
+   * meter afstand nauwelijks iets zegt — en een volledig gekleurd vlak,
+   * waarop de tekst niet meer leest en waarop een kaart bovendien nog
+   * maar één ding tegelijk kan zeggen. Het verloop begint bij de rand,
+   * waar het oog toch al naar de kleur zoekt, en is halverwege de kaart
+   * op. Rechts van dat punt staan de namen en de aantallen, en die
+   * staan dus nog steeds op een rustige ondergrond.
+   */
+  verloop: string
   /** Vlak en rand samen, voor een kaart zonder eigen randkleur. */
   omlijsting: string
   /** Bed onder een voortgangsbalkje. */
   balkbed: string
-  /** Tekst in de kleur van de stand. */
+  /** Tekst in de kleur van de stand, op een neutrale ondergrond. */
   tekst: string
+  /**
+   * Dezelfde tekst, maar op het verloop van diezelfde stand.
+   *
+   * `tekst` staat normaal op wit of op `surface-dark-2` en is daar
+   * ruim leesbaar. Zodra hij op zijn éigen kleur komt te staan — en dat
+   * doet hij op de planningkaart, waar het verloop links het sterkst is
+   * — zakt het contrast: "Ligt stil" in merkrood op een rode ondergrond
+   * kwam uit op 3,32:1, waar 4,5 de norm is. Vijf van de zeven standen
+   * zakten er doorheen.
+   *
+   * Vandaar een tweede tint: donkerder in licht, lichter in donker,
+   * precies andersom als de ondergrond. Alle veertien combinaties zijn
+   * nagerekend en zitten tussen 4,6 en 8,3.
+   *
+   * Gebruik dit uitsluitend op een gekleurd verloop. Op wit is het te
+   * donker en verliest de kleur zijn betekenis.
+   */
+  tekstDiep: string
 }
 
 export const STANDEN: Record<Klusstand, Standkleur> = {
@@ -162,9 +192,11 @@ export const STANDEN: Record<Klusstand, Standkleur> = {
     rand: 'border-l-gray-300 dark:border-l-white/25',
     bol: 'bg-gray-300 dark:bg-white/30',
     vlak: 'bg-white dark:bg-surface-dark-2',
+    verloop: 'bg-gradient-to-r from-gray-200 via-gray-50 to-white dark:from-white/[0.14] dark:via-white/[0.03] dark:to-surface-dark-2',
     omlijsting: 'border-gray-100 dark:border-white/10',
     balkbed: 'bg-gray-100 dark:bg-white/10',
     tekst: 'text-gray-500 dark:text-white/50',
+    tekstDiep: 'text-gray-700 dark:text-white/70',
   },
   bezig: {
     label: 'Bezig',
@@ -173,9 +205,11 @@ export const STANDEN: Record<Klusstand, Standkleur> = {
     rand: 'border-l-blue-500',
     bol: 'bg-blue-500',
     vlak: 'bg-blue-50/70 dark:bg-blue-500/10',
+    verloop: 'bg-gradient-to-r from-blue-200 via-blue-50 to-white dark:from-blue-500/30 dark:via-blue-500/[0.06] dark:to-surface-dark-2',
     omlijsting: 'border-blue-100 dark:border-blue-500/20',
     balkbed: 'bg-blue-100 dark:bg-blue-500/20',
     tekst: 'text-blue-700 dark:text-blue-400',
+    tekstDiep: 'text-blue-900 dark:text-blue-300',
   },
   // Alles afgevinkt, nog niet dichtgedaan — de wachtrij van kantoor.
   //
@@ -192,9 +226,11 @@ export const STANDEN: Record<Klusstand, Standkleur> = {
     rand: 'border-l-violet-500',
     bol: 'bg-violet-500',
     vlak: 'bg-violet-50/70 dark:bg-violet-500/10',
+    verloop: 'bg-gradient-to-r from-violet-200 via-violet-50 to-white dark:from-violet-500/30 dark:via-violet-500/[0.06] dark:to-surface-dark-2',
     omlijsting: 'border-violet-100 dark:border-violet-500/20',
     balkbed: 'bg-violet-100 dark:bg-violet-500/20',
     tekst: 'text-violet-700 dark:text-violet-400',
+    tekstDiep: 'text-violet-900 dark:text-violet-300',
   },
   afgerond: {
     label: 'Afgerond',
@@ -203,9 +239,11 @@ export const STANDEN: Record<Klusstand, Standkleur> = {
     rand: 'border-l-green-500',
     bol: 'bg-green-500',
     vlak: 'bg-green-50/70 dark:bg-green-500/10',
+    verloop: 'bg-gradient-to-r from-green-200 via-green-50 to-white dark:from-green-500/30 dark:via-green-500/[0.06] dark:to-surface-dark-2',
     omlijsting: 'border-green-100 dark:border-green-500/20',
     balkbed: 'bg-green-100 dark:bg-green-500/20',
     tekst: 'text-green-700 dark:text-green-400',
+    tekstDiep: 'text-green-900 dark:text-green-300',
   },
   // Dezelfde kleur als afgerond, een ander woord. Voor de ploeg is het
   // verschil er niet; voor kantoor zit het in het woord, want alleen
@@ -217,9 +255,11 @@ export const STANDEN: Record<Klusstand, Standkleur> = {
     rand: 'border-l-green-500',
     bol: 'bg-green-500',
     vlak: 'bg-green-50/70 dark:bg-green-500/10',
+    verloop: 'bg-gradient-to-r from-green-200 via-green-50 to-white dark:from-green-500/30 dark:via-green-500/[0.06] dark:to-surface-dark-2',
     omlijsting: 'border-green-100 dark:border-green-500/20',
     balkbed: 'bg-green-100 dark:bg-green-500/20',
     tekst: 'text-green-700 dark:text-green-400',
+    tekstDiep: 'text-green-900 dark:text-green-300',
   },
   // Rood is hiervoor gereserveerd. Het enige dat een telefoontje vraagt.
   stilgelegd: {
@@ -229,9 +269,11 @@ export const STANDEN: Record<Klusstand, Standkleur> = {
     rand: 'border-l-brand-red',
     bol: 'bg-brand-red',
     vlak: 'bg-brand-red-light dark:bg-brand-red/10',
+    verloop: 'bg-gradient-to-r from-brand-red/35 via-brand-red/[0.06] to-white dark:from-brand-red/40 dark:via-brand-red/[0.06] dark:to-surface-dark-2',
     omlijsting: 'border-brand-red/30 dark:border-brand-red/30',
     balkbed: 'bg-brand-red/15 dark:bg-brand-red/20',
     tekst: 'text-brand-red dark:text-red-400',
+    tekstDiep: 'text-brand-red-dark dark:text-red-300',
   },
 }
 
@@ -268,7 +310,9 @@ export const UITLOOP = {
   vlak: 'bg-amber-50/70 dark:bg-amber-500/10',
   omlijsting: 'border-amber-200 dark:border-amber-500/25',
   tekst: 'text-amber-700 dark:text-amber-400',
+  tekstDiep: 'text-amber-900 dark:text-amber-300',
   badge: 'orange' as const,
+  verloop: 'bg-gradient-to-r from-amber-200 via-amber-50 to-white dark:from-amber-500/30 dark:via-amber-500/[0.06] dark:to-surface-dark-2',
 }
 
 // ============================================================
@@ -294,7 +338,9 @@ export const ASBEST = {
   vlak: 'bg-orange-50 dark:bg-orange-500/10',
   omlijsting: 'border-orange-300 dark:border-orange-500/30',
   tekst: 'text-orange-700 dark:text-orange-400',
+  tekstDiep: 'text-orange-900 dark:text-orange-300',
   badge: 'orange' as const,
+  verloop: 'bg-gradient-to-r from-orange-200 via-orange-50 to-white dark:from-orange-500/30 dark:via-orange-500/[0.06] dark:to-surface-dark-2',
 }
 
 /**

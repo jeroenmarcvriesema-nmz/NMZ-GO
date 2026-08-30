@@ -1,5 +1,16 @@
 # NMZ GO — Changelog
 
+## Een kleurverloop over de planningkaart
+
+- **[WIJZIGING]** **De blokjes op de weekplanning dragen hun stand nu als een verloop van links naar rechts** in plaats van als een randje van zes pixels. Links, waar de rand zit en waar het oog toch al naar de kleur zoekt, staat de kleur vol; halverwege is hij op, en daar staan de namen en de aantallen op een rustige ondergrond.
+
+  Dit is de tussenweg tussen de twee uitersten die er eerder stonden. Het hele vlak in een zachte tint (de oude `KLEURWAS`) maakte van een week dertig gekleurde blokken waarop je de adressen niet meer las. Een wit kaartje met alleen een randje zei van een meter afstand te weinig. Het verloop doet allebei, en houdt bovendien overeind dat één kaart meer dan één ding kan zeggen — de rand mag intussen de uitloop of het asbest dragen.
+
+- **[FIX]** **Het statuswoord op zo'n kaart heeft een eigen, diepere tint gekregen** (`tekstDiep` in `lib/klusstand.ts`). Zodra "Ligt stil" op een rode ondergrond komt te staan zakt merkrood naar 3,32:1, waar 4,5 de norm is; vijf van de zeven standen zakten er doorheen. De nieuwe tint is donkerder in licht en juist lichter in donker, precies andersom als de ondergrond. Alle veertien combinaties zijn nagerekend en zitten tussen 4,6 en 8,3.
+
+  Dat geldt ook voor de regels "wacht op een besluit" en "wacht op afronden", die op hetzelfde sterke deel van het verloop staan.
+
+
 ## Vollere statuskleur, en zaterdag hoort er weer bij
 
 - **[WIJZIGING]** **De statusrand op een kaart is een echte kleurbalk geworden**, van 3–4 naar 6 pixels, op alle zes de plekken waar hij staat: de werkbonkaart, de planningkaart, Mijn bonnen, Mijn week, Projecten en de kop van een werkbon. Sinds de kleurwas uit staat is die rand samen met de badge de drager van de stand, en op een planbord van een meter afstand was drie pixels te weinig om iets te zeggen.
