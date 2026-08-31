@@ -306,22 +306,28 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
 
       {!readOnly && (
         <div className="flex items-center gap-2 mt-3 pl-10 flex-wrap">
-          {/* De meest gebruikte knop van de hele app, en hij was 34 pixels
-              hoog — onder de ~44 die DESIGN_SYSTEM.md vraagt, terwijl dit
-              precies de knop is die met een werkhandschoen wordt geraakt.
+          {/* De knop houdt dezelfde vorm, of er nu een foto is of niet.
+              Alleen de dekking verschilt.
 
-              De uitgeschakelde staat was bovendien dezelfde gele knop op
-              40% dekking. In fel licht is dat verschil bijna weg, en dan
-              lijkt het alsof de app niet reageert. Nu is "kan nog niet"
-              een grijze omlijnde knop: een andere vorm, niet een blekere
-              versie van dezelfde. */}
+              Hij heeft even een grijze omlijnde vorm gehad zolang
+              afvinken nog niet kon, met het argument dat "kan nog niet"
+              zo duidelijker is dan een bleke gele knop. Dat argument
+              klopt op zichzelf, maar het gevolg was erger dan het
+              probleem: bij het uploaden van een foto sprong de knop van
+              grijs naar vol geel, en dat leest als "hij heeft het
+              afgevinkt". Precies de verwarring waarvoor het commentaar
+              hieronder al bestond — een foto uploaden vinkt niets af.
+
+              Alleen de hoogte is gebleven: 44 pixels in plaats van 34,
+              want dit is de knop die met een werkhandschoen wordt
+              geraakt en dat is een aparte kwestie. */}
           <Button
-            variant={!magAfvinken ? 'secondary' : taak.voltooid ? 'secondary' : 'primary'}
-            size="md"
+            variant={taak.voltooid ? 'secondary' : 'primary'}
+            size="sm"
             loading={toggling}
             disabled={!magAfvinken}
             onClick={handleToggle}
-            className="min-h-[44px]"
+            className={cn('min-h-[44px]', !magAfvinken && 'opacity-40 cursor-not-allowed')}
             title={!magAfvinken ? 'Maak eerst een foto' : undefined}
           >
             {taak.voltooid ? <><IconCheck className="w-4 h-4" /> Afgevinkt</> : <><IconSquare className="w-4 h-4" /> Afvinken</>}

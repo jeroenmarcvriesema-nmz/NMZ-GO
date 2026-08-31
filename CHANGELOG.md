@@ -1,5 +1,16 @@
 # NMZ GO — Changelog
 
+## De afvinkknop springt niet meer van grijs naar geel
+
+- **[FIX]** **Een foto uploaden mag er niet uitzien alsof het punt is afgevinkt.** De knop kreeg tijdens de audit een grijze omlijnde vorm zolang afvinken nog niet kon, met het argument dat "kan nog niet" zo duidelijker is dan een bleke gele knop. Dat argument klopt op zichzelf, maar het gevolg was erger dan het probleem: zodra je een foto uploadde sprong de knop van grijs naar vol geel, en dat leest als *"hij heeft het afgevinkt"*.
+
+  Precies de verwarring waarvoor het commentaar in `TaakItem.tsx` al bestond — *"een foto uploaden vinkt niets af, dat blijft een aparte handeling"*. De knop houdt nu weer dezelfde vorm en kleur, of er nu een foto is of niet; alleen de dekking verschilt.
+
+  **Er wérd niets automatisch afgevinkt.** Nagelopen in de code (`verstuurFoto` doet alleen uploaden en verversen), in de migraties (geen trigger op `fotos` die `taken.voltooid` schrijft), en daarna uitgevoerd in de browser met een echte upload: het punt blijft open, de knop houdt dezelfde kleur en wordt alleen bruikbaar. Het was uitsluitend hoe het eruitzag.
+
+  Alleen de hoogte van 44 pixels is gebleven — dat is de knop die met een werkhandschoen wordt geraakt, en dat is een aparte kwestie.
+
+
 ## Punten blijven staan waar ze staan
 
 - **[FIX]** **Het samenvouwen van afgevinkte punten is teruggedraaid.** Het idee was goed op papier — een bon van dertig punten werd de helft korter — maar het gedrag klopte niet: vinkte je een punt af, dan klapte het onder je handen dicht *én* schoof het naar het blok "afgerond" onderaan. Je bent dan midden in het werk je plek kwijt, en dat is precies wat je niet wilt met een handschoen aan en een telefoon in je andere hand. Twee bewegingen tegelijk op het moment dat je je aandacht ergens anders hebt.
