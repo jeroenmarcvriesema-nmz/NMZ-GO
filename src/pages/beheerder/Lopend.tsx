@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { PageWrapper } from '@/components/layout/PageWrapper'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
@@ -12,12 +12,13 @@ import { useLopend, type LopendeKlus } from '@/hooks/useLopend'
 import { Klusactiviteit } from '@/components/werkbon/Klusactiviteit'
 import {
   STANDEN, STANDVOLGORDE, UITLOOP, ASBEST, looptUit, isAsbest,
+  type Klusstand,
 } from '@/lib/klusstand'
 import { vervolgLabel } from '@/lib/vervolgwerk'
 import {
   IconUsers, IconKey, IconPhoto, IconListCheck, IconCheck, IconCamera,
   IconClockExclamation, IconBiohazard, IconChevronRight, IconRefresh,
-  IconExternalLink, IconPlayerPause, IconSpray,
+  IconExternalLink, IconPlayerPause, IconSpray, IconClockPlay,
 } from '@tabler/icons-react'
 
 /**
@@ -41,7 +42,13 @@ import {
 export default function Lopend() {
   const { klussen, loading, error, refetch } = useLopend()
   const navigate = useNavigate()
+  const [zoekparams, zetZoekparams] = useSearchParams()
   const [open, setOpen] = useState<Set<string>>(new Set())
+
+  // Het filter staat in de URL en niet in de state: de tegels op het
+  // dashboard linken hierheen mét een stand, en dan hoort het scherm
+  // daar al op te staan. Terugknop werkt daarmee ook zoals verwacht.
+  const filter = zoekparams.get('stand') as Klusstand | null
 
   const klap = (id: string) =>
     setOpen((h) => {
@@ -50,14 +57,37 @@ export default function Lopend() {
       return n
     })
 
-  // Dezelfde volgorde als overal: wat aandacht vraagt bovenaan, en
-  // binnen dezelfde stand het adres zodat de lijst niet verspringt.
-  const gesorteerd = [...klussen].sort((a, b) => {
-    const verschil = STANDVOLGORDE[a.stand] - STANDVOLGORDE[b.stand]
-    return verschil !== 0 ? verschil : a.adres.localeCompare(b.adres)
-  })
+  const zetFilter = (stand: Klusstand | null) => {
+    if (stand) zetZoekparams({ stand })
+    else zetZoekparams({})
+  }
 
-  const bezig = gesorteerd.filter((k) => k.looptNu).length
+  // Per stand een groepje. Dat leest anders dan één doorlopende kolom:
+  // je ziet in één oogopslag dat er twee stilliggen en vijf lopen, in
+  // plaats van dat je zeven kaarten moet aflezen om daarachter te komen.
+  const perStand = new Map<Klusstand, LopendeKlus[]>()
+  for (const k of klussen) {
+    const lijst = perStand.get(k.stand) ?? []
+    lijst.push(k)
+    perStand.set(k.stand, lijst)
+  }
+  for (const lijst of perStand.values()) lijst.sort((a, b) => a.adres.localeCompare(b.adres))
+
+  const groepen = [...perStand.entries()]
+    .sort(([a], [b]) => STANDVOLGORDE[a] - STANDVOLGORDE[b])
+    .filter(([stand]) => !filter || stand === filter)
+
+  const zichtbaar = groepen.reduce((n, [, l]) => n + l.length, 0)
+
+  // De cijfers bovenaan gaan over álles van vandaag, ook als er een
+  // filter aan staat. Anders verandert de samenvatting mee met je
+  // filter en is het geen samenvatting meer.
+  const mensen = new Set<string>()
+  klussen.forEach((k) => k.werkdagen.filter((d) => !d.stop).forEach((d) => mensen.add(d.naam)))
+  const openPunten = klussen.reduce(
+    (n, k) => n + k.punten.filter((p) => !p.voltooid).length, 0)
+  const zonderFoto = klussen.reduce(
+    (n, k) => n + k.punten.filter((p) => p.fotoVereist && p.aantalFotos === 0).length, 0)
 
   if (loading) {
     return (
@@ -84,33 +114,150 @@ export default function Lopend() {
         </Card>
       )}
 
-      <p className="text-sm text-gray-500 dark:text-white/50 mb-5">
-        {gesorteerd.length} {gesorteerd.length === 1 ? 'klus loopt' : 'klussen lopen'} vandaag
-        {bezig > 0 && <> · <span className="font-semibold text-green-700 dark:text-green-400">
-          op {bezig} {bezig === 1 ? 'klus' : 'klussen'} staat nu iemand
-        </span></>}
-      </p>
+      {/* ── De dag in vier getallen ──
+          Wie hier binnenkomt wil eerst weten hoe de dag ervoor staat en
+          pas daarna welke klussen dat zijn. */}
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-5">
+        <Cijfer label="klussen vandaag" waarde={klussen.length} icon={<IconListCheck />} />
+        <Cijfer
+          label={mensen.size === 1 ? 'man aan het werk' : 'man aan het werk'}
+          waarde={mensen.size}
+          icon={<IconClockPlay />}
+          accent={mensen.size > 0 ? 'groen' : undefined}
+        />
+        <Cijfer label="punten open" waarde={openPunten} icon={<IconCheck />} />
+        <Cijfer
+          label="wachten op een foto"
+          waarde={zonderFoto}
+          icon={<IconCamera />}
+          accent={zonderFoto > 0 ? 'amber' : undefined}
+        />
+      </div>
 
-      {gesorteerd.length === 0 ? (
+      {/* ── Filter per stand ──
+          Ook het aanknopingspunt voor de tegels op het dashboard: die
+          linken hierheen met ?stand=... erachter. */}
+      {klussen.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-5">
+          <Standknop actief={!filter} aantal={klussen.length} onClick={() => zetFilter(null)}>
+            Alles
+          </Standknop>
+          {[...perStand.entries()]
+            .sort(([a], [b]) => STANDVOLGORDE[a] - STANDVOLGORDE[b])
+            .map(([stand, lijst]) => (
+              <Standknop
+                key={stand}
+                actief={filter === stand}
+                aantal={lijst.length}
+                stand={stand}
+                onClick={() => zetFilter(filter === stand ? null : stand)}
+              >
+                {STANDEN[stand].kort}
+              </Standknop>
+            ))}
+        </div>
+      )}
+
+      {zichtbaar === 0 ? (
         <EmptyState
           icon={<IconListCheck />}
-          titel="Er loopt vandaag niets"
-          uitleg="Zodra een klus vandaag gepland staat en nog niet is opgeleverd, verschijnt hij hier."
+          titel={filter ? `Niets met de stand ${STANDEN[filter].kort.toLowerCase()}` : 'Er loopt vandaag niets'}
+          uitleg={
+            filter
+              ? 'Haal het filter weg om de andere klussen van vandaag te zien.'
+              : 'Zodra een klus vandaag gepland staat en nog niet is opgeleverd, verschijnt hij hier.'
+          }
         />
       ) : (
-        <div className="space-y-3">
-          {gesorteerd.map((k) => (
-            <Klusblok
-              key={k.id}
-              klus={k}
-              open={open.has(k.id)}
-              onKlap={() => klap(k.id)}
-              onOpen={() => navigate(`/werkbonnen/${k.id}`)}
-            />
+        <div className="space-y-7">
+          {groepen.map(([stand, lijst]) => (
+            <section key={stand}>
+              {/* De kop draagt de kleur van de stand, zodat je bij het
+                  scrollen ziet in welk blok je zit zonder te lezen. */}
+              <div className="flex items-center gap-2.5 mb-3">
+                <span className={cn('w-2.5 h-2.5 rounded-full flex-shrink-0', STANDEN[stand].bol)} />
+                <h2 className="text-sm font-bold text-gray-900 dark:text-white">
+                  {STANDEN[stand].label}
+                </h2>
+                <span className="text-sm text-tekst-gedempt dark:text-white/55 tabular-nums">
+                  {lijst.length}
+                </span>
+                <span className="flex-1 h-px bg-gray-100 dark:bg-white/10" />
+              </div>
+
+              {/* Twee kolommen vanaf een breed scherm: op een laptop
+                  paste er anders maar één kaart per schermhoogte, en dan
+                  ben je aan het scrollen in plaats van aan het kijken. */}
+              <div className="grid grid-cols-1 2xl:grid-cols-2 gap-3 items-start">
+                {lijst.map((k) => (
+                  <Klusblok
+                    key={k.id}
+                    klus={k}
+                    open={open.has(k.id)}
+                    onKlap={() => klap(k.id)}
+                    onOpen={() => navigate(`/werkbonnen/${k.id}`)}
+                  />
+                ))}
+              </div>
+            </section>
           ))}
         </div>
       )}
     </PageWrapper>
+  )
+}
+
+/** Eén getal uit de samenvatting bovenaan. */
+function Cijfer({ label, waarde, icon, accent }: {
+  label: string
+  waarde: number
+  icon: React.ReactNode
+  accent?: 'groen' | 'amber'
+}) {
+  const kleur =
+    accent === 'groen' ? 'text-green-700 dark:text-green-400'
+      : accent === 'amber' ? 'text-amber-700 dark:text-amber-400'
+        : 'text-gray-900 dark:text-white'
+
+  return (
+    <div className="flex items-center gap-3 rounded-lg border border-gray-100 dark:border-white/10 bg-white dark:bg-surface-dark-2 px-4 py-3">
+      <span className={cn('flex-shrink-0 [&>svg]:w-5 [&>svg]:h-5', kleur, 'opacity-70')}>{icon}</span>
+      <span className="min-w-0">
+        <span className={cn('block text-2xl font-bold leading-none tabular-nums', kleur)}>
+          {waarde}
+        </span>
+        <span className="block text-xs text-tekst-gedempt dark:text-white/55 mt-1 break-words">
+          {label}
+        </span>
+      </span>
+    </div>
+  )
+}
+
+/** Een filterknop met het aantal erin. */
+function Standknop({ children, aantal, actief, stand, onClick }: {
+  children: React.ReactNode
+  aantal: number
+  actief: boolean
+  stand?: Klusstand
+  onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'inline-flex items-center gap-2 min-h-[44px] px-3.5 rounded-sm border text-sm font-semibold transition-colors',
+        actief
+          ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 border-gray-900 dark:border-white'
+          : 'bg-white dark:bg-surface-dark-2 text-gray-700 dark:text-white/70 border-gray-200 dark:border-white/10 hover:border-gray-400',
+      )}
+    >
+      {stand && !actief && (
+        <span className={cn('w-2 h-2 rounded-full flex-shrink-0', STANDEN[stand].bol)} />
+      )}
+      {children}
+      <span className="tabular-nums opacity-60">{aantal}</span>
+    </button>
   )
 }
 

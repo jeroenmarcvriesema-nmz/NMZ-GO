@@ -84,14 +84,26 @@ export function useLopend() {
 
     // Twee ronden, want de werkdaglogs hangen aan een andere tabel en
     // een geneste select zou elke bon zijn hele historie meegeven.
-    const [bonnenRes, logsRes] = await Promise.all([
-      supabase.from('werkbonnen').select(SELECT)
-        .is('opgeleverd_op', null)
-        .lte('geplande_start', vandaag),
-      supabase.from('werkdag_logs')
-        .select('werkbon_id, start_tijd, stop_tijd, automatisch_afgesloten, medewerker:profiles ( naam )')
-        .eq('datum', vandaag),
-    ])
+    // Eerst de logs, want ze bepalen mede wélke bonnen we ophalen.
+    const logsRes = await supabase.from('werkdag_logs')
+      .select('werkbon_id, start_tijd, stop_tijd, automatisch_afgesloten, medewerker:profiles ( naam )')
+      .eq('datum', vandaag)
+
+    // Alles wat vandaag of eerder had moeten beginnen, plus waar
+    // iemand op geklokt staat. Dat tweede is geen extraatje: het
+    // dashboard telt hem mee, en een tegel die naar dit scherm linkt
+    // hoort dezelfde klussen te laten zien. Klokt iemand op een klus
+    // die pas volgende week gepland staat, dan is dát het bericht.
+    const geklokt = [...new Set(
+      ((logsRes.data ?? []) as any[]).map((l) => l.werkbon_id).filter(Boolean),
+    )] as string[]
+
+    let query = supabase.from('werkbonnen').select(SELECT).is('opgeleverd_op', null)
+    query = geklokt.length > 0
+      ? query.or(`geplande_start.lte.${vandaag},id.in.(${geklokt.join(',')})`)
+      : query.lte('geplande_start', vandaag)
+
+    const bonnenRes = await query
 
     if (bonnenRes.error || logsRes.error) {
       setError(bonnenRes.error?.message ?? logsRes.error?.message ?? 'Onbekende fout')

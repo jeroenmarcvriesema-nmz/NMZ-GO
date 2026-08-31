@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { klusstand, STANDVOLGORDE, type Klusstand } from '@/lib/klusstand'
-import { looptOp } from '@/lib/planning'
+import { looptOp, teltVoorVandaag } from '@/lib/planning'
 
 // ── Dashboard ──────────────────────────────────────────────────
 // Draaide tot nu toe op mock data. Nu op de echte tabellen:
@@ -396,15 +396,22 @@ export function useDashboard(): { data: DashboardData; loading: boolean; error: 
 
     activiteit.sort((a, z) => a.tijd.localeCompare(z.tijd))
 
-    // ── Werkvoorraad ─────────────────────────────────────────────
-    // Over álle klussen, niet alleen die van vandaag. Dezelfde standen
-    // als op de werkbonnen, de planning en het archief.
+    // ── Wat er vandaag speelt ────────────────────────────────────
+    // Deze telling ging over álle klussen, ook die van volgende maand.
+    // Klikken op een tegel bracht je daarom in de volle
+    // werkbonnenlijst, en dat is geen overzicht maar een archief.
+    //
+    // Nu telt hij wat er vandaag op de vloer ligt, met exact dezelfde
+    // regel als het scherm Lopend gebruikt — `teltVoorVandaag`. Dat is
+    // geen detail: telde de tegel iets anders dan de lijst erachter,
+    // dan is de tegel een leugen, en dat is deze maand al drie keer
+    // gebeurd.
     const werkvoorraad: Werkvoorraad = { ...GEEN_VOORRAAD }
     let uitgelopen = 0
 
     for (const b of (voorraadRes.data ?? []) as any[]) {
       const stand = klusstand({ ...b, looptNu: loopdtNog.has(b.id) })
-      werkvoorraad[stand] += 1
+      if (teltVoorVandaag(b, vandaag, loopdtNog.has(b.id))) werkvoorraad[stand] += 1
 
       // Uitgelopen: de opleverdatum is voorbij en de klus is niet af.
       // Dat is iets anders dan "achter op schema" hieronder, wat over

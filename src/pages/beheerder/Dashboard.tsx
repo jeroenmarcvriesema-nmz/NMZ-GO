@@ -115,7 +115,13 @@ export default function Dashboard() {
           Wat aandacht vraagt staat vooraan: wat stilligt, dan wat op
           één druk op de knop wacht, dan wat loopt.
 
-          Elke tegel gaat naar de werkbonnenlijst met dat filter al aan.
+          Elke tegel gaat naar Lopend met dat filter al aan. Ze gingen
+          eerder naar de werkbonnenlijst, en dat is geen overzicht maar
+          een archief: je kwam uit bij álle bonnen, ook die van volgende
+          maand. Deze tegels tellen wat er vandaag op de vloer ligt, en
+          Lopend laat precies diezelfde klussen zien — met de ploeg, de
+          werktijden en de punten erbij.
+
           Alleen "Uitgelopen" wijkt af en houdt zijn eigen scherm: daar
           staat de reden en de historie bij, en dat is een andere vraag
           dan "welke klussen zijn dit".
@@ -132,28 +138,28 @@ export default function Dashboard() {
           value={v.stilgelegd}
           icon={<IconPlayerPause />}
           variant={v.stilgelegd > 0 ? 'red' : 'neutral'}
-          onClick={v.stilgelegd > 0 ? () => navigate('/werkbonnen?stand=stilgelegd') : undefined}
+          onClick={v.stilgelegd > 0 ? () => navigate('/lopend?stand=stilgelegd') : undefined}
         />
         <KpiCard
           label={STANDEN.af_te_ronden.kort}
           value={v.af_te_ronden}
           icon={<IconCircleCheck />}
           variant={v.af_te_ronden > 0 ? 'violet' : 'neutral'}
-          onClick={v.af_te_ronden > 0 ? () => navigate('/werkbonnen?stand=af_te_ronden') : undefined}
+          onClick={v.af_te_ronden > 0 ? () => navigate('/lopend?stand=af_te_ronden') : undefined}
         />
         <KpiCard
           label={STANDEN.bezig.label}
           value={v.bezig}
           icon={<IconPlayerPlay />}
           variant={v.bezig > 0 ? 'blue' : 'neutral'}
-          onClick={v.bezig > 0 ? () => navigate('/werkbonnen?stand=bezig') : undefined}
+          onClick={v.bezig > 0 ? () => navigate('/lopend?stand=bezig') : undefined}
         />
         <KpiCard
           label={STANDEN.niet_gestart.kort}
           value={v.niet_gestart}
           icon={<IconClock />}
           variant="neutral"
-          onClick={v.niet_gestart > 0 ? () => navigate('/werkbonnen?stand=niet_gestart') : undefined}
+          onClick={v.niet_gestart > 0 ? () => navigate('/lopend?stand=niet_gestart') : undefined}
         />
         {/* De enige tegel die ergens heen gaat. Uitloop heeft een eigen
             scherm met de reden erbij; dit getal is het startpunt van die

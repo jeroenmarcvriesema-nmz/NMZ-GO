@@ -200,6 +200,29 @@ export function looptOp(w: Ingepland, dag: string): boolean {
  * dan een leeg scherm.
  */
 /**
+ * Telt deze klus mee in het overzicht van vandaag?
+ *
+ * Eén regel, gedeeld door het dashboard en het scherm Lopend. Zonder
+ * dat telde de tegel iets anders dan de lijst waar je op uitkwam, en
+ * dat is deze maand al drie keer misgegaan.
+ *
+ * De regel: wat af is telt niet mee, wie geklokt staat telt altijd mee,
+ * en verder alles wat vandaag of eerder had moeten beginnen. Dat
+ * laatste is met opzet ruimer dan "vandaag tussen start en eind": een
+ * klus die over zijn opleverdatum heen is, loopt nog steeds — en juist
+ * die wil je zien.
+ */
+export function teltVoorVandaag(
+  w: Ingepland,
+  nu: string = isoDatum(),
+  geklokt = false,
+): boolean {
+  if (w.opgeleverd_op || w.status === 'voltooid') return false
+  if (geklokt) return true
+  return startVan(w) <= nu
+}
+
+/**
  * Alles wat vandaag loopt, in de volgorde waarin het af moet.
  *
  * Er staat lang niet altijd één klus op een dag. Iemand staat vijf

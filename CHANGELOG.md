@@ -1,5 +1,15 @@
 # NMZ GO — Changelog
 
+## Lopend is het overzicht geworden, en de tegels gaan erheen
+
+- **[FIX]** **De tegels op het dashboard brachten je in de volle werkbonnenlijst.** Klikken op "Bezig" leverde alle bonnen op, ook die van volgende maand. Dat is geen overzicht maar een archief. Ze gaan nu naar **Lopend**, met dat filter al aan.
+- **De tegels tellen daarom wat er vandaag op de vloer ligt**, niet meer de hele voorraad — met exact dezelfde regel als Lopend gebruikt (`teltVoorVandaag`). Eén regel op één plek, want een tegel die iets anders telt dan het scherm erachter is een tegel die liegt, en dat is deze maand al drie keer gebeurd.
+- **[FEATURE]** **Lopend is opnieuw ingedeeld.** Het was één doorlopende kolom met alles onder elkaar; nu staat er bovenaan de dag in vier getallen — klussen vandaag, man aan het werk, punten open, wachten op een foto — daaronder filterknoppen per stand met hun aantal, en daaronder de klussen **gegroepeerd per stand** met een gekleurde kop per blok.
+- Vanaf een breed scherm staan de kaarten in **twee kolommen**. Op een laptop paste er anders één kaart per schermhoogte, en dan ben je aan het scrollen in plaats van aan het kijken.
+- De samenvatting bovenaan telt altijd de hele dag, ook met een filter aan. Anders verandert je samenvatting mee met je filter en is het geen samenvatting meer.
+- Het filter staat in de URL, zodat de tegels erheen kunnen linken en de terugknop doet wat je verwacht.
+- **[FIX]** Lopend haalt nu ook de klussen op waar iemand op geklokt staat maar die pas later gepland staan. Die telde het dashboard wel en Lopend niet — precies het gat dat de tegel en de lijst weer uit elkaar zou laten lopen.
+
 ## De werkdag houdt het werk niet meer tegen
 
 - **[FIX]** **`readOnly={!gestart}` is weg van het Vandaag-scherm.** Dit was
