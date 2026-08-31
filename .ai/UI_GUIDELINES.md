@@ -196,16 +196,27 @@ Lettertype: `Inter` (sans), `JetBrains Mono` voor monospace-behoefte (bonnummers
 
 ## Vergrendelde schermen
 
-Een scherm dat leesbaar is maar niet bewerkbaar (`readOnly`) mag nooit
-alleen zijn knoppen kwijtraken. Dat is niet te onderscheiden van een scherm
-dat stuk is, en dat is precies hoe het in het veld wordt gemeld.
+**Vergrendel het werk van de ploeg niet.** Een zwamsaneerder die voor de
+deur staat moet kunnen afvinken en fotograferen, punt. Een voorwaarde die
+daar tussen komt te staan — eerst je werkdag starten, eerst dit, eerst dat —
+kost in het veld een telefoontje naar kantoor en levert niets op wat je niet
+ook achteraf kunt zien.
 
-- Bovenaan het vergrendelde deel staat **wát** er op slot zit, **waarom**, en
-  **de handeling die het opent**. Niet als grijze regel maar als blok.
-- Bij elk afzonderlijk item staat één regel met een slotje en dezelfde reden
-  in het kort. Een uitleg bovenaan is na twintig items scrollen uit beeld.
-- De uitleg noemt de handeling, niet de toestand: *"Start je werkdag om dit
-  punt af te vinken"*, niet *"vergrendeld"*.
+Dat is geen theorie: `readOnly={!gestart}` op het Vandaag-scherm haalde de
+afvinkknop én de camera van elk punt zolang de werkdag niet liep. Bedoeld om
+de urenregistratie kloppend te houden, in de praktijk een nieuwe man die
+twintig punten zonder knoppen zag en meldde dat hij niet kon afvinken. De
+regel gold bovendien maar op één van de twee schermen die dezelfde punten
+tonen. Weggehaald in augustus.
+
+Moet er tóch iets op slot (kantoor dat niet afvinkt, een opgeleverde bon),
+dan mag het scherm nooit alleen zijn knoppen kwijtraken — dat is niet te
+onderscheiden van een scherm dat stuk is:
+
+- Bovenaan het vergrendelde deel staat **wát** er op slot zit en **waarom**.
+- Bij elk afzonderlijk item één regel met dezelfde reden in het kort. Een
+  uitleg bovenaan is na twintig items scrollen uit beeld.
+- De uitleg noemt de handeling, niet de toestand.
 
 ---
 

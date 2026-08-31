@@ -8,7 +8,7 @@ import { useFotos } from '@/hooks/useFotos'
 import { useAuth } from '@/hooks/useAuth'
 import type { Taak } from '@/types'
 import { Puntopmerkingen } from '@/components/taak/Puntopmerkingen'
-import { IconCamera, IconCameraOff, IconCheck, IconSquare, IconPhoto, IconAlertCircle, IconArchive, IconRefresh, IconTrash, IconRotate, IconLock,
+import { IconCamera, IconCameraOff, IconCheck, IconSquare, IconPhoto, IconAlertCircle, IconArchive, IconRefresh, IconTrash, IconRotate,
 } from '@tabler/icons-react'
 
 interface TaakItemProps {
@@ -16,20 +16,6 @@ interface TaakItemProps {
   werkbonId: string
   /** Lezen mag, afvinken en fotograferen niet. Zegt niets over kantoor. */
   readOnly?: boolean
-  /**
-   * Waaróm er niet afgevinkt kan worden, in één regel.
-   *
-   * `readOnly` haalde de knoppen weg en liet niets achter. Op het
-   * scherm van de ploeg staat hij aan zolang de werkdag niet is
-   * gestart, en dan zag een zwamsaneerder twintig punten zonder ook
-   * maar één knop — zonder dat er ergens stond dat dat aan de werkdag
-   * lag. Dat is hoe "ik kan niet afvinken" ontstaat: de app doet niets
-   * en zegt er niets bij.
-   *
-   * Bij elk punt en niet alleen bovenaan de lijst: je scrolt langs
-   * twintig punten en de uitleg staat dan al lang niet meer in beeld.
-   */
-  grendel?: string
   /**
    * De klus is opgeleverd — het dossier is dicht.
    *
@@ -42,7 +28,7 @@ interface TaakItemProps {
   onRefresh: () => void
 }
 
-export function TaakItem({ taak, werkbonId, readOnly, grendel, gesloten, onRefresh }: TaakItemProps) {
+export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: TaakItemProps) {
   const { toggleVoltooid, zetFotoVereist } = useTaken()
   const { upload, getUrls } = useFotos()
   const { profile, magWerkBeheren } = useAuth()
@@ -421,17 +407,6 @@ export function TaakItem({ taak, werkbonId, readOnly, grendel, gesloten, onRefre
         </div>
       )}
 
-      {/* Waarom er hier geen knoppen staan.
-          Zonder deze regel is een vergrendeld punt niet te
-          onderscheiden van een kapot scherm: de tekst en de foto's
-          staan er, maar afvinken en fotograferen zijn er zonder een
-          woord uit verdwenen. */}
-      {readOnly && grendel && !taak.voltooid && (
-        <div className="flex items-start gap-2 mt-3 pl-10 text-xs text-tekst-gedempt dark:text-white/55">
-          <IconLock className="w-3.5 h-3.5 flex-shrink-0 mt-px" />
-          <span>{grendel}</span>
-        </div>
-      )}
 
       {/* Wat kantoor met dit punt kan.
           Dit stond binnen `!readOnly` en was daarmee overal onzichtbaar:

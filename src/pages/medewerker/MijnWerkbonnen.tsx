@@ -158,17 +158,28 @@ export default function MijnWerkbonnen() {
   const taken = vandaag.taken ?? []
   const voortgang = berekenVoortgang(taken)
   const aantalFotos = taken.flatMap((t) => t.fotos ?? []).length
-  const gestart = werkdag.fase === 'actief'
 
-  // Afvinken en fotograferen hangen aan de werkdag: lezen mag altijd,
-  // wijzigen alleen als je bezig bent. Dat verschil staat er ook bij,
-  // zodat niemand denkt dat de app kapot is als er niets gebeurt bij
-  // aantikken.
-  const bijschrift = werkdag.fase === 'voor_start'
-    ? 'Lezen kan nu al — afvinken zodra je bent gestart'
-    : werkdag.fase === 'gestopt'
-      ? 'Hervat je werkdag om weer af te vinken'
-      : 'Maak een foto vóór je afvinkt'
+  /**
+   * Afvinken hangt niet aan de werkdag.
+   *
+   * Dat heeft het wél gedaan: `readOnly={!gestart}` haalde de afvinkknop
+   * én de camera van elk punt zolang de werkdag niet liep. Bedoeld als
+   * "je uren kloppen dan tenminste", in de praktijk een nieuwe man die
+   * zijn werkbon opent, twintig punten zonder knoppen ziet en meldt dat
+   * hij niet kan afvinken. Precies wat er in augustus gebeurde.
+   *
+   * Het was bovendien een halve regel: via Mijn bonnen kwam je op
+   * `/werkbon/:id` en daar kon je diezelfde punten wél afvinken. Eén
+   * app die op het ene scherm iets weigert dat op het andere gewoon mag
+   * is erger dan geen regel.
+   *
+   * De werkdag blijft staan waarvoor hij is — de urenregistratie, de
+   * balk onderin, het dashboard van kantoor. Hij houdt het werk niet
+   * meer tegen.
+   */
+  const bijschrift = werkdag.fase === 'actief'
+    ? 'Maak een foto vóór je afvinkt'
+    : 'Maak een foto vóór je afvinkt — vergeet je werkdag niet te starten'
 
   return (
     <>
@@ -336,35 +347,7 @@ export default function MijnWerkbonnen() {
           zonderVoortgang
           laden={bonLaadt}
           ophaalfout={bonFout}
-          readOnly={!gestart}
           bijschrift={bijschrift}
-          grendel={gestart ? undefined : {
-            titel: werkdag.fase === 'voor_start'
-              ? 'Je werkdag is nog niet gestart'
-              : 'Je werkdag is gestopt',
-            uitleg: werkdag.fase === 'voor_start'
-              ? 'Lezen kan nu al. Afvinken en foto\u2019s maken kan zodra je hier bent gestart \u2014 zo weet kantoor wanneer je aan deze klus begon.'
-              : 'Hervat je werkdag om weer af te vinken en foto\u2019s te maken.',
-            perPunt: werkdag.fase === 'voor_start'
-              ? 'Start je werkdag om dit punt af te vinken'
-              : 'Hervat je werkdag om dit punt af te vinken',
-            actie: (
-              <button
-                onClick={werkdag.fase === 'voor_start' ? startWerkdag : hervatWerkdag}
-                disabled={werkdagBezig}
-                // Omlijnd en niet gevuld. De vaste balk onderin draagt
-                // dezelfde handeling als volle groene pil, en die twee
-                // stonden tegelijk in beeld — twee identieke knoppen
-                // boven elkaar leest als een fout in het scherm. Dit is
-                // dezelfde handeling op de plek waar de vraag opkomt,
-                // en dat mag er ook zo uitzien.
-                className="w-full min-h-[48px] rounded-lg border-2 border-green-600 dark:border-green-500 bg-white dark:bg-surface-dark-2 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-500/10 disabled:opacity-60 font-extrabold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
-              >
-                <IconPlayerPlay className="w-5 h-5" />
-                {werkdagBezig ? 'BEZIG\u2026' : werkdag.fase === 'voor_start' ? 'START WERKDAG' : 'WERKDAG HERVATTEN'}
-              </button>
-            ),
-          }}
           onRefresh={refetch}
           // De bon is af: de lijst moet er ook van weten, anders kiest
           // `kiesVandaag` morgen nog steeds deze bon.
@@ -492,7 +475,7 @@ function Startkaart({
         {fase === 'voor_start' ? (
           <>
             <IconPlayerPlay className="w-3.5 h-3.5 flex-shrink-0" />
-            Werkdag nog niet gestart — start hem onderin om af te vinken
+            Werkdag nog niet gestart — vergeet dat niet, voor je uren
           </>
         ) : fase === 'actief' ? (
           <>

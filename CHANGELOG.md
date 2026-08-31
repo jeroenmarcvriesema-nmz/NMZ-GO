@@ -1,5 +1,50 @@
 # NMZ GO — Changelog
 
+## De werkdag houdt het werk niet meer tegen
+
+- **[FIX]** **`readOnly={!gestart}` is weg van het Vandaag-scherm.** Dit was
+  de blokkade: zolang je werkdag niet liep haalde die regel de afvinkknop
+  *en* de camera van elk punt af. Bedoeld om de urenregistratie kloppend te
+  houden; in de praktijk opende een nieuwe man zijn werkbon, zag twintig
+  punten zonder één knop, en meldde dat hij niet kon afvinken.
+
+  Het was bovendien een halve regel. Dezelfde punten waren via Mijn bonnen
+  op `/werkbon/:id` gewoon af te vinken zonder gestarte werkdag — daar heeft
+  die eis nooit gestaan. Eén app die op het ene scherm weigert wat op het
+  andere mag is erger dan geen regel.
+
+  De werkdag blijft staan waarvoor hij is: de balk onderin, de uren, het
+  dashboard van kantoor. Hij houdt het werk niet meer tegen. Wie niet gestart
+  is krijgt een herinnering — *"vergeet je werkdag niet te starten"* — en
+  verder niets.
+
+  **Ter verantwoording, want daar was gerede twijfel over:** deze eis komt
+  niet uit de ontwerpaudit. Hij staat sinds 12 augustus in de code. De audit
+  (29–31 augustus) veranderde in `MijnWerkbonnen.tsx`, `Klusuitvoering.tsx`,
+  `TaakItem.tsx`, `useTaken.ts` en `App.tsx` geen enkele regel logica —
+  alleen kleurklassen en commentaar; nagerekend met een diff die
+  opmaakregels wegfiltert. Wat wél veranderde is wie de app gebruikt: de
+  accounts van eind augustus liepen als eersten tegen een regel aan die er al
+  stond, en die zichzelf nergens uitlegde.
+
+- **[FIX]** **Het slotblok en de slotregels per punt zijn er weer uit.** Die
+  legden de blokkade netjes uit, maar een blokkade die weg kan hoort niet
+  uitgelegd te worden — hij hoort weg. `grendel` is uit `Klusuitvoering` en
+  `TaakItem` verwijderd.
+
+Wat uit de vorige ronde blijft staan, want dat lost echte problemen op en
+blokkeert niemand:
+
+- De afvinkknop is niet langer `disabled` als de foto nog ontbreekt: hij
+  legt bij een tik uit wat er mist, met de cameraknop erbij. Fotoplicht per
+  punt blijft gelden — dat is de kern van de rapportage, geen drempel.
+- `toggleVoltooid` toetst met `.select('id')` of er echt een rij is geraakt.
+  Een door RLS geweigerde afvinkpoging verdween daarvóór geruisloos en het
+  scherm meldde "gelukt".
+- De kaart bovenaan Vandaag die zegt wáár je begint en waarom.
+- De negentien schermladers via `scherm()`, tegen de dertig vastgelopen
+  schermen na een uitrol.
+
 ## Waar je vandaag begint, en waarom je niet kon afvinken
 
 Twee meldingen uit het veld, met dezelfde oorzaak. *"Het is niet duidelijk

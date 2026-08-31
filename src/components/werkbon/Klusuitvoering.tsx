@@ -11,7 +11,7 @@ import { supabase } from '@/lib/supabase'
 import { berekenVoortgang, formatDatum, cn } from '@/lib/utils'
 import { standkleur } from '@/lib/klusstand'
 import { vervolgLabel } from '@/lib/vervolgwerk'
-import { IconCheck, IconAlertCircle, IconCircleCheck, IconCalendar, IconListCheck, IconSpray, IconLock } from '@tabler/icons-react'
+import { IconCheck, IconAlertCircle, IconCircleCheck, IconCalendar, IconListCheck, IconSpray } from '@tabler/icons-react'
 import type { Werkbon } from '@/types'
 
 interface Props {
@@ -26,27 +26,6 @@ interface Props {
   readOnly?: boolean
   /** Waaróm er niet afgevinkt kan worden. Staat naast de kop van de punten. */
   bijschrift?: string
-  /**
-   * Het slot op de punten, uitgelegd én op te heffen.
-   *
-   * `readOnly` met een zin eronder was niet genoeg. Op Vandaag staat
-   * `readOnly` aan zolang de werkdag niet loopt; het bijschrift zei dat
-   * ook, maar in grijze kleine letters boven twintig punten die er
-   * verder normaal uitzagen. Wie daar langs scrolde zag alleen punten
-   * zonder knoppen, en dat leest als een app die stuk is.
-   *
-   * Vandaar een blok in plaats van een regel, en de knop die het slot
-   * eraf haalt erin. Er is precies één handeling die dit oplost en die
-   * hoort hier te staan, niet onderaan het scherm.
-   */
-  grendel?: {
-    titel: string
-    uitleg: string
-    /** De handeling die het slot eraf haalt, bv. START WERKDAG. */
-    actie?: React.ReactNode
-    /** Dezelfde reden, in één regel, bij elk punt. */
-    perPunt: string
-  }
   onRefresh: () => void
   /** Na een geslaagde afronding. Vandaag ververst; `/werkbon/:id` gaat terug. */
   onVoltooid?: () => void
@@ -76,7 +55,7 @@ interface Props {
  * van volgende week, en daar hoort geen STOP WERKDAG onder.
  */
 export function Klusuitvoering({
-  werkbon, kopje, laden, ophaalfout, readOnly, bijschrift, grendel, onRefresh, onVoltooid,
+  werkbon, kopje, laden, ophaalfout, readOnly, bijschrift, onRefresh, onVoltooid,
   zonderVoortgang,
 }: Props) {
   const [voltooien, setVoltooien] = useState(false)
@@ -238,22 +217,9 @@ export function Klusuitvoering({
             pixels duwde die zin van tien woorden "Uit te voeren punten"
             over drie regels uiteen. Eronder leest het in één regel. */}
         <SectionHeading title={`Uit te voeren punten (${taken.length})`} className="mb-1.5" />
-        {grendel ? (
-          <div className="rounded-lg border border-amber-300 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 p-4 mt-2 mb-4">
-            <div className="flex items-start gap-2">
-              <IconLock className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-700 dark:text-amber-400" />
-              <div className="min-w-0">
-                <p className="text-sm font-bold text-amber-900 dark:text-amber-200">{grendel.titel}</p>
-                <p className="text-sm text-amber-800/80 dark:text-amber-200/70 mt-0.5">{grendel.uitleg}</p>
-              </div>
-            </div>
-            {grendel.actie && <div className="mt-3">{grendel.actie}</div>}
-          </div>
-        ) : (
-          <p className="text-xs text-tekst-gedempt dark:text-white/55 mb-4">
-            {bijschrift ?? 'Maak een foto vóór je afvinkt'}
-          </p>
-        )}
+        <p className="text-xs text-tekst-gedempt dark:text-white/55 mb-4">
+          {bijschrift ?? 'Maak een foto vóór je afvinkt'}
+        </p>
         {/* Wachten tot de foto's er zijn. Zonder dit tekent hij eerst de
             punten mét een leeg cameravakje en springen de foto's er een
             tel later in — precies het beeld waarvan gemeld is dat het
@@ -269,7 +235,6 @@ export function Klusuitvoering({
               taak={taak}
               werkbonId={werkbon.id}
               readOnly={readOnly || werkbon.status === 'voltooid'}
-              grendel={grendel?.perPunt}
               gesloten={Boolean(werkbon.opgeleverd_op)}
               onRefresh={onRefresh}
             />
