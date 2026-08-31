@@ -1,5 +1,14 @@
 # NMZ GO — Changelog
 
+## Opnieuw inplannen haalt de klus van het bord
+
+- **[FIX]** **Op "opnieuw inplannen" drukken haalde de klus nergens weg.** Hij bleef gewoon op zijn oude dag op de weekplanning staan, terwijl vaststond dat hij die dag niet doorging — de bewoner was niet thuis, de vloer lag niet vrij. Een week die vol lijkt met werk dat zeker niet doorgaat is erger dan een gat.
+- Zo'n klus verdwijnt nu uit de **weekplanning**, uit **Mijn week** bij de ploeg, uit de **doorkijk** op het dashboard en uit **Lopend**. Eén regel (`moetOpnieuwIngepland`) op één plek, zodat de schermen niet uit elkaar kunnen lopen.
+- **Maar hij is niet kwijt.** Bovenaan de weekplanning staat een blok met de klussen die opnieuw ingepland moeten worden, mét de reden erbij — dat is precies wat een planner nodig heeft om hem opnieuw in te zetten. Los van de week, want ze horen bij géén week: bladeren laat ze niet verdwijnen.
+- De datums blijven in de database staan. Leegmaken kan niet (`datum` is `not null`) en zou bovendien weggooien wanneer hij oorspronkelijk stond — juist wat je wilt weten als je hem opnieuw inplant.
+- **"Nog spuiten/isoleren" blijft gewoon staan.** Die klus loopt door, er ligt alleen nog werk van een ander soort.
+- Staat er tóch iemand op geklokt, dan telt hij wél mee voor vandaag. De planning zegt wat er zou gebeuren, de klok zegt wat er gebeurt, en het tweede wint.
+
 ## Foto's uit je galerij, en een foto weer weg
 
 - **[FEATURE]** **Foto's uit de galerij of uit bestanden.** Naast de camera staat nu een tweede knop, *Galerij*. De cameraknop blijft wat hij was — `capture` weghalen zou ook werken, maar dan kost fotograferen op de klus een tik extra, en dat is de handeling die twintig keer per dag gebeurt.

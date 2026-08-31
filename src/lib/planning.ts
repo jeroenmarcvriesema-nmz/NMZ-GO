@@ -139,6 +139,7 @@ export function maandagVerschoven(verschuiving: number, vanaf: Date = new Date()
  * ook de klus zien die in week 33 begon en nog loopt.
  */
 export function inWeek(w: Ingepland, maandag: Date): boolean {
+  if (moetOpnieuwIngepland(w)) return false
   const dagen = weekDagen(maandag)
   const van = isoDatum(dagen[0])
   const tot = isoDatum(dagen[dagen.length - 1])
@@ -156,6 +157,31 @@ export interface Ingepland {
   geplande_eind?: string | null
   status?: string | null
   opgeleverd_op?: string | null
+  /**
+   * Gemeld vervolgwerk. `opnieuw_inplannen` haalt de klus van het bord:
+   * zie `moetOpnieuwIngepland`.
+   */
+  vervolg_soort?: string | null
+}
+
+/**
+ * Moet deze klus opnieuw ingepland worden?
+ *
+ * Zo ja, dan staat hij nergens meer op de planning. De datums die er
+ * nog in staan slaan nergens meer op — de bewoner was niet thuis, de
+ * vloer lag niet vrij — en een klus laten staan op een dag waarop hij
+ * zeker niet doorgaat is erger dan een gat in de week.
+ *
+ * De datums blijven wél in de database staan. Ze leegmaken kan niet
+ * (`datum` is `not null`) en zou bovendien weggooien wanneer hij
+ * oorspronkelijk stond; dat is precies wat de planner wil weten als hij
+ * hem opnieuw inplant.
+ *
+ * `spuiten_isoleren` telt hier níet mee: die klus loopt gewoon door, er
+ * ligt alleen nog werk van een ander soort.
+ */
+export function moetOpnieuwIngepland(w: Ingepland): boolean {
+  return w.vervolg_soort === 'opnieuw_inplannen'
 }
 
 /** Eerste dag waarop deze klus loopt. */
@@ -170,6 +196,7 @@ export function eindVan(w: Ingepland): string {
 
 /** Loopt deze klus op die dag? Een meerdaagse klus telt op elke dag mee. */
 export function looptOp(w: Ingepland, dag: string): boolean {
+  if (moetOpnieuwIngepland(w)) return false
   return startVan(w) <= dag && eindVan(w) >= dag
 }
 
@@ -219,6 +246,9 @@ export function teltVoorVandaag(
 ): boolean {
   if (w.opgeleverd_op || w.status === 'voltooid') return false
   if (geklokt) return true
+  // Wie opnieuw ingepland moet worden staat vandaag niet op de vloer,
+  // ook al zegt de oude datum van wel.
+  if (moetOpnieuwIngepland(w)) return false
   return startVan(w) <= nu
 }
 

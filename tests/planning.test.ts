@@ -1,10 +1,25 @@
 import { describe, it, expect } from 'vitest'
 import {
-  isoDatum, maandagVan, weekDagen, kiesVandaag, looptVandaag, looptOp, dagenUitloop, uitgelopenWerk,
-  dagInKlus, duurLabel,
-  weeknummer, weekLabel, maandagVerschoven, inWeek,
-  maandagVanWerkweek, groepeerPerWeek,
-  startreden, begintVandaag,
+  isoDatum,
+  maandagVan,
+  weekDagen,
+  kiesVandaag,
+  looptVandaag,
+  looptOp,
+  dagenUitloop,
+  uitgelopenWerk,
+  dagInKlus,
+  duurLabel,
+  weeknummer,
+  weekLabel,
+  maandagVerschoven,
+  inWeek,
+  maandagVanWerkweek,
+  groepeerPerWeek,
+  startreden,
+  begintVandaag,
+  moetOpnieuwIngepland,
+  teltVoorVandaag,
 } from '@/lib/planning'
 
 // Een minimale bon: precies de velden waar het rekenwerk naar kijkt.
@@ -602,5 +617,57 @@ describe('begintVandaag — beginnen of verdergaan', () => {
 
   it('valt terug op de bondatum als er geen planning is', () => {
     expect(begintVandaag(bon({ id: 'a' }), '2026-08-10')).toBe(true)
+  })
+})
+
+describe('moetOpnieuwIngepland', () => {
+  // Dit is de klacht: op "opnieuw inplannen" drukken haalde de klus
+  // nergens weg. Hij bleef op zijn oude dag op het bord staan, terwijl
+  // vaststond dat hij die dag niet doorgaat.
+  it('haalt een klus die opnieuw ingepland moet worden van het bord', () => {
+    const w = bon({
+      id: 'opnieuw',
+      geplande_start: '2026-09-01',
+      geplande_eind: '2026-09-03',
+      vervolg_soort: 'opnieuw_inplannen',
+    })
+    expect(moetOpnieuwIngepland(w)).toBe(true)
+    expect(looptOp(w, '2026-09-02')).toBe(false)
+    expect(inWeek(w, maandagVan(new Date('2026-09-02')))).toBe(false)
+    expect(teltVoorVandaag(w, '2026-09-02')).toBe(false)
+  })
+
+  // Spuiten/isoleren is geen stilstand: die klus loopt gewoon door, er
+  // ligt alleen nog werk van een ander soort.
+  it('laat spuiten/isoleren met rust', () => {
+    const w = bon({
+      id: 'spuit',
+      geplande_start: '2026-09-01',
+      geplande_eind: '2026-09-03',
+      vervolg_soort: 'spuiten_isoleren',
+    })
+    expect(moetOpnieuwIngepland(w)).toBe(false)
+    expect(looptOp(w, '2026-09-02')).toBe(true)
+  })
+
+  it('raakt een gewone klus niet aan', () => {
+    const w = bon({ id: 'gewoon', geplande_start: '2026-09-01', geplande_eind: '2026-09-03' })
+    expect(moetOpnieuwIngepland(w)).toBe(false)
+    expect(looptOp(w, '2026-09-02')).toBe(true)
+  })
+
+  // Staat er iemand op geklokt, dan telt hij wél mee voor vandaag —
+  // ook al is hij van het bord gehaald. Dat is met opzet: de planning
+  // zegt wat er zou gebeuren, de klok zegt wat er gebeurt, en het
+  // tweede wint. Kantoor hoort te zien dat er iemand staat op een klus
+  // die opnieuw ingepland had moeten worden.
+  it('telt wel mee zodra er iemand op geklokt staat', () => {
+    const w = bon({
+      id: 'opnieuw',
+      geplande_start: '2026-09-01',
+      geplande_eind: '2026-09-03',
+      vervolg_soort: 'opnieuw_inplannen',
+    })
+    expect(teltVoorVandaag(w, '2026-09-02', true)).toBe(true)
   })
 })

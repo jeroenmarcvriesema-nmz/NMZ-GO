@@ -7,12 +7,12 @@ import { usePlanning } from '@/hooks/useProjecten'
 import { PlanningKaart } from '@/components/werkbon/PlanningKaart'
 import { Weekkiezer } from '@/components/layout/Weekkiezer'
 import { cn, formatDatumKort } from '@/lib/utils'
-import { isoDatum, weekDagen, maandagVerschoven } from '@/lib/planning'
+import { isoDatum, weekDagen, maandagVerschoven, moetOpnieuwIngepland } from '@/lib/planning'
 import { zoektMee } from '@/lib/zoeken'
 import { klusstand, looptUit, isAsbest, STANDEN, STANDVOLGORDE, type Klusstand } from '@/lib/klusstand'
 import { Standbalk, type Standverdeling } from '@/components/dashboard/Standbalk'
 import type { PlanningItem } from '@/types'
-import { IconAlertTriangle, IconSearch, IconX } from '@tabler/icons-react'
+import { IconAlertTriangle, IconSearch, IconX, IconCalendarRepeat, IconChevronRight } from '@tabler/icons-react'
 
 // Zes dagen: zaterdag wordt gebruikt om dingen af te maken en voor
 // garantiewerk, en hoort dus gewoon in de planning.
@@ -176,7 +176,24 @@ export default function Planning() {
   // moment waarop je niet meer weet welke week je bekijkt.
   const vanWeek = isoDatum(dagen[0])
   const totWeek = isoDatum(dagen[dagen.length - 1])
-  const dezeWeek = zichtbaar.filter((p) => p.datum <= totWeek && (p.eind ?? p.datum) >= vanWeek)
+  const dezeWeek = zichtbaar.filter(
+    (p) => !moetOpnieuwIngepland({ datum: p.datum, geplande_eind: p.eind, vervolg_soort: p.vervolgSoort })
+      && p.datum <= totWeek && (p.eind ?? p.datum) >= vanWeek,
+  )
+
+  // Wat van het bord af is gehaald. Deze klussen staan met opzet niet
+  // meer in een week: de bewoner was niet thuis, de vloer lag niet vrij.
+  // Ze hier laten staan op hun oude dag zou betekenen dat de week vol
+  // lijkt met werk dat zeker niet doorgaat.
+  //
+  // Maar ze mogen ook niet zomaar verdwijnen — dan is "van het bord"
+  // hetzelfde als "kwijt". Vandaar een eigen blok, met de reden erbij,
+  // want dat is precies wat de planner nodig heeft om hem opnieuw in te
+  // zetten. Los van de week: ze horen bij géén week, dus bladeren mag
+  // ze niet laten verdwijnen.
+  const opnieuwInplannen = planning.filter((p) =>
+    moetOpnieuwIngepland({ datum: p.datum, geplande_eind: p.eind, vervolg_soort: p.vervolgSoort }),
+  )
 
   /**
    * Wie staat er op deze dag op meer dan één klus?
@@ -241,6 +258,43 @@ export default function Planning() {
         telling={`${dezeWeek.length} ${dezeWeek.length === 1 ? 'klus' : 'klussen'}`}
         className="mb-4"
       />
+
+      {opnieuwInplannen.length > 0 && (
+        <div className="mb-4 rounded-lg border border-amber-200 dark:border-amber-500/25 bg-amber-50 dark:bg-amber-500/10 p-4">
+          <div className="flex items-center gap-2 mb-2.5">
+            <IconCalendarRepeat className="w-4 h-4 flex-shrink-0 text-amber-700 dark:text-amber-400" />
+            <span className="text-sm font-bold text-amber-900 dark:text-amber-200">
+              {opnieuwInplannen.length === 1
+                ? 'Eén klus moet opnieuw ingepland worden'
+                : `${opnieuwInplannen.length} klussen moeten opnieuw ingepland worden`}
+            </span>
+          </div>
+          <p className="text-xs text-amber-800/80 dark:text-amber-200/60 mb-2.5">
+            Deze staan in geen enkele week. Zet er een datum op om ze terug op het bord te krijgen.
+          </p>
+          <div className="space-y-1.5">
+            {opnieuwInplannen.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => navigate(`/werkbonnen/${p.id}`)}
+                className="w-full min-h-[44px] flex items-center gap-2 text-left px-3 py-2 rounded-sm bg-white dark:bg-surface-dark-2 border border-amber-200 dark:border-amber-500/25 hover:border-amber-400 transition-colors"
+              >
+                <span className="flex-1 min-w-0">
+                  <span className="block text-sm font-semibold text-gray-900 dark:text-white break-words">
+                    {p.adres}
+                  </span>
+                  {p.vervolgReden && (
+                    <span className="block text-xs text-amber-800/80 dark:text-amber-200/60 mt-0.5 break-words">
+                      {p.vervolgReden}
+                    </span>
+                  )}
+                </span>
+                <IconChevronRight className="w-4 h-4 flex-shrink-0 text-gray-400 dark:text-white/40" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* `flex-wrap` plus een ondergrens op het zoekveld. Zonder allebei
           werd dit op een tablet in staand formaat onbruikbaar: de zijbalk

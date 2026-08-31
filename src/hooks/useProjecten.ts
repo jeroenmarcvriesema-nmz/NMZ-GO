@@ -41,6 +41,7 @@ export function usePlanning() {
         .select(`
           id, datum, adres, plaats, bonnummer, status, kluiscode,
           geplande_start, geplande_eind, stilgelegd_op, opgeleverd_op, stilleg_reden,
+          vervolg_soort, vervolg_reden,
           taken ( id, voltooid ),
           werkbon_medewerkers ( persoon:personen(naam) )
         `)
@@ -70,6 +71,8 @@ export function usePlanning() {
             punten: (w.taken ?? []).length,
             puntenKlaar: (w.taken ?? []).filter((t: any) => t.voltooid).length,
             looptNu: lopend.has(w.id),
+            vervolgSoort: w.vervolg_soort ?? null,
+            vervolgReden: w.vervolg_reden ?? null,
             medewerkers: (w.werkbon_medewerkers || [])
               .map((wm: any) => wm.persoon?.naam)
               .filter(Boolean),

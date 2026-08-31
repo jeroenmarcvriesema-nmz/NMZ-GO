@@ -185,4 +185,10 @@ export interface PlanningItem {
    * Telt mee in `klusstand()` — zie `lib/werkdagen.ts`.
    */
   looptNu?: boolean
+  /**
+   * Gemeld vervolgwerk. `opnieuw_inplannen` haalt de klus van het
+   * weekbord af en zet hem in het blok "moet opnieuw ingepland worden".
+   */
+  vervolgSoort?: string | null
+  vervolgReden?: string | null
 }
