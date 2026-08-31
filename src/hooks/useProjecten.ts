@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { klussenMetLopendeWerkdag } from '@/lib/werkdagen'
 import type { PlanningItem, ProjectStatus } from '@/types'
 
 // ============================================================
@@ -45,6 +46,11 @@ export function usePlanning() {
         `)
         .order('datum', { ascending: true })
 
+      // Wie er nu geklokt staat, uit dezelfde bron als de andere
+      // schermen. Zonder dit rekent de planning een andere stand uit
+      // dan de tegel op het dashboard.
+      const lopend = await klussenMetLopendeWerkdag()
+
       if (error) {
         setError(error.message)
       } else {
@@ -63,6 +69,7 @@ export function usePlanning() {
             stillegReden: w.stilleg_reden ?? null,
             punten: (w.taken ?? []).length,
             puntenKlaar: (w.taken ?? []).filter((t: any) => t.voltooid).length,
+            looptNu: lopend.has(w.id),
             medewerkers: (w.werkbon_medewerkers || [])
               .map((wm: any) => wm.persoon?.naam)
               .filter(Boolean),

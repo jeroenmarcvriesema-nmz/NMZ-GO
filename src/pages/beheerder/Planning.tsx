@@ -38,6 +38,8 @@ function feitenVan(p: PlanningItem) {
     stilgelegd_op: p.status === 'stilgelegd' ? 'ja' : null,
     puntenKlaar: p.puntenKlaar,
     punten: p.punten,
+    // Geklokt telt als bezig, net als op het dashboard.
+    looptNu: p.looptNu,
   }
 }
 

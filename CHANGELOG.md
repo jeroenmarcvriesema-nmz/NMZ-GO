@@ -220,6 +220,13 @@ Achttien bevindingen uit een volledige audit van de UI, doorgevoerd in één ron
 - **[FIX]** De **weekplanning** perste zes dagen in een raster van zo'n 150 pixels per kolom, waar adressen middenin een woord afbraken ("Meidoornstraa / t 4"). Een dag is nu minstens 190 pixels en de week schuift desnoods opzij; zaterdag verschijnt alleen als er zaterdag werk staat of als het vandaag is.
 - **[FIX]** Kleinere dingen: de zoekplaceholder werd middenin een woord afgekapt (wat er doorzocht wordt staat nu als hint eronder), het zoekveld op de planning kromp op een tablet tot een vakje met alleen het vergrootglas, "Opslaan" en "Werkbon opslaan" waren allebei primair, en "Opleveren" zag er bruikbaar uit terwijl de regel eronder uitlegde dat het nog niet kon — die staat nu uit met die reden als toelichting.
 
+## De tegel en de lijst tellen weer hetzelfde
+
+- **[FIX]** **De tegel "bezig" op het dashboard en de lijst waar je op uitkomt gaven verschillende klussen.** Klikken op een tegel die er vijf telde leverde er twee op. Op het moment van de fix stonden er vijf klussen met iemand geklokt, waarvan drie zonder afgevinkt punt — precies die drie ontbraken in de lijst.
+- De oorzaak: `klusstand()` telt een lopende werkdag als bewijs dat een klus bezig is — iemand klokt in als hij aankomt en vinkt zijn eerste punt pas uren later af. Het dashboard gaf dat gegeven mee, maar de werkbonnenlijst en de planning haalden de werkdaglogs helemaal niet op. Dezelfde vraag, twee antwoorden, en niets dat liet zien welke van de twee loog.
+- **Opgelost bij de bron, niet per scherm.** `lib/werkdagen.ts` beantwoordt de vraag "waar staat er nu iemand geklokt" één keer; `useWerkbonnen` en `useProjecten` zetten het op elke klus, en de schermen rekenen er vanzelf mee. Dit was de derde keer dat dit op een nieuwe plek opdook — Lopend eerder vandaag, en daarvoor het dashboard zelf.
+- Gaat het ophalen van de werkdaglogs mis, dan valt de stand terug op de afgevinkte punten. Een scherm dat niet laadt is erger dan een klus die even "nog niet gestart" heet.
+
 
 ## Het opleverrapport als PDF, gemaakt in de browser
 

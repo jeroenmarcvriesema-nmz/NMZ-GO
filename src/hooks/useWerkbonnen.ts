@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { klussenMetLopendeWerkdag } from '@/lib/werkdagen'
 import type { Werkbon } from '@/types'
 
 /**
@@ -32,14 +33,22 @@ export function useWerkbonnen() {
 
   const fetch = async () => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('werkbonnen')
-      .select(`
-        *,
-        taken(*, fotos(id)),
-        medewerkers:werkbon_medewerkers(persoon:personen(*))
-      `)
-      .order('datum', { ascending: false })
+    // De werkdaglogs erbij. Zonder dat rekent dit scherm een andere
+    // stand uit dan het dashboard: een klus waar iemand op geklokt
+    // staat maar nog niets heeft afgevinkt heet hier dan "nog niet
+    // gestart", terwijl de tegel hem als bezig telt. Dezelfde vraag,
+    // twee antwoorden.
+    const [{ data, error }, lopend] = await Promise.all([
+      supabase
+        .from('werkbonnen')
+        .select(`
+          *,
+          taken(*, fotos(id)),
+          medewerkers:werkbon_medewerkers(persoon:personen(*))
+        `)
+        .order('datum', { ascending: false }),
+      klussenMetLopendeWerkdag(),
+    ])
 
     if (error) {
       setError(error.message)
@@ -47,6 +56,7 @@ export function useWerkbonnen() {
       const mapped = (data || []).map((w: any) => ({
         ...w,
         medewerkers: (w.medewerkers || []).map((m: any) => m.persoon).filter(Boolean),
+        looptNu: lopend.has(w.id),
       }))
       setWerkbonnen(mapped)
     }

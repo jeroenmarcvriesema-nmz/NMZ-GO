@@ -76,6 +76,11 @@ export interface Werkbon {
   opmerkingen_bewoners?: string | null
   extra_werkzaamheden?: string | null
   bijzonderheden?: string | null
+  /**
+   * Er staat nu iemand op deze klus: geklokt en nog niet gestopt.
+   * Wordt gevuld door `useWerkbonnen` en telt mee in `klusstand()`.
+   */
+  looptNu?: boolean
 }
 
 /** Een aangevraagd opleverrapport. Zie migratie 025. */
@@ -175,4 +180,9 @@ export interface PlanningItem {
   status: ProjectStatus
   /** De reden waarom hij stilligt. Alleen gevuld als dat zo is. */
   stillegReden: string | null
+  /**
+   * Er staat nu iemand op deze klus: geklokt en nog niet gestopt.
+   * Telt mee in `klusstand()` — zie `lib/werkdagen.ts`.
+   */
+  looptNu?: boolean
 }
