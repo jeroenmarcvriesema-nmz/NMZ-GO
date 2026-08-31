@@ -40,6 +40,42 @@ export function isVersiefout(fout: unknown): boolean {
   return PATRONEN.some((p) => p.test(tekst))
 }
 
+/**
+ * Een scherm inladen, en een leeg antwoord herkennen als wat het is.
+ *
+ * `lazy(() => import(...))` gaat er vanuit dat de import een module
+ * oplevert. Als het chunkbestand er niet meer is levert hij soms geen
+ * afwijzing op maar `undefined`, en dan struikelt React er zelf over
+ * bij het uitpakken van de lading:
+ *
+ *   Cannot read properties of undefined (reading 'default')
+ *   undefined is not an object (evaluating 'e._result.default')
+ *
+ * Dat is dezelfde verouderde pagina als hierboven, maar met een
+ * boodschap waar `isVersiefout` niets in herkent. Gevolg: geen
+ * herlaadpoging maar het rode "dit scherm liep vast" — dertig keer in
+ * veertien dagen, waarvan veertien op het Vandaag-scherm van de ploeg.
+ * Een monteur in een kruipruimte krijgt dan een storingsmelding voor
+ * iets wat één herlading is.
+ *
+ * Hier wordt het lege antwoord daarom omgezet in een boodschap die de
+ * vanger hierboven wél herkent, zodat hij zijn gewone weg loopt:
+ * eenmalig herladen, en anders het scherm met de knop.
+ */
+export function scherm<T extends { default: unknown }>(
+  laad: () => Promise<T>,
+): () => Promise<T> {
+  return async () => {
+    const module = await laad()
+    if (!module || typeof (module as { default?: unknown }).default === 'undefined') {
+      throw new Error(
+        'Failed to fetch dynamically imported module: het scherm kwam leeg binnen',
+      )
+    }
+    return module
+  }
+}
+
 // Eén sleutel in sessionStorage, want dit hoort bij dit tabblad en niet
 // bij het toestel: een tweede tabblad heeft zijn eigen verhaal.
 const SLEUTEL = 'nmzgo:versie-herladen'

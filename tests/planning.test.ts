@@ -4,6 +4,7 @@ import {
   dagInKlus, duurLabel,
   weeknummer, weekLabel, maandagVerschoven, inWeek,
   maandagVanWerkweek, groepeerPerWeek,
+  startreden, begintVandaag,
 } from '@/lib/planning'
 
 // Een minimale bon: precies de velden waar het rekenwerk naar kijkt.
@@ -541,5 +542,65 @@ describe('groepeerPerWeek', () => {
 
   it('geeft een lege lijst terug bij niets', () => {
     expect(groepeerPerWeek([])).toEqual([])
+  })
+})
+
+describe('startreden — waaróm is dit de klus van vandaag', () => {
+  const nu = '2026-08-12'
+
+  it('geklokt gaat vóór alles, ook vóór de planning', () => {
+    // De planning zegt dat deze klus pas volgende week begint, maar de
+    // man staat er. Dan is "je staat hier geklokt" het enige juiste
+    // bovenschrift — anders vertelt het scherm hem dat hij ergens
+    // anders hoort te zijn dan waar hij is.
+    const w = bon({ id: 'a', geplande_start: '2026-08-20', geplande_eind: '2026-08-22' })
+    expect(startreden(w, nu, 'a')).toBe('geklokt')
+  })
+
+  it('een klus die vandaag loopt is de klus van vandaag', () => {
+    const w = bon({ id: 'a', geplande_start: '2026-08-10', geplande_eind: '2026-08-14' })
+    expect(startreden(w, nu, null)).toBe('vandaag')
+  })
+
+  it('een klus waarvan de einddatum voorbij is, is uitgelopen', () => {
+    const w = bon({ id: 'a', geplande_start: '2026-08-05', geplande_eind: '2026-08-11' })
+    expect(startreden(w, nu, null)).toBe('uitgelopen')
+  })
+
+  it('een klus die nog moet beginnen komt eraan', () => {
+    const w = bon({ id: 'a', geplande_start: '2026-08-20', geplande_eind: '2026-08-22' })
+    expect(startreden(w, nu, null)).toBe('komt')
+  })
+
+  it('volgt dezelfde volgorde als kiesVandaag', () => {
+    // Zou dit uiteenlopen, dan zegt het bovenschrift iets anders dan de
+    // keuze eronder — en dat is erger dan geen bovenschrift.
+    const bonnen = [
+      bon({ id: 'oud',    geplande_start: '2026-08-04', geplande_eind: '2026-08-07' }),
+      bon({ id: 'nu',     geplande_start: '2026-08-11', geplande_eind: '2026-08-13' }),
+      bon({ id: 'later',  geplande_start: '2026-08-25', geplande_eind: '2026-08-27' }),
+    ]
+    const gekozen = kiesVandaag(bonnen, nu)
+    expect(gekozen?.id).toBe('nu')
+    expect(startreden(gekozen!, nu, null)).toBe('vandaag')
+  })
+
+  it('geklokt telt alleen als het om dezelfde bon gaat', () => {
+    const w = bon({ id: 'a', geplande_start: '2026-08-10', geplande_eind: '2026-08-14' })
+    expect(startreden(w, nu, 'b')).toBe('vandaag')
+  })
+})
+
+describe('begintVandaag — beginnen of verdergaan', () => {
+  it('is waar op de eerste dag van de klus', () => {
+    expect(begintVandaag(bon({ id: 'a', geplande_start: '2026-08-12', geplande_eind: '2026-08-14' }), '2026-08-12')).toBe(true)
+  })
+
+  it('is onwaar zodra de klus al loopt', () => {
+    expect(begintVandaag(bon({ id: 'a', geplande_start: '2026-08-10', geplande_eind: '2026-08-14' }), '2026-08-12')).toBe(false)
+  })
+
+  it('valt terug op de bondatum als er geen planning is', () => {
+    expect(begintVandaag(bon({ id: 'a' }), '2026-08-10')).toBe(true)
   })
 })

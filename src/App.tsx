@@ -7,6 +7,7 @@ import { PageLoader } from '@/components/ui/Spinner'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { Toaster } from '@/components/ui/Toaster'
 import { Foutvanger } from '@/components/layout/Foutvanger'
+import { scherm } from '@/lib/versie'
 import { magWerkBeheren, magGebruikersBeheren, isEigenaar, startPad } from '@/lib/rollen'
 
 // Elk scherm apart inladen.
@@ -25,25 +26,25 @@ import Registreer from '@/pages/auth/Registreer'
 import WachtwoordVergeten from '@/pages/auth/WachtwoordVergeten'
 import WachtwoordHerstellen from '@/pages/auth/WachtwoordHerstellen'
 
-const Dashboard        = lazy(() => import('@/pages/beheerder/Dashboard'))
-const Projecten        = lazy(() => import('@/pages/beheerder/Projecten'))
-const Planning         = lazy(() => import('@/pages/beheerder/Planning'))
-const Werkbonnen       = lazy(() => import('@/pages/beheerder/Werkbonnen'))
-const WerkbonNieuw     = lazy(() => import('@/pages/beheerder/WerkbonNieuw'))
-const WerkbonDetail    = lazy(() => import('@/pages/beheerder/WerkbonDetail'))
-const Medewerkers      = lazy(() => import('@/pages/beheerder/Medewerkers'))
-const Storingen        = lazy(() => import('@/pages/beheerder/Storingen'))
-const PersoonDetail    = lazy(() => import('@/pages/beheerder/PersoonDetail'))
-const Rapporten        = lazy(() => import('@/pages/beheerder/Rapporten'))
-const Archief          = lazy(() => import('@/pages/beheerder/Archief'))
-const Uitloop          = lazy(() => import('@/pages/beheerder/Uitloop'))
-const Lopend           = lazy(() => import('@/pages/beheerder/Lopend'))
-const Voorzieningen    = lazy(() => import('@/pages/beheerder/Voorzieningen'))
-const MijnWerkbonnen   = lazy(() => import('@/pages/medewerker/MijnWerkbonnen'))
-const MijnWeek         = lazy(() => import('@/pages/medewerker/MijnWeek'))
-const MijnBonnen       = lazy(() => import('@/pages/medewerker/MijnBonnen'))
-const WerkbonUitvoeren = lazy(() => import('@/pages/medewerker/WerkbonUitvoeren'))
-const Afgerond         = lazy(() => import('@/pages/medewerker/Afgerond'))
+const Dashboard        = lazy(scherm(() => import('@/pages/beheerder/Dashboard')))
+const Projecten        = lazy(scherm(() => import('@/pages/beheerder/Projecten')))
+const Planning         = lazy(scherm(() => import('@/pages/beheerder/Planning')))
+const Werkbonnen       = lazy(scherm(() => import('@/pages/beheerder/Werkbonnen')))
+const WerkbonNieuw     = lazy(scherm(() => import('@/pages/beheerder/WerkbonNieuw')))
+const WerkbonDetail    = lazy(scherm(() => import('@/pages/beheerder/WerkbonDetail')))
+const Medewerkers      = lazy(scherm(() => import('@/pages/beheerder/Medewerkers')))
+const Storingen        = lazy(scherm(() => import('@/pages/beheerder/Storingen')))
+const PersoonDetail    = lazy(scherm(() => import('@/pages/beheerder/PersoonDetail')))
+const Rapporten        = lazy(scherm(() => import('@/pages/beheerder/Rapporten')))
+const Archief          = lazy(scherm(() => import('@/pages/beheerder/Archief')))
+const Uitloop          = lazy(scherm(() => import('@/pages/beheerder/Uitloop')))
+const Lopend           = lazy(scherm(() => import('@/pages/beheerder/Lopend')))
+const Voorzieningen    = lazy(scherm(() => import('@/pages/beheerder/Voorzieningen')))
+const MijnWerkbonnen   = lazy(scherm(() => import('@/pages/medewerker/MijnWerkbonnen')))
+const MijnWeek         = lazy(scherm(() => import('@/pages/medewerker/MijnWeek')))
+const MijnBonnen       = lazy(scherm(() => import('@/pages/medewerker/MijnBonnen')))
+const WerkbonUitvoeren = lazy(scherm(() => import('@/pages/medewerker/WerkbonUitvoeren')))
+const Afgerond         = lazy(scherm(() => import('@/pages/medewerker/Afgerond')))
 
 function AuthInitializer() {
   const { fetchProfile, setLoading, setProfile } = useAuthStore()

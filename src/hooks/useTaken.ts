@@ -2,9 +2,23 @@ import { supabase } from '@/lib/supabase'
 import type { Taak } from '@/types'
 
 export function useTaken() {
+  /**
+   * Een punt af- of uitvinken.
+   *
+   * Met `.select()` erachter, en dat is geen detail. Een update die
+   * door RLS wordt tegengehouden levert bij PostgREST geen fout op maar
+   * een geldig, leeg antwoord: nul rijen geraakt. Zonder deze toets
+   * meldde het scherm dus "gelukt", haalde het de bon opnieuw op, en
+   * stond het vinkje er alsnog niet — zonder dat er ergens iets stond
+   * over waarom. Dat is de vorm waarin "ik kan niet afvinken" bij
+   * kantoor binnenkomt, en er is geen enkele aanwijzing bij.
+   *
+   * Dezelfde behandeling die `voltooiWerkbon` in `Klusuitvoering` al
+   * had; die had hem om precies dezelfde reden gekregen.
+   */
   const toggleVoltooid = async (taak: Taak) => {
     const aan = !taak.voltooid
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('taken')
       // Ook het moment, sinds migratie 034. Een punt wist of het af was
       // maar niet wannéér, en dat is precies wat een activiteitenfeed
@@ -13,7 +27,26 @@ export function useTaken() {
       // anders zou de feed een moment tonen dat niet meer klopt.
       .update({ voltooid: aan, voltooid_op: aan ? new Date().toISOString() : null })
       .eq('id', taak.id)
-    return { error }
+      .select('id')
+
+    if (error) return { error }
+    if (!data || data.length === 0) {
+      // De twee gevallen die de policy uit migratie 014 overlaat: je
+      // staat niet (meer) op de bon, of de bon is al voltooid. Welke
+      // van de twee het is weten we hier niet — dat zou een extra
+      // vraag aan de server kosten voor een antwoord dat in beide
+      // gevallen op hetzelfde neerkomt: het gaat niet, en niet omdat
+      // de app stuk is.
+      return {
+        error: {
+          message:
+            'Dit punt kon niet worden bijgewerkt. Je staat niet meer op deze '
+            + 'werkbon, of de bon is al afgerond. Vraag je uitvoerder om je '
+            + 'opnieuw in te plannen.',
+        },
+      }
+    }
+    return { error: null }
   }
 
   const voegToe = async (

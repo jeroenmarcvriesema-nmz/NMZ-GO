@@ -402,3 +402,42 @@ export function dagenUitloop(w: Ingepland, nu: string = isoDatum()): number {
   const verschil = Date.parse(`${nu}T00:00:00Z`) - Date.parse(`${eind}T00:00:00Z`)
   return Math.round(verschil / 86_400_000)
 }
+
+/**
+ * Waaróm is dit de klus van vandaag?
+ *
+ * `kiesVandaag` kiest langs vier verschillende wegen, en die vier
+ * betekenen op het scherm van de ploeg vier verschillende dingen. "Je
+ * staat hier geklokt" is een constatering, "hier begin je vandaag" is
+ * een opdracht, en "dit had gisteren af moeten zijn" is een
+ * waarschuwing. Ze zien er hetzelfde uit als je alleen het adres
+ * neerzet — en dat was precies de klacht: er stond wél waar iemand mee
+ * bezig was en wat er niet af was, maar niet waar hij volgens de
+ * planning hoorde te beginnen.
+ *
+ * Dezelfde volgorde als `kiesVandaag`, want anders zou het label iets
+ * anders zeggen dan de keuze die eraan ten grondslag ligt.
+ */
+export type Startreden = 'geklokt' | 'vandaag' | 'uitgelopen' | 'komt'
+
+export function startreden<T extends Ingepland & { id?: string }>(
+  w: T,
+  nu: string = isoDatum(),
+  geklokOp?: string | null,
+): Startreden {
+  if (geklokOp && w.id && w.id === geklokOp) return 'geklokt'
+  if (looptOp(w, nu)) return 'vandaag'
+  if (eindVan(w) < nu) return 'uitgelopen'
+  return 'komt'
+}
+
+/**
+ * Begint deze klus vandaag, of loopt hij al?
+ *
+ * Het verschil tussen "hier begin je vandaag" en "hier ga je verder".
+ * Voor iemand die 's ochtends in de bus zit is dat het verschil tussen
+ * een nieuw adres opzoeken en teruggaan waar hij gisteren stond.
+ */
+export function begintVandaag(w: Ingepland, nu: string = isoDatum()): boolean {
+  return startVan(w) === nu
+}

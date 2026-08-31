@@ -108,6 +108,35 @@ Let bij zo'n vergelijking niet alleen op de gegevens maar ook op de
 er iets uit beeld? Een wijziging die de gebruiker niet heeft gevraagd is
 een bug, ook als de database klopt.
 
+**Weigert Playwright te klikken?** Dan is dat een bevinding en geen
+hindernis. `element is not enabled` bij een `aria-disabled`-knop betekent
+dat de knop volgens de toegankelijkheidsafspraak niets doet. Klopt dat
+niet met wat hij daadwerkelijk doet, dan liegt het attribuut en moet het
+weg — niet de test.
+
+## 3c. Kijk in de tabellen `fouten` en de gebruikersgegevens
+
+Een audit die alleen naar het scherm kijkt vindt wat lelijk is. Wat er
+*misgaat* staat in de database, en met de Supabase-tools is dat één
+query.
+
+- `select boodschap, pad, count(*) from fouten where created_at > now() -
+  interval '14 days' group by 1,2 order by 3 desc` — dit leverde dertig
+  vastgelopen schermen op die nergens anders zichtbaar waren, waarvan
+  veertien op het Vandaag-scherm van de ploeg.
+- Bij een melding over één persoon: zoek zijn profiel, zijn koppeling in
+  `personen`, zijn toewijzingen, en vooral **wat hij nog nooit heeft
+  gedaan**. Raphael had nul rijen in `werkdag_logs` en nul foto's terwijl
+  hij op zeven bonnen stond; dáár zat het antwoord, niet in de code.
+- Kijk ook naar het tegenovergestelde: *werkt het bij anderen wél?* 144
+  van de 1047 punten stonden afgevinkt, dus het afvinken zelf was niet
+  stuk. Dat sluit een hele klasse oorzaken in één query uit.
+
+**Een melding uit het veld is een symptoom, geen diagnose.** "Ik kan niet
+afvinken" bleek: de knop was er niet, omdat de werkdag niet liep, en dat
+stond nergens. Vraag bij elke melding wat de gebruiker zág, niet wat hij
+dénkt dat er kapot is.
+
 ## 4. Toets aan de eigen normen van het project
 
 De sterkste bevindingen zijn niet "dit kan mooier" maar "dit overtreedt

@@ -8,7 +8,7 @@ import { useFotos } from '@/hooks/useFotos'
 import { useAuth } from '@/hooks/useAuth'
 import type { Taak } from '@/types'
 import { Puntopmerkingen } from '@/components/taak/Puntopmerkingen'
-import { IconCamera, IconCameraOff, IconCheck, IconSquare, IconPhoto, IconAlertCircle, IconArchive, IconRefresh, IconTrash, IconRotate,
+import { IconCamera, IconCameraOff, IconCheck, IconSquare, IconPhoto, IconAlertCircle, IconArchive, IconRefresh, IconTrash, IconRotate, IconLock,
 } from '@tabler/icons-react'
 
 interface TaakItemProps {
@@ -16,6 +16,20 @@ interface TaakItemProps {
   werkbonId: string
   /** Lezen mag, afvinken en fotograferen niet. Zegt niets over kantoor. */
   readOnly?: boolean
+  /**
+   * Waaróm er niet afgevinkt kan worden, in één regel.
+   *
+   * `readOnly` haalde de knoppen weg en liet niets achter. Op het
+   * scherm van de ploeg staat hij aan zolang de werkdag niet is
+   * gestart, en dan zag een zwamsaneerder twintig punten zonder ook
+   * maar één knop — zonder dat er ergens stond dat dat aan de werkdag
+   * lag. Dat is hoe "ik kan niet afvinken" ontstaat: de app doet niets
+   * en zegt er niets bij.
+   *
+   * Bij elk punt en niet alleen bovenaan de lijst: je scrolt langs
+   * twintig punten en de uitleg staat dan al lang niet meer in beeld.
+   */
+  grendel?: string
   /**
    * De klus is opgeleverd — het dossier is dicht.
    *
@@ -28,7 +42,7 @@ interface TaakItemProps {
   onRefresh: () => void
 }
 
-export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: TaakItemProps) {
+export function TaakItem({ taak, werkbonId, readOnly, grendel, gesloten, onRefresh }: TaakItemProps) {
   const { toggleVoltooid, zetFotoVereist } = useTaken()
   const { upload, getUrls } = useFotos()
   const { profile, magWerkBeheren } = useAuth()
@@ -44,6 +58,8 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
   // makkelijk gebeurd.
   const [verwijderBezig, setVerwijderBezig] = useState(false)
   const [heropenBezig, setHeropenBezig] = useState(false)
+  // Getikt op afvinken terwijl de foto er nog niet is. Zie `handleToggle`.
+  const [vraagFoto, setVraagFoto] = useState(false)
   const [bevestigWeg, setBevestigWeg] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const fotos = taak.fotos ?? []
@@ -123,6 +139,7 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
     }
 
     setWachtendeFoto(null)
+    setVraagFoto(false)
     await onRefresh()
   }
 
@@ -184,12 +201,24 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
   }
 
   const handleToggle = async () => {
-    if (!magAfvinken || readOnly || toggling) return
+    if (readOnly || toggling) return
+    // Geen dode knop meer. Hij zag er "nog niet" uit en deed bij een tik
+    // helemaal niets — en `title` is een muisaanwijzertekst, die op een
+    // telefoon nooit verschijnt. Wie dus niet wist dat er eerst een foto
+    // moet, tikte op een knop die zweeg.
+    if (!magAfvinken) { setVraagFoto(true); return }
     setFout(null)
     setToggling(true)
     const { error } = await toggleVoltooid(taak)
     setToggling(false)
-    if (error) { setFout('De taak kon niet worden bijgewerkt. Probeer het opnieuw.'); return }
+    // De boodschap van de laag eronder, want die weet wát er misging:
+    // een lege respons van RLS betekent iets heel anders dan een
+    // verbinding die wegviel, en "probeer het opnieuw" is bij het
+    // eerste geval een verkeerd advies.
+    if (error) {
+      setFout(error.message || 'De taak kon niet worden bijgewerkt. Probeer het opnieuw.')
+      return
+    }
     await onRefresh()
   }
 
@@ -325,10 +354,20 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
             variant={taak.voltooid ? 'secondary' : 'primary'}
             size="sm"
             loading={toggling}
-            disabled={!magAfvinken}
+            // Bewust géén `disabled`, en ook geen `aria-disabled`. Een
+            // uitgeschakelde knop krijgt op een telefoon geen tik door:
+            // geen klik, geen `title`, geen enkel teken van leven — en
+            // `title` is sowieso een muisaanwijzertekst die daar nooit
+            // verschijnt. Zo ontstond de melding "ik kan niet afvinken":
+            // de knop stond er, was bleek, en zweeg.
+            //
+            // `aria-disabled` zou hetzelfde liegen tegen wie het scherm
+            // laat voorlezen: de knop dóét iets, hij legt uit wat er nog
+            // ontbreekt. Vandaar de verwijzing naar die uitleg in plaats
+            // van een uitgeschakelde stand.
+            aria-describedby={!magAfvinken ? `fotoplicht-${taak.id}` : undefined}
             onClick={handleToggle}
-            className={cn('min-h-[44px]', !magAfvinken && 'opacity-40 cursor-not-allowed')}
-            title={!magAfvinken ? 'Maak eerst een foto' : undefined}
+            className={cn('min-h-[44px]', !magAfvinken && 'opacity-40')}
           >
             {taak.voltooid ? <><IconCheck className="w-4 h-4" /> Afgevinkt</> : <><IconSquare className="w-4 h-4" /> Afvinken</>}
           </Button>
@@ -340,8 +379,11 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
               gebeurde is dat de knop van grijs naar geel sprong, en dat
               leest als "gedaan". Nu staat er wat er staat. */}
           {!taak.voltooid && !heeftFoto && taak.foto_vereist && (
-            <span className="text-xs text-tekst-gedempt dark:text-white/55 italic flex items-center gap-1">
-              <IconCamera className="w-3.5 h-3.5" /> Foto vereist
+            <span
+              id={`fotoplicht-${taak.id}`}
+              className="text-xs text-tekst-gedempt dark:text-white/55 italic flex items-center gap-1"
+            >
+              <IconCamera className="w-3.5 h-3.5" /> Eerst een foto, dan afvinken
             </span>
           )}
           {!taak.voltooid && heeftFoto && (
@@ -349,6 +391,45 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
               {fotos.length} {fotos.length === 1 ? 'foto' : "foto's"} · nog niet afgevinkt
             </span>
           )}
+
+          {/* Het antwoord op de tik die niets deed. Geen foutmelding in
+              het rood — er is niets misgegaan, er ontbreekt alleen nog
+              een stap, en die staat er meteen als knop bij. De camera
+              gaat niet vanzelf open: dat blijft een tik van de man zelf,
+              net als het afvinken. */}
+          {vraagFoto && !magAfvinken && (
+            <div className="w-full flex items-start gap-2 rounded-sm border border-brand-yellow bg-brand-yellow-light dark:bg-brand-yellow/10 p-3 mt-1">
+              <IconCamera className="w-4 h-4 flex-shrink-0 mt-0.5 text-brand-yellow-dark dark:text-brand-yellow" />
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-gray-900 dark:text-white">
+                  Maak eerst een foto van dit punt
+                </p>
+                <p className="text-xs text-gray-600 dark:text-white/60 mt-0.5">
+                  Op dit punt is een foto verplicht. Zodra die er staat kun je
+                  afvinken.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  className="mt-2 min-h-[44px] inline-flex items-center gap-1.5 text-xs font-bold text-brand-yellow-dark dark:text-brand-yellow underline underline-offset-2"
+                >
+                  <IconCamera className="w-3.5 h-3.5" /> Foto maken
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Waarom er hier geen knoppen staan.
+          Zonder deze regel is een vergrendeld punt niet te
+          onderscheiden van een kapot scherm: de tekst en de foto's
+          staan er, maar afvinken en fotograferen zijn er zonder een
+          woord uit verdwenen. */}
+      {readOnly && grendel && !taak.voltooid && (
+        <div className="flex items-start gap-2 mt-3 pl-10 text-xs text-tekst-gedempt dark:text-white/55">
+          <IconLock className="w-3.5 h-3.5 flex-shrink-0 mt-px" />
+          <span>{grendel}</span>
         </div>
       )}
 

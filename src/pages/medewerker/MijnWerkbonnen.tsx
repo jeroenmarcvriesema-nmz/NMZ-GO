@@ -13,13 +13,17 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Avatar } from '@/components/ui/Avatar'
 import { Voortgangsring } from '@/components/ui/Voortgangsring'
 import { berekenVoortgang, cn } from '@/lib/utils'
-import { kiesVandaag, looptVandaag, uitgelopenWerk, duurLabel, isoDatum } from '@/lib/planning'
+import {
+  kiesVandaag, looptVandaag, uitgelopenWerk, duurLabel, isoDatum,
+  startreden, begintVandaag, startVan, eindVan, type Startreden,
+} from '@/lib/planning'
 import { klusstand, STANDEN, type Klusstand } from '@/lib/klusstand'
 import { LOCATIE_AAN } from '@/lib/locatie'
 import {
   IconCalendar, IconPlayerPlay, IconPlayerStop,
   IconPhoto, IconClock, IconTrophy,
   IconUsers, IconCircleCheck, IconAlertTriangle, IconChevronRight, IconCalendarEvent, IconMapPin,
+  IconMapPinFilled,
 } from '@tabler/icons-react'
 
 function groet(): string {
@@ -174,6 +178,26 @@ export default function MijnWerkbonnen() {
             ervoor" — dat is wat je wil zien als je je telefoon uit je
             zak haalt, niet iets waar je twintig afvinkpunten voor moet
             langsscrollen. */}
+        {/* Het eerste wat er staat: wáár je vandaag begint.
+            Hieronder stonden eerst de cijfers, dan de blokken met
+            uitgelopen werk en klussen die er ook nog zijn, en pas
+            daarna het adres van de klus zelf — halverwege het scherm,
+            in een klein grijs bovenschriftje. Dat is de klacht: er
+            stond wél waar iemand mee bezig was en wat er niet af was,
+            maar het adres waar hij volgens de planning hoorde te
+            beginnen moest je ertussenuit vissen. */}
+        <Startkaart
+          adres={vandaag.adres}
+          plaats={vandaag.plaats}
+          reden={startreden(vandaag, isoDatum(), geklokOp)}
+          nieuweKlus={begintVandaag(vandaag)}
+          duur={duurLabel(vandaag)}
+          start={startVan(vandaag)}
+          eind={eindVan(vandaag)}
+          fase={werkdag.fase}
+          startTijd={werkdag.startTijd}
+        />
+
         <Dagkaart
           aantalKlaar={taken.filter((t) => t.voltooid).length}
           aantalTaken={taken.length}
@@ -314,6 +338,33 @@ export default function MijnWerkbonnen() {
           ophaalfout={bonFout}
           readOnly={!gestart}
           bijschrift={bijschrift}
+          grendel={gestart ? undefined : {
+            titel: werkdag.fase === 'voor_start'
+              ? 'Je werkdag is nog niet gestart'
+              : 'Je werkdag is gestopt',
+            uitleg: werkdag.fase === 'voor_start'
+              ? 'Lezen kan nu al. Afvinken en foto\u2019s maken kan zodra je hier bent gestart \u2014 zo weet kantoor wanneer je aan deze klus begon.'
+              : 'Hervat je werkdag om weer af te vinken en foto\u2019s te maken.',
+            perPunt: werkdag.fase === 'voor_start'
+              ? 'Start je werkdag om dit punt af te vinken'
+              : 'Hervat je werkdag om dit punt af te vinken',
+            actie: (
+              <button
+                onClick={werkdag.fase === 'voor_start' ? startWerkdag : hervatWerkdag}
+                disabled={werkdagBezig}
+                // Omlijnd en niet gevuld. De vaste balk onderin draagt
+                // dezelfde handeling als volle groene pil, en die twee
+                // stonden tegelijk in beeld — twee identieke knoppen
+                // boven elkaar leest als een fout in het scherm. Dit is
+                // dezelfde handeling op de plek waar de vraag opkomt,
+                // en dat mag er ook zo uitzien.
+                className="w-full min-h-[48px] rounded-lg border-2 border-green-600 dark:border-green-500 bg-white dark:bg-surface-dark-2 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-500/10 disabled:opacity-60 font-extrabold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+              >
+                <IconPlayerPlay className="w-5 h-5" />
+                {werkdagBezig ? 'BEZIG\u2026' : werkdag.fase === 'voor_start' ? 'START WERKDAG' : 'WERKDAG HERVATTEN'}
+              </button>
+            ),
+          }}
           onRefresh={refetch}
           // De bon is af: de lijst moet er ook van weten, anders kiest
           // `kiesVandaag` morgen nog steeds deze bon.
@@ -336,6 +387,135 @@ export default function MijnWerkbonnen() {
 }
 
 // ── Onderdelen ────────────────────────────────────────────────
+
+/**
+ * Waar je vandaag begint.
+ *
+ * De eerste kaart van het scherm, en met opzet de enige die een adres
+ * groot neerzet. De klacht die hem opleverde: "er staat waar ze
+ * beginnen en ook wat niet af is — maar de klus waar ze volgens
+ * planning moeten starten moet wel duidelijk te zien zijn." Dat klopte:
+ * het adres stond er wel, maar als bovenschriftje van de derde kaart,
+ * ónder twee blokken over ánder werk.
+ *
+ * De regel bovenaan is het hele punt. `kiesVandaag` kiest langs vier
+ * wegen en die betekenen vier verschillende dingen: je staat er al, je
+ * begint er vandaag, je gaat er verder, of het had gisteren af moeten
+ * zijn. Alleen het adres neerzetten laat dat verschil weg, en dan moet
+ * de man zelf uitrekenen of hij goed zit.
+ *
+ * De startknop staat er ook, en niet alleen onderin in de balk. Dit is
+ * de plek waar de vraag opkomt — en zolang er niet gestart is, is het
+ * de handeling die alles op dit scherm openzet.
+ */
+function Startkaart({
+  adres, plaats, reden, nieuweKlus, duur, start, eind, fase, startTijd,
+}: {
+  adres: string
+  plaats?: string | null
+  reden: Startreden
+  nieuweKlus: boolean
+  duur: string
+  start: string
+  eind: string
+  fase: 'voor_start' | 'actief' | 'gestopt'
+  startTijd: Date | null
+}) {
+  // Vier redenen, vier zinnen. "Hier begin je vandaag" is een opdracht,
+  // "je staat hier geklokt" een constatering en "dit had gisteren af
+  // moeten zijn" een waarschuwing — dat verschil hoort in de woorden en
+  // niet alleen in een kleur.
+  const kop: Record<Startreden, { tekst: string; kleur: string; rand: string; vlak: string }> = {
+    geklokt: {
+      tekst: 'Je staat hier geklokt',
+      kleur: 'text-green-800 dark:text-green-300',
+      rand: 'border-green-300 dark:border-green-500/30',
+      vlak: 'bg-gradient-to-r from-green-100 via-green-50 to-white dark:from-green-500/25 dark:via-green-500/[0.06] dark:to-surface-dark-2',
+    },
+    vandaag: {
+      tekst: nieuweKlus ? 'Hier begin je vandaag' : 'Hier ga je vandaag verder',
+      kleur: 'text-blue-900 dark:text-blue-300',
+      rand: 'border-blue-300 dark:border-blue-500/30',
+      vlak: 'bg-gradient-to-r from-blue-100 via-blue-50 to-white dark:from-blue-500/25 dark:via-blue-500/[0.06] dark:to-surface-dark-2',
+    },
+    uitgelopen: {
+      tekst: 'Dit werk staat nog open',
+      kleur: 'text-amber-900 dark:text-amber-200',
+      rand: 'border-amber-300 dark:border-amber-500/30',
+      vlak: 'bg-gradient-to-r from-amber-100 via-amber-50 to-white dark:from-amber-500/25 dark:via-amber-500/[0.06] dark:to-surface-dark-2',
+    },
+    komt: {
+      tekst: 'Je eerstvolgende klus',
+      kleur: 'text-tekst-zwak dark:text-white/70',
+      rand: 'border-gray-200 dark:border-white/10',
+      vlak: 'bg-gradient-to-r from-surface-2 via-surface-2/40 to-white dark:from-white/10 dark:via-white/[0.03] dark:to-surface-dark-2',
+    },
+  }
+  const k = kop[reden]
+
+  return (
+    <div className={cn('rounded-lg border shadow-sm p-5 border-l-[6px]', k.rand, k.vlak)}>
+      <p className={cn('text-[11px] font-extrabold uppercase tracking-widest flex items-center gap-1.5', k.kleur)}>
+        <IconMapPinFilled className="w-3.5 h-3.5 flex-shrink-0" />
+        {k.tekst}
+      </p>
+
+      {/* Het adres zo groot als het op dit scherm kan. Dit is het
+          antwoord op de enige vraag die om zeven uur 's ochtends telt. */}
+      <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white leading-tight break-words mt-1.5">
+        {adres}
+      </h2>
+      {plaats && !adres.toLowerCase().includes(plaats.toLowerCase()) && (
+        <p className="text-sm text-tekst-zwak dark:text-white/60">{plaats}</p>
+      )}
+
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs text-tekst-zwak dark:text-white/60">
+        <span className="flex items-center gap-1">
+          <IconCalendar className="w-3.5 h-3.5 flex-shrink-0" />
+          {start === eind ? formatKort(start) : `${formatKort(start)} t/m ${formatKort(eind)}`}
+        </span>
+        <span>{duur}</span>
+      </div>
+
+      {/* De stand van de werkdag, in woorden en niet als knop.
+          Er stond hier eerst een tweede groene START WERKDAG. Die stond
+          dan tegelijk met de vaste balk onderin in beeld — twee
+          identieke knoppen boven elkaar, en dat leest als een fout in
+          plaats van als een aanbod. Deze kaart beantwoordt "waar ben ik
+          vandaag"; het starten hoort bij de balk die altijd binnen
+          duimbereik staat, en bij het slot op de punten, want dáár komt
+          de vraag op. */}
+      <p className={cn(
+        'flex items-center gap-1.5 text-xs font-bold mt-3 pt-3 border-t border-black/5 dark:border-white/10',
+        fase === 'voor_start' ? 'text-amber-800 dark:text-amber-300' : 'text-tekst-zwak dark:text-white/60',
+      )}>
+        {fase === 'voor_start' ? (
+          <>
+            <IconPlayerPlay className="w-3.5 h-3.5 flex-shrink-0" />
+            Werkdag nog niet gestart — start hem onderin om af te vinken
+          </>
+        ) : fase === 'actief' ? (
+          <>
+            <IconCircleCheck className="w-3.5 h-3.5 flex-shrink-0 text-green-600 dark:text-green-400" />
+            Werkdag gestart om {formatTijd(startTijd)}
+          </>
+        ) : (
+          <>
+            <IconCircleCheck className="w-3.5 h-3.5 flex-shrink-0 text-green-600 dark:text-green-400" />
+            Werkdag gestopt — hervatten kan onderin
+          </>
+        )}
+      </p>
+    </div>
+  )
+}
+
+/** Een datum als "ma 1 sep" — kort genoeg voor één regel op een telefoon. */
+function formatKort(iso: string): string {
+  const d = new Date(`${iso}T00:00:00`)
+  if (Number.isNaN(d.getTime())) return iso
+  return d.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' })
+}
 
 /**
  * De werkdagknop, altijd op dezelfde plek.

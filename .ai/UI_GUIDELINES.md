@@ -64,6 +64,21 @@ Lettertype: `Inter` (sans), `JetBrains Mono` voor monospace-behoefte (bonnummers
 - **Maximaal één `primary`-knop per scherm/sectie** — meerdere primaire knoppen naast elkaar breekt de "één duidelijke actie"-regel uit `PRODUCT_VISION.md`.
 - Alle knoppen hebben een `loading`-state (spinner + disabled) voor elke actie die een netwerkcall triggert — nooit een knop die "hangt" zonder feedback.
 - `active:scale-[0.98]` als tactiele feedback bij klikken (bestaand patroon) — dit soort micro-interactie blijft de norm voor alle klikbare elementen.
+- **Een knop die er staat maar niets doet, bestaat niet.** `disabled` is
+  alleen toegestaan zolang een handeling loopt (`loading`). Kan een actie nog
+  niet omdat er eerst iets anders moet gebeuren, dan blijft de knop tikbaar
+  en legt hij bij een tik uit wát er ontbreekt — met de handeling die het
+  oplost ernaast. Redenen: een uitgeschakelde knop krijgt op een telefoon
+  geen tik door (geen klik, geen reactie), en `title` is een
+  muisaanwijzertekst die daar nooit verschijnt. Zo ontstond in augustus de
+  melding *"ik kan niet afvinken"*.
+- **Zet geen `aria-disabled` op zo'n knop.** Dat zegt tegen wie het scherm
+  laat voorlezen dat er niets gebeurt, terwijl de knop juist uitleg geeft.
+  Verwijs met `aria-describedby` naar die uitleg.
+- **Dezelfde handeling twee keer in beeld krijgt niet twee keer hetzelfde
+  gewicht.** Staat een actie al in een vaste balk, dan is dezelfde knop
+  elders in de pagina omlijnd en niet gevuld — twee identieke gevulde pillen
+  boven elkaar leest als een fout in het scherm.
 
 ---
 
@@ -176,6 +191,21 @@ Lettertype: `Inter` (sans), `JetBrains Mono` voor monospace-behoefte (bonnummers
 
 - Bij een mislukte data-load: duidelijke, Nederlandstalige uitleg + een "opnieuw proberen"-actie (bestaand patroon in `App.tsx` → `AuthGuard`-foutscherm — dit wordt het uitgangspunt voor een generieke `ErrorState`-component).
 - Nooit een rauwe technische foutmelding (stacktrace, Supabase-foutcode) rechtstreeks aan de gebruiker tonen — zie `CODING_STANDARDS.md`/`ARCHITECTURE.md` voor foutafhandelingsregels.
+
+---
+
+## Vergrendelde schermen
+
+Een scherm dat leesbaar is maar niet bewerkbaar (`readOnly`) mag nooit
+alleen zijn knoppen kwijtraken. Dat is niet te onderscheiden van een scherm
+dat stuk is, en dat is precies hoe het in het veld wordt gemeld.
+
+- Bovenaan het vergrendelde deel staat **wát** er op slot zit, **waarom**, en
+  **de handeling die het opent**. Niet als grijze regel maar als blok.
+- Bij elk afzonderlijk item staat één regel met een slotje en dezelfde reden
+  in het kort. Een uitleg bovenaan is na twintig items scrollen uit beeld.
+- De uitleg noemt de handeling, niet de toestand: *"Start je werkdag om dit
+  punt af te vinken"*, niet *"vergrendeld"*.
 
 ---
 

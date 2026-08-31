@@ -1,5 +1,92 @@
 # NMZ GO — Changelog
 
+## Waar je vandaag begint, en waarom je niet kon afvinken
+
+Twee meldingen uit het veld, met dezelfde oorzaak. *"Het is niet duidelijk
+genoeg waar je moet starten"* en *"Raphael geeft aan niet te kunnen
+afvinken."*
+
+- **[FIX]** **Een zwamsaneerder die zijn werkdag nog niet had gestart kreeg
+  geen enkele knop te zien, en nergens stond waarom.** Op het scherm Vandaag
+  staat `readOnly` aan zolang de werkdag niet loopt; dat haalde de afvinkknop
+  én de camera van elk punt af en liet niets achter. De enige aanwijzing was
+  één grijze regel — *"Lezen kan nu al, afvinken zodra je bent gestart"* —
+  boven twintig punten die er verder volstrekt normaal uitzagen. Wie daar
+  langs scrolde zag punten zonder knoppen, en dat leest als een app die stuk
+  is.
+
+  Nagelopen in de database: Raphaels account is aangemaakt op 28 augustus,
+  hij heeft nul rijen in `werkdag_logs` en nul foto's geüpload, terwijl hij
+  op zeven bonnen staat. Hij heeft nooit een werkdag gestart, en de app heeft
+  hem dat nooit verteld.
+
+  Er staat nu een blok op de plek van de punten dat zegt wát er aan de hand
+  is, met de knop die het oplost erin. En bij elk afzonderlijk punt staat één
+  regel met een slotje: *"Start je werkdag om dit punt af te vinken."* Bij
+  elk punt en niet alleen bovenaan, want na twintig punten scrollen staat de
+  uitleg allang niet meer in beeld.
+
+- **[FIX]** **De afvinkknop deed niets als de foto nog ontbrak, en zei er
+  niets bij.** Hij stond er bleek bij met een `title` als uitleg — en een
+  `title` is een muisaanwijzertekst die op een telefoon nooit verschijnt. Een
+  uitgeschakelde knop krijgt bovendien helemaal geen tik door: geen klik,
+  geen reactie, geen enkel teken van leven.
+
+  De knop is niet langer uitgeschakeld. Hij ziet er nog steeds "nog niet" uit
+  (dezelfde bleke gele vorm als voorheen — die bleef bewust zo, zie de vorige
+  ronde), maar een tik levert nu een uitleg op met de cameraknop erbij. Ook
+  geen `aria-disabled`: dat zou tegen wie het scherm laat voorlezen hetzelfde
+  liegen. De knop dóét iets, hij legt uit wat er ontbreekt.
+
+  De camera gaat niet uit zichzelf open. Dat blijft een tik van de man zelf,
+  net als het afvinken.
+
+- **[FIX]** **Een afvinkpoging die door de database werd geweigerd, verdween
+  geruisloos.** `toggleVoltooid` deed een `update` zonder `select`, en een
+  update die door RLS wordt tegengehouden levert bij PostgREST geen fout op
+  maar een geldig, leeg antwoord. Het scherm meldde dus "gelukt", haalde de
+  bon opnieuw op, en het vinkje stond er alsnog niet — zonder één woord over
+  het waarom. Dat is precies de vorm waarin *"ik kan niet afvinken"* bij
+  kantoor binnenkomt, zonder enige aanwijzing.
+
+  Nu staat er `.select('id')` achter en betekent nul geraakte rijen een
+  melding: je staat niet meer op deze werkbon, of de bon is al afgerond.
+  Dezelfde behandeling die `voltooiWerkbon` om precies dezelfde reden al had.
+
+- **[WIJZIGING]** **Bovenaan Vandaag staat nu wáár je begint.** Het adres
+  stond er wel, maar als klein grijs bovenschriftje van de derde kaart —
+  ónder de cijfers van de dag en ónder twee blokken over ánder werk. Wat
+  er ontbrak was niet het adres maar de reden: `kiesVandaag` kiest langs vier
+  wegen en die betekenen vier verschillende dingen. *"Hier begin je vandaag"*
+  is een opdracht, *"je staat hier geklokt"* een constatering, *"dit werk
+  staat nog open"* een waarschuwing en *"je eerstvolgende klus"* geen van
+  drieën. Alleen het adres neerzetten laat dat verschil weg, en dan moet de
+  man zelf uitrekenen of hij goed zit.
+
+  De nieuwe kaart staat als eerste op het scherm, met die reden erboven, het
+  adres zo groot als het past, de looptijd, en de stand van de werkdag
+  eronder. `startreden()` en `begintVandaag()` in `lib/planning.ts` volgen
+  dezelfde volgorde als `kiesVandaag` — daar staat een test op, want zou dat
+  uiteenlopen dan zegt het bovenschrift iets anders dan de keuze eronder, en
+  dat is erger dan geen bovenschrift.
+
+  Geen tweede startknop op die kaart. Die stond er eerst wel, en dan stonden
+  er twee identieke groene knoppen tegelijk in beeld met de vaste balk
+  onderin — dat leest als een fout in plaats van als een aanbod.
+
+- **[FIX]** **Dertig vastgelopen schermen in veertien dagen, waarvan veertien
+  op het Vandaag-scherm van de ploeg.** In de foutentabel: `Cannot read
+  properties of undefined (reading 'default')`. Dat is dezelfde verouderde
+  pagina na een uitrol die `lib/versie.ts` al afving, maar in een vorm die
+  `isVersiefout` niet herkende: het chunkbestand is weg, de import levert
+  geen afwijzing op maar `undefined`, en React struikelt zelf over het
+  uitpakken van de lading. Gevolg was geen herlaadpoging maar het rode "dit
+  scherm liep vast" — een storingsmelding voor iets wat één herlading is.
+
+  De negentien schermladers lopen nu door `scherm()`, die een leeg antwoord
+  omzet in een boodschap die de vanger wél herkent. Daarmee loopt hij zijn
+  gewone weg: eenmalig herladen, en anders het scherm met de knop.
+
 ## De afvinkknop springt niet meer van grijs naar geel
 
 - **[FIX]** **Een foto uploaden mag er niet uitzien alsof het punt is afgevinkt.** De knop kreeg tijdens de audit een grijze omlijnde vorm zolang afvinken nog niet kon, met het argument dat "kan nog niet" zo duidelijker is dan een bleke gele knop. Dat argument klopt op zichzelf, maar het gevolg was erger dan het probleem: zodra je een foto uploadde sprong de knop van grijs naar vol geel, en dat leest als *"hij heeft het afgevinkt"*.
