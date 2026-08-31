@@ -8,7 +8,7 @@ import { useFotos } from '@/hooks/useFotos'
 import { useAuth } from '@/hooks/useAuth'
 import type { Taak } from '@/types'
 import { Puntopmerkingen } from '@/components/taak/Puntopmerkingen'
-import { IconCamera, IconCameraOff, IconCheck, IconSquare, IconPhoto, IconAlertCircle, IconArchive, IconRefresh, IconTrash, IconRotate, IconChevronDown,
+import { IconCamera, IconCameraOff, IconCheck, IconSquare, IconPhoto, IconAlertCircle, IconArchive, IconRefresh, IconTrash, IconRotate,
 } from '@tabler/icons-react'
 
 interface TaakItemProps {
@@ -28,41 +28,6 @@ interface TaakItemProps {
   onRefresh: () => void
 }
 
-/**
- * De bovenste regel van een punt: bolletje, titel, en rechts een pijl
- * zodra er iets te klappen valt.
- *
- * Dit is een `<button>` of een `<div>`, afhankelijk van of er iets
- * gebeurt bij aantikken. Een `<div>` met een `onClick` eraan is geen
- * knop: hij komt niet in de tabvolgorde, reageert niet op de spatiebalk
- * en wordt door een schermlezer niet aangekondigd. En andersom is een
- * knop die niets doet net zo verkeerd — vandaar de schakelaar in plaats
- * van altijd hetzelfde element.
- *
- * `w-full text-left` omdat een knop zijn inhoud anders centreert en
- * krimpt tot de breedte van de tekst.
- */
-function Kop({ alsKnop, open, onClick, children }: {
-  alsKnop: boolean
-  open: boolean
-  onClick: () => void
-  children: React.ReactNode
-}) {
-  if (!alsKnop) return <div className="flex items-start gap-3">{children}</div>
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-expanded={open}
-      // min-h: dichtgeklapt is deze knop de enige manier om het punt weer
-      // open te krijgen, en dan hoort hij ook een echt aanraakvlak te zijn.
-      className="flex items-start gap-3 w-full min-h-[44px] text-left rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow/60"
-    >
-      {children}
-    </button>
-  )
-}
-
 export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: TaakItemProps) {
   const { toggleVoltooid, zetFotoVereist } = useTaken()
   const { upload, getUrls } = useFotos()
@@ -80,27 +45,9 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
   const [verwijderBezig, setVerwijderBezig] = useState(false)
   const [heropenBezig, setHeropenBezig] = useState(false)
   const [bevestigWeg, setBevestigWeg] = useState(false)
-  /**
-   * Een afgevinkt punt staat dichtgeklapt.
-   *
-   * Elk afgerond punt nam de volle hoogte in: doorgestreepte titel,
-   * fotostrook van 64 pixels, een knop "Afgevinkt", het gesprekje en bij
-   * kantoor nog vier beheerknoppen. Bij zes punten waarvan drie af werd
-   * de pagina bijna zevenduizend pixels lang, en een échte werkopdracht
-   * heeft er twintig tot dertig. De ploeg scrolde dus langs alles wat al
-   * gedaan was om te zien wat er nog openstond — twintig keer per dag,
-   * met een handschoen aan.
-   *
-   * Dicht blijft zichtbaar dát het punt af is en met welke foto's; wie
-   * iets wil nakijken tikt het open. Punten worden niet in de volgorde
-   * van de bon afgewerkt, dus het gaat er niet om wat "het volgende" is
-   * maar dat wat nog open staat bij elkaar staat.
-   */
-  const [uitgeklapt, setUitgeklapt] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const fotos = taak.fotos ?? []
   const heeftFoto = fotos.length > 0
-  const dicht = taak.voltooid && !uitgeklapt
 
   // De foto's zelf, niet een pictogram dat erop lijkt.
   //
@@ -248,18 +195,10 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
 
   return (
     <div className={cn(
-      'border rounded-lg transition-all duration-200 ease-brand',
-      // Dicht mag de kaart ook krapper: het is een bewijsregel, geen
-      // werkvlak. Samen met de kleinere fotostrook scheelt dat ruwweg
-      // tweederde van de hoogte per afgerond punt.
-      dicht ? 'p-3 mb-1.5' : 'p-5 mb-3',
+      'border rounded-lg p-5 mb-3 transition-all duration-200 ease-brand',
       taak.voltooid ? 'border-green-200 dark:border-green-500/30 bg-green-50 dark:bg-green-500/10' : 'border-gray-100 dark:border-white/10 bg-white dark:bg-surface-dark-2'
     )}>
-      {/* Zodra een punt af is, is de hele kop de knop die hem open- en
-          dichtklapt. Zolang hij openstaat valt er niets te klappen en
-          blijft het gewone tekst — een tik op de titel moet dan niets
-          doen, want de afvinkknop zit er vlak onder. */}
-      <Kop alsKnop={taak.voltooid} open={uitgeklapt} onClick={() => setUitgeklapt((v) => !v)}>
+      <div className="flex items-start gap-3">
         <div className={cn(
           'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold',
           taak.voltooid ? 'bg-green-500 text-white' : 'bg-surface-2 dark:bg-white/10 text-gray-500 dark:text-white/60'
@@ -267,55 +206,29 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
           {taak.voltooid ? <IconCheck className="w-4 h-4" /> : null}
         </div>
         {/* min-w-0 en break-words: een afvinkpunt is bij ons vaak een
-            hele zin uit de werkopdracht, soms met een woord dat langer
-            is dan het scherm ("bodemafsluiterconstructie"). Zonder dit
+              hele zin uit de werkopdracht, soms met een woord dat langer
+              is dan het scherm ("bodemafsluiterconstructie"). Zonder dit
             duwt zo'n woord de hele kaart uit beeld. */}
         <div className="flex-1 min-w-0">
-          {/* Dicht: één regel, afgekapt. Een afvinkpunt is bij ons vaak een
-              hele zin uit de werkopdracht en brak dichtgeklapt alsnog over
-              drie regels — dan is een punt van 110 pixels hoog nog steeds
-              het meeste van wat je ziet, terwijl het alleen hoeft te
-              bevestigen dát het af is. Openklappen geeft de hele zin. */}
           <div className={cn(
-            'text-sm font-semibold leading-snug text-gray-900 dark:text-white',
-            dicht ? 'truncate' : 'break-words',
+            'text-sm font-semibold leading-snug text-gray-900 dark:text-white break-words',
             taak.voltooid && 'line-through text-tekst-gedempt dark:text-white/55',
           )}>
             {taak.titel}
           </div>
-          {/* Uitleg vóóraf. Bij een punt dat al af is voegt hij niets
-              meer toe en kost hij alleen hoogte. */}
-          {taak.omschrijving && !dicht && (
+          {taak.omschrijving && (
             <div className="text-xs text-gray-500 dark:text-white/50 mt-1 leading-relaxed break-words">{taak.omschrijving}</div>
           )}
         </div>
-        {/* Dicht gaat het bewijs mee op de titelregel in plaats van op een
-            eigen regel eronder. De titel is dan toch één regel, dus die
-            ruimte staat er al — en het scheelt bij achttien afgeronde
-            punten een paar honderd pixels scrollen. */}
-        {dicht && heeftFoto && (
-          <span className="flex items-center gap-1 flex-shrink-0 text-[11px] font-semibold text-tekst-gedempt dark:text-white/55">
-            <IconPhoto className="w-3.5 h-3.5" />
-            {fotos.length}
-          </span>
-        )}
-        {taak.voltooid && (
-          <IconChevronDown className={cn(
-            'w-4 h-4 flex-shrink-0 text-tekst-fijn dark:text-white/40 transition-transform duration-150',
-            uitgeklapt ? 'rotate-180 mt-2' : 'mt-1.5'
-          )} />
-        )}
-      </Kop>
+      </div>
 
       {/* De foto's staan buiten de readOnly-voorwaarde. Die stond eromheen
           en betekende daarmee "niet te zien" in plaats van "niet te
           wijzigen" — op de werkbon van kantoor was de hele
           fotorapportage daardoor onzichtbaar, en na afronden voor de
           ploeg ook. */}
-      {/* Dicht schuift de strook strak onder de titel aan in plaats van
-          op een eigen regel met volle tussenruimte. */}
-      {((heeftFoto && !dicht) || (!readOnly && !dicht)) && (
-        <div className={cn('flex items-center flex-wrap pl-10', dicht ? 'gap-1.5 mt-1.5' : 'gap-2 mt-3')}>
+      {(heeftFoto || !readOnly) && (
+        <div className="flex items-center gap-2 mt-3 pl-10 flex-wrap">
           {fotos.map((foto, n) => foto.opgeruimd_op ? (
             // Het bestand is weg, de foto niet: die staat als bijlage
             // bij de ClickUp-taak. Dat is beter nieuws dan een gebroken
@@ -323,10 +236,7 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
             <div
               key={foto.id}
               title="Het bestand is opgeruimd — de foto staat als bijlage bij de ClickUp-taak"
-              className={cn(
-                'rounded-sm border border-gray-200 dark:border-white/10 bg-surface-2 dark:bg-white/5 flex flex-col items-center justify-center gap-0.5 px-1 text-center',
-                dicht ? 'w-8 h-8' : 'w-16 h-16'
-              )}
+              className="w-16 h-16 rounded-sm border border-gray-200 dark:border-white/10 bg-surface-2 dark:bg-white/5 flex flex-col items-center justify-center gap-0.5 px-1 text-center"
             >
               <IconArchive className="w-4 h-4 text-tekst-gedempt dark:text-white/55" />
               <span className="text-[9px] font-semibold leading-tight text-tekst-gedempt dark:text-white/55">
@@ -338,13 +248,7 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
               key={foto.id}
               onClick={() => setBekijk(n)}
               aria-label={`Foto ${n + 1} bekijken`}
-              className={cn(
-                'rounded-sm overflow-hidden border border-gray-200 dark:border-white/10 bg-surface-2 dark:bg-white/5 flex items-center justify-center transition-all hover:border-brand-yellow',
-                // Dicht is de strook een bewijsregel, geen werkvlak: je
-                // ziet dát er foto's zijn en hoeveel. Wie er één wil
-                // bekijken klapt het punt open.
-                dicht ? 'w-8 h-8' : 'w-16 h-16'
-              )}
+              className="w-16 h-16 rounded-sm overflow-hidden border border-gray-200 dark:border-white/10 bg-surface-2 dark:bg-white/5 flex items-center justify-center transition-all hover:border-brand-yellow"
             >
               {urls[foto.storage_path] ? (
                 <img
@@ -374,7 +278,7 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
               eigen regel. Zo is het één strook waar je aan ziet dat er
               nog eentje bij kan — er komen er bij ons vaak meer, voor en
               na, en van twee kanten. */}
-          {!readOnly && !dicht && (
+          {!readOnly && (
             <label className={cn(
               'w-16 h-16 rounded-sm border-2 border-dashed border-gray-200 dark:border-white/15 bg-surface-2 dark:bg-white/5 flex flex-col items-center justify-center gap-0.5 cursor-pointer transition-all hover:border-brand-yellow hover:bg-brand-yellow-light dark:hover:bg-brand-yellow/10',
               uploading && 'opacity-50 cursor-not-allowed'
@@ -391,10 +295,7 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
               hierboven wél of niet ziet staan. Het stond in het blok
               met de afvinkknop, en dus zag kantoor op de werkbon niets
               als de plaatjes het niet deden. */}
-          {/* Niet als het punt dichtstaat: dan kijk je niet naar de foto's
-              en kost een melding van twee regels meer hoogte dan het
-              punt zelf. Openklappen laat hem gewoon weer zien. */}
-          {fotoStand === 'mislukt' && !dicht && (
+          {fotoStand === 'mislukt' && (
             <span className="w-full text-xs text-brand-red dark:text-red-400 flex items-start gap-1 mt-1">
               <IconAlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
               De foto&apos;s konden niet worden geladen — ze zijn wél opgeslagen.
@@ -403,7 +304,7 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
         </div>
       )}
 
-      {!readOnly && !dicht && (
+      {!readOnly && (
         <div className="flex items-center gap-2 mt-3 pl-10 flex-wrap">
           {/* De meest gebruikte knop van de hele app, en hij was 34 pixels
               hoog — onder de ~44 die DESIGN_SYSTEM.md vraagt, terwijl dit
@@ -461,9 +362,9 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
           het nergens anders op dit scherm iets mag, en de ploeg moet
           kunnen antwoorden. Wel weg zodra de bon is opgeleverd — dan is
           het rapport de deur uit en is het gesprek gesloten. */}
-      {!gesloten && !dicht && <Puntopmerkingen taakId={taak.id} werkbonId={werkbonId} />}
+      {!gesloten && <Puntopmerkingen taakId={taak.id} werkbonId={werkbonId} />}
 
-      {magWerkBeheren && !gesloten && !dicht && (
+      {magWerkBeheren && !gesloten && (
         <div className="flex items-center gap-2 mt-3 pl-10 flex-wrap">
           {/* Een afgevinkt punt weer openzetten.
               Afvinken blijft het werk van de ploeg op de klus — daarom

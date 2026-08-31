@@ -1,5 +1,16 @@
 # NMZ GO — Changelog
 
+## Punten blijven staan waar ze staan
+
+- **[FIX]** **Het samenvouwen van afgevinkte punten is teruggedraaid.** Het idee was goed op papier — een bon van dertig punten werd de helft korter — maar het gedrag klopte niet: vinkte je een punt af, dan klapte het onder je handen dicht *én* schoof het naar het blok "afgerond" onderaan. Je bent dan midden in het werk je plek kwijt, en dat is precies wat je niet wilt met een handschoen aan en een telefoon in je andere hand. Twee bewegingen tegelijk op het moment dat je je aandacht ergens anders hebt.
+
+  De punten staan weer voluit, in de volgorde van de werkopdracht, en een afgevinkt punt blijft staan waar het stond. De kop telt weer alle punten.
+
+  Wat blijft staan uit dezelfde ronde: de afvinkknop op 44 pixels, de uitgeschakelde staat grijs in plaats van bleekgeel, en alle andere aanraakvlakken op maat. Dat waren aparte bevindingen en die zaten niet fout.
+
+  De lengte van de bon blijft daarmee een open punt. Als het opnieuw aan de orde komt: de oplossing moet zijn dat een punt niet beweegt op het moment dat je het afvinkt — bijvoorbeeld pas samenvouwen bij het herladen van het scherm, of alleen op verzoek.
+
+
 ## Een kleurverloop over de planningkaart
 
 - **[WIJZIGING]** **De blokjes op de weekplanning dragen hun stand nu als een verloop van links naar rechts** in plaats van als een randje van zes pixels. Links, waar de rand zit en waar het oog toch al naar de kleur zoekt, staat de kleur vol; halverwege is hij op, en daar staan de namen en de aantallen op een rustige ondergrond.
