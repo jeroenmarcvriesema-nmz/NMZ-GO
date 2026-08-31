@@ -30,17 +30,27 @@ interface TaakItemProps {
    * afgevinkt of geüpload mag worden.
    *
    * Weglaten betekent: geen eis. Zo bepaalt het scherm eromheen of dit
-   * geldt — op Vandaag wel, want daar zitten de start- en stopknoppen;
-   * op een bon van volgende week niet, want daar valt geen werkdag te
-   * starten.
+   * geldt.
    *
    * Bewust geen `disabled` en niets verbergen. Precies dat is eerder
    * teruggedraaid: een nieuwe man opende zijn werkbon, zag twintig
    * punten zonder één knop, en meldde dat hij niet kon afvinken. De
    * knoppen blijven staan; wie erop tikt krijgt te horen wat er eerst
    * moet, mét de knop ernaast.
+   *
+   * `uitleg` en `knop` zijn er voor het scherm waar de werkdag niet te
+   * starten ís (`/werkbon/:id`). Daar brengt de knop je naar Vandaag,
+   * en dan hoort er iets anders op te staan dan "Werkdag starten" —
+   * een knop die iets anders doet dan hij zegt is precies het soort
+   * ding waar meldingen over binnenkomen.
    */
-  werkdagNodig?: { fase: 'voor_start' | 'gestopt'; onStart: () => void; bezig?: boolean }
+  werkdagNodig?: {
+    fase: 'voor_start' | 'gestopt'
+    onStart: () => void
+    bezig?: boolean
+    uitleg?: string
+    knop?: string
+  }
   onRefresh: () => void
 }
 
@@ -498,9 +508,9 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, werkdagNodig, on
                 : 'Start eerst je werkdag'}
             </p>
             <p className="text-xs text-gray-600 dark:text-white/60 mt-0.5">
-              {werkdagNodig.fase === 'gestopt'
+              {werkdagNodig.uitleg ?? (werkdagNodig.fase === 'gestopt'
                 ? 'Hervat je werkdag om verder te gaan met afvinken en foto’s.'
-                : 'Afvinken en foto’s horen bij een lopende werkdag. Zodra je start kun je verder.'}
+                : 'Afvinken en foto’s horen bij een lopende werkdag. Zodra je start kun je verder.')}
             </p>
             <button
               type="button"
@@ -511,7 +521,8 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, werkdagNodig, on
               <IconPlayerPlay className="w-3.5 h-3.5" />
               {werkdagNodig.bezig
                 ? 'Bezig…'
-                : werkdagNodig.fase === 'gestopt' ? 'Werkdag hervatten' : 'Werkdag starten'}
+                : werkdagNodig.knop
+                  ?? (werkdagNodig.fase === 'gestopt' ? 'Werkdag hervatten' : 'Werkdag starten')}
             </button>
           </div>
         </div>
