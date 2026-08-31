@@ -69,6 +69,45 @@ Dit is waar de audit zijn gezag vandaan haalt. Alles hieronder staat in
 - **Voorkomens tellen** — `grep -rc` geeft een bevinding gewicht. "op
   191 plekken" is een ander gesprek dan "op sommige plekken".
 
+## 3b. Voer de handeling uit, fotografeer hem niet
+
+Dit is de duurste les uit de eerste ronde en de reden dat deze paragraaf
+bestaat. Twee wijzigingen zijn na oplevering teruggedraaid, allebei om
+dezelfde oorzaak: ik had het scherm gelezen en opgenomen, maar de
+handeling nooit gedaan.
+
+- **Afgevinkte punten samenvouwen** was gemeten 52% winst in lengte. In
+  gebruik klapte een punt onder je handen dicht *en* schoof het naar
+  onderen op het moment dat je het afvinkte — je raakt midden in het
+  werk je plek kwijt.
+- **Een grijze uitgeschakelde afvinkknop** las prima op een screenshot.
+  In gebruik sprong hij bij het uploaden van een foto van grijs naar vol
+  geel, en dat leest als "hij heeft het afgevinkt" terwijl er niets werd
+  afgevinkt.
+
+Geen van beide is zichtbaar op een schermafdruk. Ze ontstaan pas in de
+overgang, en die zie je alleen door hem te maken.
+
+**Doe dit dus voor elke flow die iets wegschrijft:** een punt afvinken,
+een foto uploaden, een werkdag starten en stoppen, een bon opleveren.
+Laat de nep-backend die handeling écht landen — een `insert` die de
+fixture bijwerkt, en `resultaatVoor` die verse objecten teruggeeft
+(`JSON.parse(JSON.stringify(...))`), anders ziet React geen verandering
+en lijkt een geslaagde actie mislukt. Meet daarna de toestand vóór en ná
+in dezelfde test:
+
+```js
+const inputs = await p.$$('input[type=file]')
+await inputs[i].setInputFiles('/tmp/proef.jpg')
+await p.waitForTimeout(2500)
+// en dan: is er iets veranderd dat níét had mogen veranderen?
+```
+
+Let bij zo'n vergelijking niet alleen op de gegevens maar ook op de
+**vorm**: verandert een knop van kleur, verspringt een element, verdwijnt
+er iets uit beeld? Een wijziging die de gebruiker niet heeft gevraagd is
+een bug, ook als de database klopt.
+
 ## 4. Toets aan de eigen normen van het project
 
 De sterkste bevindingen zijn niet "dit kan mooier" maar "dit overtreedt
@@ -113,6 +152,11 @@ draait. Dat is één keer gebeurd en leverde lege pagina's op.
 - **Externe afbeeldingen in de mock** worden geblokkeerd door de proxy.
   Consolefouten over `ERR_CONNECTION_RESET` zijn dan ruis — filter ze
   eruit voordat je "fouten gevonden" meldt.
+- **Een verbetering die de gebruiker niet vroeg is verdacht.** Twee van
+  de bevindingen uit de eerste ronde zijn teruggedraaid, en allebei
+  waren het mijn eigen toevoegingen bovenop wat er gevraagd was. Bestaand
+  gedrag dat vreemd oogt heeft vaak een reden die in het commentaar
+  staat; lees dat eerst. In dit project stond de reden er letterlijk bij.
 
 ## 7. Lever het op
 

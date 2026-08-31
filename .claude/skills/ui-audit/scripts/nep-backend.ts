@@ -92,7 +92,11 @@ const RPC: Record<string, any> = {
 // ── De motor ────────────────────────────────────────────────
 
 function resultaat(tabel: string, enkel: boolean) {
-  const rijen = FIXTURES[tabel] ?? []
+  // Verse identiteiten bij elke ophaalronde. Zonder dit geeft een refetch
+  // exact dezelfde objecten terug, ziet React geen verandering en tekent
+  // hij niets opnieuw — dan lijkt een geslaagde actie mislukt terwijl hij
+  // gewoon is aangekomen. Dat kost je een uur zoeken.
+  const rijen = JSON.parse(JSON.stringify(FIXTURES[tabel] ?? []))
   return enkel
     ? { data: rijen[0] ?? null, error: rijen[0] ? null : { code: 'PGRST116', message: 'geen rij' }, count: rijen.length }
     : { data: rijen, error: null, count: rijen.length }
@@ -101,12 +105,38 @@ function resultaat(tabel: string, enkel: boolean) {
 /** Elke methode geeft zichzelf terug; `then` lost op naar het resultaat. */
 function bouwer(tabel: string): any {
   let enkel = false
+
+  /**
+   * Een insert landt écht in de fixture.
+   *
+   * Zonder dit test je een handeling die nergens aankomt, en dan zie je
+   * de helft van wat er misgaat niet. Precies zo is een knop die bij het
+   * uploaden van grijs naar geel sprong door de audit heen geglipt: op
+   * een schermafdruk klopte alles, de overgang zag niemand.
+   *
+   * Vul aan per tabel die je in een flow aanraakt.
+   */
+  const invoegen = (rij: any) => {
+    if (tabel === 'fotos') {
+      const taak = (FIXTURES.taken as any[]).find((t) => t.id === rij.taak_id)
+      if (taak) {
+        taak.fotos = [...(taak.fotos ?? []), {
+          id: `nieuw-${Date.now()}`,
+          storage_path: rij.storage_path ?? `x/${Date.now()}.jpg`,
+          created_at: new Date().toISOString(),
+          opgeruimd_op: null,
+        }]
+      }
+    }
+  }
+
   const proxy: any = new Proxy({}, {
     get(_t, prop: string) {
       if (prop === 'then') {
         return (ok: any, mis: any) => Promise.resolve(resultaat(tabel, enkel)).then(ok, mis)
       }
       if (prop === 'single' || prop === 'maybeSingle') return () => { enkel = true; return proxy }
+      if (prop === 'insert') return (rij: any) => { invoegen(rij); return proxy }
       return () => proxy
     },
   })
