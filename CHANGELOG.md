@@ -1,5 +1,13 @@
 # NMZ GO — Changelog
 
+## Eerst op start, dan afvinken
+
+- **[FEATURE]** **Afvinken en foto's uploaden vragen nu een lopende werkdag.** Op het Vandaag-scherm hoort een afgevinkt punt bij een dag waarop iemand aan het werk was. Gevraagd door kantoor als extra controle dat er ook echt op start wordt gedrukt.
+- **Geen knoppen die verdwijnen of dood zijn.** Dat is precies wat hier eerder misging: `readOnly` haalde de knoppen weg, een nieuwe man opende zijn werkbon, zag twintig punten zonder één knop en meldde dat hij niet kon afvinken. Nu blijft alles staan — afvinken, camera, galerij — en wie erop tikt krijgt een geel blok met *Start eerst je werkdag* en de startknop er meteen naast. Eén tik en je bent verder.
+- Is de werkdag gestópt, dan staat er *Hervat je werkdag* met de hervatknop. Zodra de dag loopt verdwijnt de uitleg vanzelf.
+- Ook op het label van de camera en de galerij, en niet op de `input` erin: een uitgeschakelde `input` in een label slikt de tik zonder één teken van leven, en dat is de dode knop die we niet willen.
+- **Alleen op Vandaag.** Via *Mijn bonnen* kom je op `/werkbon/:id` — een bon van volgende week, waar geen werkdag te starten valt. De eis zou daar een doodlopende weg zijn in plaats van een controle, dus daar geldt hij niet.
+
 ## Opnieuw inplannen haalt de klus van het bord
 
 - **[FIX]** **Op "opnieuw inplannen" drukken haalde de klus nergens weg.** Hij bleef gewoon op zijn oude dag op de weekplanning staan, terwijl vaststond dat hij die dag niet doorging — de bewoner was niet thuis, de vloer lag niet vrij. Een week die vol lijkt met werk dat zeker niet doorgaat is erger dan een gat.

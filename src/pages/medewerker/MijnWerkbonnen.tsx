@@ -160,26 +160,36 @@ export default function MijnWerkbonnen() {
   const aantalFotos = taken.flatMap((t) => t.fotos ?? []).length
 
   /**
-   * Afvinken hangt niet aan de werkdag.
+   * Eerst starten, dan afvinken.
    *
-   * Dat heeft het wél gedaan: `readOnly={!gestart}` haalde de afvinkknop
-   * én de camera van elk punt zolang de werkdag niet liep. Bedoeld als
-   * "je uren kloppen dan tenminste", in de praktijk een nieuwe man die
-   * zijn werkbon opent, twintig punten zonder knoppen ziet en meldt dat
-   * hij niet kan afvinken. Precies wat er in augustus gebeurde.
+   * Gevraagd door kantoor als extra controle dat er ook echt op start
+   * wordt gedrukt: een punt dat afgevinkt wordt hoort bij een dag
+   * waarop iemand aan het werk was.
    *
-   * Het was bovendien een halve regel: via Mijn bonnen kwam je op
-   * `/werkbon/:id` en daar kon je diezelfde punten wél afvinken. Eén
-   * app die op het ene scherm iets weigert dat op het andere gewoon mag
-   * is erger dan geen regel.
+   * Dit heeft eerder als `readOnly={!gestart}` bestaan en is toen
+   * teruggedraaid, met reden: een nieuwe man opende zijn werkbon, zag
+   * twintig punten zonder één knop, en meldde dat hij niet kon
+   * afvinken. Daarom nu andersom — de knoppen blijven gewoon staan, en
+   * wie erop tikt krijgt te horen dat de werkdag eerst moet, mét de
+   * startknop ernaast. Geen dode knop, wél de eis.
    *
-   * De werkdag blijft staan waarvoor hij is — de urenregistratie, de
-   * balk onderin, het dashboard van kantoor. Hij houdt het werk niet
-   * meer tegen.
+   * Alleen hier. Op `/werkbon/:id` valt geen werkdag te starten (dat is
+   * de bon van volgende week), dus daar zou de eis een doodlopende weg
+   * zijn in plaats van een controle.
    */
+  const werkdagNodig = werkdag.fase === 'actief'
+    ? undefined
+    : {
+        fase: werkdag.fase,
+        bezig: werkdagBezig,
+        onStart: werkdag.fase === 'gestopt' ? hervatWerkdag : startWerkdag,
+      }
+
   const bijschrift = werkdag.fase === 'actief'
     ? 'Maak een foto vóór je afvinkt'
-    : 'Maak een foto vóór je afvinkt — vergeet je werkdag niet te starten'
+    : werkdag.fase === 'gestopt'
+      ? 'Hervat je werkdag om verder te kunnen afvinken'
+      : 'Start eerst je werkdag — daarna kun je afvinken en foto’s maken'
 
   return (
     <>
@@ -348,6 +358,7 @@ export default function MijnWerkbonnen() {
           laden={bonLaadt}
           ophaalfout={bonFout}
           bijschrift={bijschrift}
+          werkdagNodig={werkdagNodig}
           onRefresh={refetch}
           // De bon is af: de lijst moet er ook van weten, anders kiest
           // `kiesVandaag` morgen nog steeds deze bon.

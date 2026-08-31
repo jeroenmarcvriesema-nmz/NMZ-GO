@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ComponentProps } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { ProgressBar } from '@/components/ui/ProgressBar'
@@ -26,6 +26,14 @@ interface Props {
   readOnly?: boolean
   /** Waaróm er niet afgevinkt kan worden. Staat naast de kop van de punten. */
   bijschrift?: string
+  /**
+   * De werkdag moet lopen voordat er afgevinkt of geüpload mag worden.
+   *
+   * Alleen ingevuld door het Vandaag-scherm: daar staan de start- en
+   * stopknoppen. Op `/werkbon/:id` blijft dit leeg — een bon van
+   * volgende week heeft geen werkdag om te starten.
+   */
+  werkdagNodig?: ComponentProps<typeof TaakItem>['werkdagNodig']
   onRefresh: () => void
   /** Na een geslaagde afronding. Vandaag ververst; `/werkbon/:id` gaat terug. */
   onVoltooid?: () => void
@@ -55,8 +63,8 @@ interface Props {
  * van volgende week, en daar hoort geen STOP WERKDAG onder.
  */
 export function Klusuitvoering({
-  werkbon, kopje, laden, ophaalfout, readOnly, bijschrift, onRefresh, onVoltooid,
-  zonderVoortgang,
+  werkbon, kopje, laden, ophaalfout, readOnly, bijschrift, werkdagNodig,
+  onRefresh, onVoltooid, zonderVoortgang,
 }: Props) {
   const [voltooien, setVoltooien] = useState(false)
   const [fout, setFout] = useState<string | null>(null)
@@ -236,6 +244,7 @@ export function Klusuitvoering({
               werkbonId={werkbon.id}
               readOnly={readOnly || werkbon.status === 'voltooid'}
               gesloten={Boolean(werkbon.opgeleverd_op)}
+              werkdagNodig={werkdagNodig}
               onRefresh={onRefresh}
             />
           ))

@@ -8,7 +8,7 @@ import { useFotos } from '@/hooks/useFotos'
 import { useAuth } from '@/hooks/useAuth'
 import type { Taak } from '@/types'
 import { Puntopmerkingen } from '@/components/taak/Puntopmerkingen'
-import { IconCamera, IconCameraOff, IconCheck, IconSquare, IconPhoto, IconPhotoUp, IconAlertCircle, IconArchive, IconRefresh, IconTrash, IconRotate,
+import { IconCamera, IconCameraOff, IconCheck, IconSquare, IconPhoto, IconPhotoUp, IconAlertCircle, IconArchive, IconRefresh, IconTrash, IconRotate, IconPlayerPlay,
 } from '@tabler/icons-react'
 
 interface TaakItemProps {
@@ -25,10 +25,26 @@ interface TaakItemProps {
    * oplevert hoort er niet te staan.
    */
   gesloten?: boolean
+  /**
+   * De werkdag moet eerst gestart of hervat worden voordat er
+   * afgevinkt of geüpload mag worden.
+   *
+   * Weglaten betekent: geen eis. Zo bepaalt het scherm eromheen of dit
+   * geldt — op Vandaag wel, want daar zitten de start- en stopknoppen;
+   * op een bon van volgende week niet, want daar valt geen werkdag te
+   * starten.
+   *
+   * Bewust geen `disabled` en niets verbergen. Precies dat is eerder
+   * teruggedraaid: een nieuwe man opende zijn werkbon, zag twintig
+   * punten zonder één knop, en meldde dat hij niet kon afvinken. De
+   * knoppen blijven staan; wie erop tikt krijgt te horen wat er eerst
+   * moet, mét de knop ernaast.
+   */
+  werkdagNodig?: { fase: 'voor_start' | 'gestopt'; onStart: () => void; bezig?: boolean }
   onRefresh: () => void
 }
 
-export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: TaakItemProps) {
+export function TaakItem({ taak, werkbonId, readOnly, gesloten, werkdagNodig, onRefresh }: TaakItemProps) {
   const { toggleVoltooid, zetFotoVereist } = useTaken()
   const { upload, getUrls } = useFotos()
   const { profile, magWerkBeheren } = useAuth()
@@ -46,6 +62,9 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
   const [heropenBezig, setHeropenBezig] = useState(false)
   // Getikt op afvinken terwijl de foto er nog niet is. Zie `handleToggle`.
   const [vraagFoto, setVraagFoto] = useState(false)
+  // Getikt terwijl de werkdag nog niet loopt. Zie `handleToggle`.
+  const [vraagWerkdag, setVraagWerkdag] = useState(false)
+  const werkdagVereist = Boolean(werkdagNodig)
   const [bevestigWeg, setBevestigWeg] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const fotos = taak.fotos ?? []
@@ -84,6 +103,13 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
     .filter((f) => !f.opgeruimd_op && f.storage_path)
     .map((f) => f.storage_path)
     .join('|')
+
+  // Zodra de werkdag loopt heeft de uitleg geen reden meer om te
+  // staan. Anders blijft hij hangen tot het scherm opnieuw laadt, en
+  // vertelt hij iets wat net is opgelost.
+  useEffect(() => {
+    if (!werkdagVereist) setVraagWerkdag(false)
+  }, [werkdagVereist])
 
   useEffect(() => {
     if (paden === '') { setUrls({}); setFotoStand('klaar'); return }
@@ -280,6 +306,10 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
 
   const handleToggle = async () => {
     if (readOnly || toggling) return
+    // De werkdag eerst. Dat is de controle die kantoor wil: een punt
+    // dat afgevinkt wordt hoort bij een dag waarop iemand aan het werk
+    // was, en niet bij een scherm dat iemand 's avonds openslaat.
+    if (werkdagNodig) { setVraagWerkdag(true); return }
     // Geen dode knop meer. Hij zag er "nog niet" uit en deed bij een tik
     // helemaal niets — en `title` is een muisaanwijzertekst, die op een
     // telefoon nooit verschijnt. Wie dus niet wist dat er eerst een foto
@@ -389,7 +419,15 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
             <label className={cn(
               'w-16 h-16 rounded-sm border-2 border-dashed border-gray-200 dark:border-white/15 bg-surface-2 dark:bg-white/5 flex flex-col items-center justify-center gap-0.5 cursor-pointer transition-all hover:border-brand-yellow hover:bg-brand-yellow-light dark:hover:bg-brand-yellow/10',
               uploading && 'opacity-50 cursor-not-allowed'
-            )}>
+            )}
+                // De werkdag eerst, ook hier. Op het label zelf en niet op
+                // de `input`: een uitgeschakelde `input` in een `label`
+                // slikt de tik zonder één teken van leven, en dat is
+                // precies de dode knop die we niet willen.
+                onClick={(e) => {
+                  if (werkdagNodig) { e.preventDefault(); setVraagWerkdag(true) }
+                }}
+            >
               <IconCamera className="w-5 h-5 text-tekst-gedempt dark:text-white/55" />
               {heeftFoto && (
                 <span className="text-[10px] font-semibold text-tekst-gedempt dark:text-white/55">Nog een</span>
@@ -408,7 +446,15 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
             <label className={cn(
               'w-16 h-16 rounded-sm border-2 border-dashed border-gray-200 dark:border-white/15 bg-surface-2 dark:bg-white/5 flex flex-col items-center justify-center gap-0.5 cursor-pointer transition-all hover:border-brand-yellow hover:bg-brand-yellow-light dark:hover:bg-brand-yellow/10',
               uploading && 'opacity-50 cursor-not-allowed'
-            )}>
+            )}
+                // De werkdag eerst, ook hier. Op het label zelf en niet op
+                // de `input`: een uitgeschakelde `input` in een `label`
+                // slikt de tik zonder één teken van leven, en dat is
+                // precies de dode knop die we niet willen.
+                onClick={(e) => {
+                  if (werkdagNodig) { e.preventDefault(); setVraagWerkdag(true) }
+                }}
+            >
               <IconPhotoUp className="w-5 h-5 text-tekst-gedempt dark:text-white/55" />
               <span className="text-[10px] font-semibold text-tekst-gedempt dark:text-white/55">Galerij</span>
               <input
@@ -432,6 +478,42 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
               De foto&apos;s konden niet worden geladen — ze zijn wél opgeslagen.
             </span>
           )}
+        </div>
+      )}
+
+      {/* Het antwoord op de tik terwijl de werkdag niet loopt.
+
+          Buiten de knoppenrij en buiten de fotostrook, want het geldt
+          voor allebei: wie op afvinken tikt en wie de camera opent
+          krijgt hetzelfde te horen, en de knop die het oplost staat er
+          meteen bij. Geel en niet rood — er is niets misgegaan, er
+          ontbreekt een stap. */}
+      {vraagWerkdag && werkdagNodig && (
+        <div className="flex items-start gap-2 rounded-sm border border-brand-yellow bg-brand-yellow-light dark:bg-brand-yellow/10 p-3 mt-3 ml-10">
+          <IconPlayerPlay className="w-4 h-4 flex-shrink-0 mt-0.5 text-brand-yellow-dark dark:text-brand-yellow" />
+          <div className="min-w-0">
+            <p className="text-xs font-bold text-gray-900 dark:text-white">
+              {werkdagNodig.fase === 'gestopt'
+                ? 'Je werkdag is gestopt'
+                : 'Start eerst je werkdag'}
+            </p>
+            <p className="text-xs text-gray-600 dark:text-white/60 mt-0.5">
+              {werkdagNodig.fase === 'gestopt'
+                ? 'Hervat je werkdag om verder te gaan met afvinken en foto’s.'
+                : 'Afvinken en foto’s horen bij een lopende werkdag. Zodra je start kun je verder.'}
+            </p>
+            <button
+              type="button"
+              disabled={werkdagNodig.bezig}
+              onClick={() => werkdagNodig.onStart()}
+              className="mt-2 min-h-[44px] inline-flex items-center gap-1.5 text-xs font-bold text-brand-yellow-dark dark:text-brand-yellow underline underline-offset-2 disabled:opacity-50"
+            >
+              <IconPlayerPlay className="w-3.5 h-3.5" />
+              {werkdagNodig.bezig
+                ? 'Bezig…'
+                : werkdagNodig.fase === 'gestopt' ? 'Werkdag hervatten' : 'Werkdag starten'}
+            </button>
+          </div>
         </div>
       )}
 
