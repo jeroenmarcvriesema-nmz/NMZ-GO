@@ -8,7 +8,7 @@ import { useFotos } from '@/hooks/useFotos'
 import { useAuth } from '@/hooks/useAuth'
 import type { Taak } from '@/types'
 import { Puntopmerkingen } from '@/components/taak/Puntopmerkingen'
-import { IconCamera, IconCameraOff, IconCheck, IconSquare, IconPhoto, IconAlertCircle, IconArchive, IconRefresh, IconTrash, IconRotate,
+import { IconCamera, IconCameraOff, IconCheck, IconSquare, IconPhoto, IconPhotoUp, IconAlertCircle, IconArchive, IconRefresh, IconTrash, IconRotate,
 } from '@tabler/icons-react'
 
 interface TaakItemProps {
@@ -134,6 +134,98 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
     // Leegmaken: dezelfde foto nog eens kiezen moet opnieuw iets doen.
     e.target.value = ''
     if (file) await verstuurFoto(file)
+  }
+
+  /**
+   * Meerdere foto's tegelijk, uit de galerij of uit bestanden.
+   *
+   * Een voor een versturen en niet parallel: `upload` verkleint elke
+   * foto in de browser, en vijf tegelijk laat een telefoon in een
+   * kruipruimte struikelen. Eén keer verversen aan het eind in plaats
+   * van na elke foto, anders staat het scherm vijf keer te herbouwen.
+   *
+   * Wat niet lukt wordt geteld en gemeld. Stilzwijgend drie van de vijf
+   * doorlaten is erger dan een foutmelding: dan denkt iemand dat het
+   * bewijs er staat.
+   */
+  const verstuurMeerdere = async (files: File[]) => {
+    if (!profile || uploading) return
+    setFout(null)
+    setUploading(true)
+
+    let gelukt = 0
+    let eersteProbleem: { tekst: string; opnieuw?: boolean } | null = null
+    let opnieuwBestand: File | null = null
+
+    for (const file of files) {
+      const { fout: probleem } = await upload(werkbonId, taak.id, profile.id, file)
+      if (probleem) {
+        if (!eersteProbleem) {
+          eersteProbleem = probleem
+          opnieuwBestand = probleem.opnieuw ? file : null
+        }
+      } else {
+        gelukt++
+      }
+    }
+
+    setUploading(false)
+
+    if (eersteProbleem) {
+      const mislukt = files.length - gelukt
+      setFout(
+        files.length === 1
+          ? eersteProbleem.tekst
+          : `${mislukt} van de ${files.length} foto's is niet gelukt. ${eersteProbleem.tekst}`,
+      )
+      setWachtendeFoto(opnieuwBestand)
+    } else {
+      setWachtendeFoto(null)
+      setVraagFoto(false)
+    }
+
+    if (gelukt > 0) await onRefresh()
+  }
+
+  /**
+   * Een foto weghalen.
+   *
+   * Alleen de databaserij; het bestand blijft even in de bucket staan
+   * en wordt door de opruimronde meegenomen (migratie 027). Andersom
+   * zou betekenen dat een mislukte tweede stap een rij achterlaat die
+   * naar niets meer wijst.
+   *
+   * Wie dit mag staat in de RLS (migratie 043): kantoor alles, een
+   * medewerker zijn eigen foto op een klus waar hij op staat, en niet
+   * meer nadat de bon is opgeleverd. Weigert de database, dan komt er
+   * geen rij terug en zeggen we dat het niet mocht — in plaats van te
+   * doen alsof het gelukt is.
+   */
+  const wisFoto = async (fotoId: string) => {
+    setFout(null)
+    const { data, error } = await supabase
+      .from('fotos')
+      .delete()
+      .eq('id', fotoId)
+      .select('id')
+
+    if (error) {
+      setFout('De foto kon niet worden verwijderd. Controleer je verbinding.')
+      return
+    }
+    if (!data || data.length === 0) {
+      setFout('Deze foto mag je niet verwijderen. Vraag kantoor om hem weg te halen.')
+      return
+    }
+
+    setBekijk(null)
+    await onRefresh()
+  }
+
+  const handleGalerijUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? [])
+    e.target.value = ''
+    if (files.length > 0) await verstuurMeerdere(files)
   }
 
   const wisselFotoplicht = async () => {
@@ -303,6 +395,30 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
                 <span className="text-[10px] font-semibold text-tekst-gedempt dark:text-white/55">Nog een</span>
               )}
               <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFotoUpload} disabled={uploading} />
+            </label>
+          )}
+
+          {/* Uit de galerij of uit bestanden. Een aparte knop en geen
+              vervanging van de camera: `capture` weghalen zou werken,
+              maar dan kost fotograferen op de klus een tik extra, en dat
+              is de handeling die twintig keer per dag gebeurt.
+              Hier juist wél `multiple` — wie achteraf uit zijn galerij
+              kiest, kiest er zelden één. */}
+          {!readOnly && (
+            <label className={cn(
+              'w-16 h-16 rounded-sm border-2 border-dashed border-gray-200 dark:border-white/15 bg-surface-2 dark:bg-white/5 flex flex-col items-center justify-center gap-0.5 cursor-pointer transition-all hover:border-brand-yellow hover:bg-brand-yellow-light dark:hover:bg-brand-yellow/10',
+              uploading && 'opacity-50 cursor-not-allowed'
+            )}>
+              <IconPhotoUp className="w-5 h-5 text-tekst-gedempt dark:text-white/55" />
+              <span className="text-[10px] font-semibold text-tekst-gedempt dark:text-white/55">Galerij</span>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handleGalerijUpload}
+                disabled={uploading}
+              />
             </label>
           )}
 
@@ -538,6 +654,10 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, onRefresh }: Taa
         titel={taak.titel}
         onSluit={() => setBekijk(null)}
         onWissel={setBekijk}
+        // Niet aanbieden op een scherm dat alleen leest. Of het echt
+        // mag bepaalt de RLS; dit voorkomt alleen een knop die daar
+        // gegarandeerd op stukloopt.
+        onWis={readOnly ? undefined : wisFoto}
       />
     </div>
   )

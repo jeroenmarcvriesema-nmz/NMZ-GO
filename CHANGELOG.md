@@ -1,5 +1,13 @@
 # NMZ GO — Changelog
 
+## Foto's uit je galerij, en een foto weer weg
+
+- **[FEATURE]** **Foto's uit de galerij of uit bestanden.** Naast de camera staat nu een tweede knop, *Galerij*. De cameraknop blijft wat hij was — `capture` weghalen zou ook werken, maar dan kost fotograferen op de klus een tik extra, en dat is de handeling die twintig keer per dag gebeurt.
+- **Meerdere tegelijk.** Wie achteraf uit zijn galerij kiest, kiest er zelden één. Ze gaan één voor één de lucht in, niet parallel: elke foto wordt in de browser verkleind, en vijf tegelijk laat een telefoon in een kruipruimte struikelen. Lukt er eentje niet, dan staat er hoeveel van hoeveel het wél haalden — stilzwijgend drie van de vijf doorlaten is erger dan een foutmelding, want dan denkt iemand dat het bewijs er staat.
+- **[FEATURE]** **Een foto kan weer weg.** Open hem op volle grootte en er staat een prullenbak; twee tikken, want het is onomkeerbaar. Bewust in de viewer en niet als kruisje op een duimnagel van 64 pixels: daar tik je met een werkhandschoen naast, en dan gooi je iets weg dat je wilde bekijken.
+- Verwijderen mocht tot nu toe alleen kantoor. Een zwamsaneerder die per ongeluk zijn schoen fotografeerde kon die niet weg krijgen — hij kon er alleen een goede naast zetten, en die ruis ging mee naar de opdrachtgever. Migratie 043 laat je **je eigen foto** weghalen, op een klus waar je op staat, en alleen zolang de bon niet is opgeleverd. Dat laatste is dezelfde regel als bij het weghalen van een punt: een opgeleverd dossier is dicht.
+- Weigert de database toch, dan zegt het scherm dat het niet mocht in plaats van te doen alsof het gelukt is.
+
 ## Lopend is het overzicht geworden, en de tegels gaan erheen
 
 - **[FIX]** **De tegels op het dashboard brachten je in de volle werkbonnenlijst.** Klikken op "Bezig" leverde alle bonnen op, ook die van volgende maand. Dat is geen overzicht maar een archief. Ze gaan nu naar **Lopend**, met dat filter al aan.

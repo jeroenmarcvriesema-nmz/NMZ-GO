@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
-import { IconX, IconChevronLeft, IconChevronRight, IconArchive } from '@tabler/icons-react'
+import { useEffect, useState } from 'react'
+import { IconX, IconChevronLeft, IconChevronRight, IconArchive, IconTrash } from '@tabler/icons-react'
 
 interface Props {
   /**
@@ -14,6 +14,12 @@ interface Props {
   titel: string
   onSluit: () => void
   onWissel: (index: number) => void
+  /**
+   * Deze foto weghalen. Ontbreekt de functie, dan verschijnt de knop
+   * niet — zo bepaalt de aanroeper of wissen hier mag, en hoeft deze
+   * component niets van rollen of RLS te weten.
+   */
+  onWis?: (fotoId: string) => Promise<void>
 }
 
 /**
@@ -29,7 +35,11 @@ interface Props {
  * Bewust geen Modal: die is voor formulieren, met een kop, witruimte en
  * een maximale breedte. Een foto wil het hele scherm en verder niets.
  */
-export function Fotoviewer({ fotos, index, titel, onSluit, onWissel }: Props) {
+export function Fotoviewer({ fotos, index, titel, onSluit, onWissel, onWis }: Props) {
+  // Twee tikken, want dit is onomkeerbaar. Geen los bevestigingsvenster:
+  // dat legt een tweede laag over een scherm dat al over alles heen ligt.
+  const [vraagWis, setVraagWis] = useState(false)
+  const [wisBezig, setWisBezig] = useState(false)
   const open = index !== null && index >= 0 && index < fotos.length
 
   useEffect(() => {
@@ -50,6 +60,10 @@ export function Fotoviewer({ fotos, index, titel, onSluit, onWissel }: Props) {
     }
   }, [open, index, fotos.length, onSluit, onWissel])
 
+  // Van foto wisselen zet de vraag terug: anders staat "weet je het
+  // zeker" ineens boven een andere foto dan die je wilde weghalen.
+  useEffect(() => { setVraagWis(false) }, [index])
+
   if (!open) return null
 
   const huidige = fotos[index!]
@@ -68,13 +82,48 @@ export function Fotoviewer({ fotos, index, titel, onSluit, onWissel }: Props) {
         </div>
         {/* 44 pixels: met een werkhandschoen aan is een klein kruisje
             niet te raken. */}
-        <button
-          onClick={onSluit}
-          aria-label="Sluiten"
-          className="flex items-center justify-center w-11 h-11 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors flex-shrink-0"
-        >
-          <IconX className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {onWis && (
+            vraagWis ? (
+              <>
+                <button
+                  onClick={async () => {
+                    setWisBezig(true)
+                    try { await onWis(huidige.id) } finally { setWisBezig(false); setVraagWis(false) }
+                  }}
+                  disabled={wisBezig}
+                  className="h-11 px-4 rounded-full bg-brand-red text-white text-sm font-semibold hover:bg-brand-red-dark disabled:opacity-50 transition-colors"
+                >
+                  {wisBezig ? 'Bezig…' : 'Definitief weg'}
+                </button>
+                <button
+                  onClick={() => setVraagWis(false)}
+                  disabled={wisBezig}
+                  className="h-11 px-4 rounded-full bg-white/10 text-white text-sm font-semibold hover:bg-white/20 transition-colors"
+                >
+                  Toch niet
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setVraagWis(true)}
+                aria-label="Foto verwijderen"
+                className="flex items-center justify-center w-11 h-11 rounded-full bg-white/10 text-white hover:bg-brand-red transition-colors"
+              >
+                <IconTrash className="w-5 h-5" />
+              </button>
+            )
+          )}
+          {/* 44 pixels: met een werkhandschoen aan is een klein kruisje
+              niet te raken. */}
+          <button
+            onClick={onSluit}
+            aria-label="Sluiten"
+            className="flex items-center justify-center w-11 h-11 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+          >
+            <IconX className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 min-h-0 flex items-center justify-center px-4 pb-4">
