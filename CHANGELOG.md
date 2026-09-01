@@ -1,5 +1,14 @@
 # NMZ GO — Changelog
 
+## Foto's spelen een punt niet vrij — en het veiligheidspunt ligt vast
+
+- **[FIX]** **Een punt met foto's eronder zag er afvinkbaar uit terwijl het op de volgorde vastzat.** Afvinken werd wel geweigerd, maar dat merkte je pas ná de tik. Nu staat het er vóóraf: de knop is bleek en ernaast staat *"Kan pas na het veiligheidsblad"*. Foto's uploaden mag gewoon door — bewijs verzamelen kan altijd, afvinken pas na het blad.
+- De regel staat nu in `lib/standaardpunt.ts` met negen tests erop, waaronder precies dit geval: een punt met drie foto's blijft op slot zolang het blad openstaat. Eén regel op één plek, zodat twee schermen hem niet elk zelf gaan uitrekenen.
+- **[FIX]** **Het slot hing aan één kolom, en die kolom stond open.** `taken_update` is een policy per rij en niet per kolom, dus wie op de bon staat mocht élke kolom van zijn punten schrijven. Nagemeten op de database: `update taken set standaard = false` op het veiligheidsblad ging er gewoon doorheen, en daarna vinkte de rest vrolijk af. Ook de fotoplicht kon eraf.
+- Er zit geen knop op en niemand deed dit via de app. Maar het slot zit in de database júist omdat het niet van het scherm mag afhangen, en dan hoort het niet één veldnaam verwijderd te zijn van niets. Op het veiligheidspunt liggen nu de vlag, de tekst, de volgorde en de fotoplicht vast — beide kanten op.
+- De knop **Foto verplicht** is daarom weg op dat punt: hij zou gegarandeerd een foutmelding opleveren.
+- Migratie 046.
+
 ## Het veiligheidsblad staat voortaan als eerste punt op elke werkbon
 
 - **[FEATURE]** **Elke werkbon begint met één vast punt: "Het plakken van het rode gevaren veiligheidsblad op de voordeur en/of raam".** Met fotoplicht, bovenaan de lijst, en op élke bon — uit ClickUp, met de hand aangemaakt, of wat er later ook bij komt. Een trigger op de werkbon zet hem erbij, zodat er geen vierde plek is die de regel niet krijgt.

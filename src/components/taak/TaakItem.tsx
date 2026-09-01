@@ -615,9 +615,13 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, werkdagNodig, ee
             // laat voorlezen: de knop dóét iets, hij legt uit wat er nog
             // ontbreekt. Vandaar de verwijzing naar die uitleg in plaats
             // van een uitgeschakelde stand.
-            aria-describedby={!magAfvinken ? `fotoplicht-${taak.id}` : undefined}
+            aria-describedby={
+              eersteDit ? `volgorde-${taak.id}`
+                : !magAfvinken ? `fotoplicht-${taak.id}`
+                  : undefined
+            }
             onClick={handleToggle}
-            className={cn('min-h-[44px]', !magAfvinken && 'opacity-40')}
+            className={cn('min-h-[44px]', (eersteDit || !magAfvinken) && 'opacity-40')}
           >
             {taak.voltooid ? <><IconCheck className="w-4 h-4" /> Afgevinkt</> : <><IconSquare className="w-4 h-4" /> Afvinken</>}
           </Button>
@@ -628,7 +632,25 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, werkdagNodig, ee
               de man ter plekke weet wanneer het punt klaar is. Wat er
               gebeurde is dat de knop van grijs naar geel sprong, en dat
               leest als "gedaan". Nu staat er wat er staat. */}
-          {!taak.voltooid && !heeftFoto && taak.foto_vereist && (
+          {/* Waaróm hij bleek is, vóórdat je erop tikt.
+              Dit stond er alleen ná de tik, en dat is één tik te laat:
+              een punt met foto's eronder zag er volledig bruikbaar uit
+              terwijl het op de volgorde vastzat. Foto's spelen een punt
+              niet vrij — dat is precies de verwarring waar dit tegen
+              moet beschermen, en dan hoort het op het scherm te staan
+              en niet in een blok dat pas verschijnt als je het al
+              geprobeerd hebt.
+              Gaat vóór de fotoplichtregel: als allebei geldt, is dit
+              wat er als eerste moet gebeuren. */}
+          {!taak.voltooid && eersteDit && (
+            <span
+              id={`volgorde-${taak.id}`}
+              className="text-xs text-brand-red dark:text-red-400 font-semibold flex items-center gap-1"
+            >
+              <IconAlertTriangle className="w-3.5 h-3.5" /> Kan pas na het veiligheidsblad
+            </span>
+          )}
+          {!taak.voltooid && !eersteDit && !heeftFoto && taak.foto_vereist && (
             <span
               id={`fotoplicht-${taak.id}`}
               className="text-xs text-tekst-gedempt dark:text-white/55 italic flex items-center gap-1"
@@ -636,7 +658,7 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, werkdagNodig, ee
               <IconCamera className="w-3.5 h-3.5" /> Eerst een foto, dan afvinken
             </span>
           )}
-          {!taak.voltooid && heeftFoto && (
+          {!taak.voltooid && heeftFoto && !eersteDit && (
             <span className="text-xs text-tekst-gedempt dark:text-white/55 flex items-center gap-1">
               {fotos.length} {fotos.length === 1 ? 'foto' : "foto's"} · nog niet afgevinkt
             </span>
@@ -715,7 +737,10 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, werkdagNodig, ee
             </button>
           )}
 
-          <button
+          {/* Niet op het standaardpunt. Daar ligt de fotoplicht vast
+              (migratie 046) en zou deze knop gegarandeerd een
+              foutmelding opleveren. */}
+          {!taak.standaard && <button
             onClick={wisselFotoplicht}
             disabled={fotoplichtBezig}
             className={cn(
@@ -731,7 +756,7 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, werkdagNodig, ee
             {taak.foto_vereist
               ? <><IconCamera className="w-3.5 h-3.5" /> Foto verplicht</>
               : <><IconCameraOff className="w-3.5 h-3.5" /> Geen foto nodig</>}
-          </button>
+          </button>}
 
           {/* Twee tikken, want dit is onomkeerbaar. Eén tik op een
               prullenbak naast een afvinkvakje is te makkelijk gebeurd —

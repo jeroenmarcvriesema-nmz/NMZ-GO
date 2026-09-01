@@ -10,6 +10,7 @@ import { PuntToevoegen } from '@/components/werkbon/PuntToevoegen'
 import { supabase } from '@/lib/supabase'
 import { berekenVoortgang, formatDatum, cn } from '@/lib/utils'
 import { standkleur } from '@/lib/klusstand'
+import { openStandaardpunt } from '@/lib/standaardpunt'
 import { vervolgLabel } from '@/lib/vervolgwerk'
 import { IconCheck, IconAlertCircle, IconCircleCheck, IconCalendar, IconListCheck, IconSpray, IconAlertTriangle } from '@tabler/icons-react'
 import type { Werkbon } from '@/types'
@@ -72,16 +73,11 @@ export function Klusuitvoering({
   const taken = werkbon.taken ?? []
   const voortgang = berekenVoortgang(taken)
 
-  /**
-   * Het punt dat vóór alles gaat: het veiligheidsblad op de deur
-   * (migratie 045). Zolang dat openstaat kan er geen ander punt af —
-   * de database weigert het, en hier staat het er in gewone woorden.
-   *
-   * Op de vlag en niet op de titel: een tekst die ooit anders wordt
-   * geschreven maakt deze regel stil onwaar. Bonnen van vóór die
-   * migratie hebben geen standaardpunt en houden dus niets tegen.
-   */
-  const standaardOpen = taken.find((t) => t.standaard && !t.voltooid) ?? null
+  // Het punt dat vóór alles gaat: het veiligheidsblad op de deur
+  // (migratie 045). De regel zelf staat in `lib/standaardpunt.ts`,
+  // met tests erop — inclusief het geval waar de melding over ging:
+  // foto's onder een punt spelen dat punt niet vrij.
+  const standaardOpen = openStandaardpunt(taken)
   // Dezelfde stand en kleur als op de lijstschermen en de planning.
   const k = standkleur(werkbon)
   const aantalKlaar = taken.filter((t) => t.voltooid).length
