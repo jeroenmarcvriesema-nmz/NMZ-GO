@@ -122,6 +122,16 @@ export interface Taak {
   foto_vereist: boolean
   opmerking: string | null
   volgorde: number
+  /**
+   * Door NMZ GO zelf toegevoegd en niet afkomstig uit de werkopdracht
+   * (migratie 045): het veiligheidsblad op de deur. Staat vooraan
+   * (`volgorde` -1), is niet te verwijderen, en houdt de andere punten
+   * tegen tot het af is.
+   *
+   * Optioneel omdat niet elk scherm de kolom ophaalt — de lijsten
+   * selecteren losse kolommen om niet de hele bon mee te slepen.
+   */
+  standaard?: boolean
   created_at: string
   fotos?: Foto[]
 }

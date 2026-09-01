@@ -8,7 +8,7 @@ import { useFotos } from '@/hooks/useFotos'
 import { useAuth } from '@/hooks/useAuth'
 import type { Taak } from '@/types'
 import { Puntopmerkingen } from '@/components/taak/Puntopmerkingen'
-import { IconCamera, IconCameraOff, IconCheck, IconSquare, IconPhoto, IconPhotoUp, IconAlertCircle, IconArchive, IconRefresh, IconTrash, IconRotate, IconPlayerPlay,
+import { IconCamera, IconCameraOff, IconCheck, IconSquare, IconPhoto, IconPhotoUp, IconAlertCircle, IconArchive, IconRefresh, IconTrash, IconRotate, IconPlayerPlay, IconAlertTriangle,
 } from '@tabler/icons-react'
 
 interface TaakItemProps {
@@ -51,10 +51,23 @@ interface TaakItemProps {
     uitleg?: string
     knop?: string
   }
+  /**
+   * Er staat een punt vóór dit punt dat eerst af moet — bij ons het
+   * veiligheidsblad op de deur (migratie 045).
+   *
+   * De titel en niet alleen een vlag: wie op afvinken tikt hoort te
+   * lezen wát er eerst moet, niet dat "er nog iets" moet. Weglaten
+   * betekent: niets in de weg.
+   *
+   * Ook hier niets uitschakelen. De database weigert het echt — dit
+   * scherm zegt het alleen eerder en in gewone woorden, in plaats van
+   * met een foutmelding uit Postgres.
+   */
+  eersteDit?: { titel: string }
   onRefresh: () => void
 }
 
-export function TaakItem({ taak, werkbonId, readOnly, gesloten, werkdagNodig, onRefresh }: TaakItemProps) {
+export function TaakItem({ taak, werkbonId, readOnly, gesloten, werkdagNodig, eersteDit, onRefresh }: TaakItemProps) {
   const { toggleVoltooid, zetFotoVereist } = useTaken()
   const { upload, getUrls } = useFotos()
   const { profile, magWerkBeheren } = useAuth()
@@ -75,6 +88,9 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, werkdagNodig, on
   // Getikt terwijl de werkdag nog niet loopt. Zie `handleToggle`.
   const [vraagWerkdag, setVraagWerkdag] = useState(false)
   const werkdagVereist = Boolean(werkdagNodig)
+  // Getikt terwijl het veiligheidsblad nog openstaat. Zie `handleToggle`.
+  const [vraagEerste, setVraagEerste] = useState(false)
+  const eersteVereist = Boolean(eersteDit)
   const [bevestigWeg, setBevestigWeg] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const fotos = taak.fotos ?? []
@@ -120,6 +136,10 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, werkdagNodig, on
   useEffect(() => {
     if (!werkdagVereist) setVraagWerkdag(false)
   }, [werkdagVereist])
+
+  useEffect(() => {
+    if (!eersteVereist) setVraagEerste(false)
+  }, [eersteVereist])
 
   useEffect(() => {
     if (paden === '') { setUrls({}); setFotoStand('klaar'); return }
@@ -320,6 +340,10 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, werkdagNodig, on
     // dat afgevinkt wordt hoort bij een dag waarop iemand aan het werk
     // was, en niet bij een scherm dat iemand 's avonds openslaat.
     if (werkdagNodig) { setVraagWerkdag(true); return }
+    // Dan het punt dat vóór alles gaat. De database weigert dit ook
+    // echt (migratie 045); hier vangen we het op zodat er uitleg staat
+    // in plaats van een constraint-melding.
+    if (eersteDit) { setVraagEerste(true); return }
     // Geen dode knop meer. Hij zag er "nog niet" uit en deed bij een tik
     // helemaal niets — en `title` is een muisaanwijzertekst, die op een
     // telefoon nooit verschijnt. Wie dus niet wist dat er eerst een foto
@@ -357,6 +381,16 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, werkdagNodig, on
               is dan het scherm ("bodemafsluiterconstructie"). Zonder dit
             duwt zo'n woord de hele kaart uit beeld. */}
         <div className="flex-1 min-w-0">
+          {/* Het standaardpunt draagt zijn eigen bordje. Het staat al
+              bovenaan, maar tussen twintig punten leest volgorde alleen
+              niet als "dit eerst" — en dit is het punt dat de rest
+              tegenhoudt. Weg zodra het af is: dan is het een punt als
+              alle andere. */}
+          {taak.standaard && !taak.voltooid && (
+            <span className="inline-flex items-center gap-1 mb-1.5 px-1.5 py-0.5 rounded-sm bg-brand-red text-white text-[10px] font-bold uppercase tracking-wide">
+              <IconAlertTriangle className="w-3 h-3" /> Eerst dit
+            </span>
+          )}
           <div className={cn(
             'text-sm font-semibold leading-snug text-gray-900 dark:text-white break-words',
             taak.voltooid && 'line-through text-tekst-gedempt dark:text-white/55',
@@ -528,6 +562,27 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, werkdagNodig, on
         </div>
       )}
 
+      {/* Het antwoord op de tik terwijl het veiligheidsblad nog
+          openstaat. Met de titel erin: "er moet eerst iets" stuurt
+          niemand ergens heen, "eerst het rode gevarenblad op de deur"
+          wel. Geen knop erbij — het punt staat bovenaan ditzelfde
+          scherm, en daarheen springen zou het scherm onder je handen
+          laten verspringen. */}
+      {vraagEerste && eersteDit && (
+        <div className="flex items-start gap-2 rounded-sm border border-brand-red bg-brand-red-light dark:bg-brand-red/10 p-3 mt-3 ml-10">
+          <IconAlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-brand-red dark:text-red-400" />
+          <div className="min-w-0">
+            <p className="text-xs font-bold text-gray-900 dark:text-white">
+              Eerst het veiligheidsblad
+            </p>
+            <p className="text-xs text-gray-600 dark:text-white/60 mt-0.5">
+              Bovenaan deze werkbon staat: {eersteDit.titel}. Maak daar een
+              foto van en vink het af — daarna kun je de rest afvinken.
+            </p>
+          </div>
+        </div>
+      )}
+
       {!readOnly && (
         <div className="flex items-center gap-2 mt-3 pl-10 flex-wrap">
           {/* De knop houdt dezelfde vorm, of er nu een foto is of niet.
@@ -681,7 +736,15 @@ export function TaakItem({ taak, werkbonId, readOnly, gesloten, werkdagNodig, on
           {/* Twee tikken, want dit is onomkeerbaar. Eén tik op een
               prullenbak naast een afvinkvakje is te makkelijk gebeurd —
               zeker op een telefoon met handschoenen aan. */}
-          {bevestigWeg ? (
+          {taak.standaard ? (
+            // De database weigert dit punt te verwijderen (migratie
+            // 045). Een knop die gegarandeerd een foutmelding oplevert
+            // hoort er niet te staan — dezelfde regel als bij een
+            // opgeleverde bon hierboven.
+            <span className="text-xs text-tekst-gedempt dark:text-white/55 italic">
+              Dit punt staat op elke werkbon en kan er niet af.
+            </span>
+          ) : bevestigWeg ? (
             <span className="flex items-center gap-1.5">
               <button
                 onClick={verwijderPunt}

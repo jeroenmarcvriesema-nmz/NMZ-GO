@@ -603,10 +603,17 @@ async function verwerkTaak(
 
   // Punten alleen bij een nieuwe bon. Bij een bestaande zou opnieuw
   // invoegen het afvinkwerk van een zwamsaneerder wissen.
+  //
+  // `standaard` eruit: sinds migratie 045 zet een trigger het
+  // veiligheidsblad als eerste punt op elke bon, dus een verse bon
+  // heeft er al één staan. Zonder deze voorwaarde telt die mee als
+  // "er staan al punten" en zou een nieuwe klus uit ClickUp alleen
+  // het veiligheidsblad krijgen en geen enkel punt uit de opdracht.
   const { count } = await db
     .from('taken')
     .select('id', { count: 'exact', head: true })
     .eq('werkbon_id', bonId)
+    .eq('standaard', false)
 
   if ((count ?? 0) === 0) {
     const rijen = w.punten.map((titel, n) => ({

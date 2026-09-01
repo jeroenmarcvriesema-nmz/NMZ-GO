@@ -1,5 +1,16 @@
 # NMZ GO — Changelog
 
+## Het veiligheidsblad staat voortaan als eerste punt op elke werkbon
+
+- **[FEATURE]** **Elke werkbon begint met één vast punt: "Het plakken van het rode gevaren veiligheidsblad op de voordeur en/of raam".** Met fotoplicht, bovenaan de lijst, en op élke bon — uit ClickUp, met de hand aangemaakt, of wat er later ook bij komt. Een trigger op de werkbon zet hem erbij, zodat er geen vierde plek is die de regel niet krijgt.
+- **Zonder dit punt kan er niets anders afgevinkt worden.** Dat slot zit in de database en niet alleen in het scherm: afvinken gaat via een gewone update op de tabel, dus daar hoort het te zitten. Het scherm zegt het alleen eerder en in gewone woorden — *"Eerst het veiligheidsblad"* met de titel erbij — in plaats van met een foutmelding uit Postgres.
+- Bovenaan de puntenlijst staat een rood blok met waar je begint, en het punt zelf draagt een bordje **Eerst dit** zolang het openstaat. Tussen twintig punten leest volgorde alleen niet als "dit eerst".
+- **Het punt is niet te verwijderen** — ook niet door kantoor. Zonder die regel was het slot één knop verwijderd van niets.
+- Wat de trigger bewust met rust laat: uitvinken en heropenen door kantoor, de fotoplicht wisselen, het punt zelf, en elke bon die geen standaardpunt heeft.
+- **De 61 klussen die nu lopen hebben het punt erbij gekregen.** Afgeronde en opgeleverde bonnen niet: een open punt op een gesloten dossier zou die bon terugzetten naar "bezig", het rapport tegenspreken en op de planning opnieuw als werk verschijnen.
+- De verwerker telt bij een nieuwe ClickUp-bon nu alleen de punten uit de opdracht. Zonder die aanpassing zou het standaardpunt tellen als "er staan al punten" en kreeg een verse klus alleen het veiligheidsblad en geen enkel werkpunt.
+- Migratie 045.
+
 ## Opleveren zonder bewijs — alleen voor de eigenaar
 
 - **[FEATURE]** **De eigenaar kan een klus dichtdoen terwijl er niets is afgevinkt en niets is gefotografeerd.** Voor de bonnen die administratief dicht moeten terwijl het bewijs buiten de app om is geregeld: oude ClickUp-taken zonder punten, werk dat per WhatsApp is afgehandeld. Zonder deze knop blijven die eeuwig meetellen als lopend werk.

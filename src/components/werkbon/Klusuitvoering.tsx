@@ -11,7 +11,7 @@ import { supabase } from '@/lib/supabase'
 import { berekenVoortgang, formatDatum, cn } from '@/lib/utils'
 import { standkleur } from '@/lib/klusstand'
 import { vervolgLabel } from '@/lib/vervolgwerk'
-import { IconCheck, IconAlertCircle, IconCircleCheck, IconCalendar, IconListCheck, IconSpray } from '@tabler/icons-react'
+import { IconCheck, IconAlertCircle, IconCircleCheck, IconCalendar, IconListCheck, IconSpray, IconAlertTriangle } from '@tabler/icons-react'
 import type { Werkbon } from '@/types'
 
 interface Props {
@@ -71,6 +71,17 @@ export function Klusuitvoering({
 
   const taken = werkbon.taken ?? []
   const voortgang = berekenVoortgang(taken)
+
+  /**
+   * Het punt dat vóór alles gaat: het veiligheidsblad op de deur
+   * (migratie 045). Zolang dat openstaat kan er geen ander punt af —
+   * de database weigert het, en hier staat het er in gewone woorden.
+   *
+   * Op de vlag en niet op de titel: een tekst die ooit anders wordt
+   * geschreven maakt deze regel stil onwaar. Bonnen van vóór die
+   * migratie hebben geen standaardpunt en houden dus niets tegen.
+   */
+  const standaardOpen = taken.find((t) => t.standaard && !t.voltooid) ?? null
   // Dezelfde stand en kleur als op de lijstschermen en de planning.
   const k = standkleur(werkbon)
   const aantalKlaar = taken.filter((t) => t.voltooid).length
@@ -228,6 +239,24 @@ export function Klusuitvoering({
         <p className="text-xs text-tekst-gedempt dark:text-white/55 mb-4">
           {bijschrift ?? 'Maak een foto vóór je afvinkt'}
         </p>
+
+        {/* Vóór de punten, niet erin. Wie het scherm openslaat hoort in
+            één oogopslag te zien waar hij begint — dat is goedkoper dan
+            twintig punten proberen en er telkens uitleg bij krijgen. */}
+        {!readOnly && standaardOpen && (
+          <div className="flex items-start gap-2 rounded-sm border border-brand-red bg-brand-red-light dark:bg-brand-red/10 p-3 mb-4">
+            <IconAlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-brand-red dark:text-red-400" />
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-gray-900 dark:text-white">
+                Begin hiermee: {standaardOpen.titel}
+              </p>
+              <p className="text-xs text-gray-600 dark:text-white/60 mt-0.5">
+                Maak er een foto van en vink het af. Zolang dit openstaat kun
+                je de andere punten niet afvinken.
+              </p>
+            </div>
+          </div>
+        )}
         {/* Wachten tot de foto's er zijn. Zonder dit tekent hij eerst de
             punten mét een leeg cameravakje en springen de foto's er een
             tel later in — precies het beeld waarvan gemeld is dat het
@@ -245,6 +274,9 @@ export function Klusuitvoering({
               readOnly={readOnly || werkbon.status === 'voltooid'}
               gesloten={Boolean(werkbon.opgeleverd_op)}
               werkdagNodig={werkdagNodig}
+              eersteDit={standaardOpen && !taak.standaard
+                ? { titel: standaardOpen.titel }
+                : undefined}
               onRefresh={onRefresh}
             />
           ))
