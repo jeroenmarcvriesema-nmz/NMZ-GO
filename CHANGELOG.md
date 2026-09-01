@@ -1,5 +1,15 @@
 # NMZ GO — Changelog
 
+## Opleveren zonder bewijs — alleen voor de eigenaar
+
+- **[FEATURE]** **De eigenaar kan een klus dichtdoen terwijl er niets is afgevinkt en niets is gefotografeerd.** Voor de bonnen die administratief dicht moeten terwijl het bewijs buiten de app om is geregeld: oude ClickUp-taken zonder punten, werk dat per WhatsApp is afgehandeld. Zonder deze knop blijven die eeuwig meetellen als lopend werk.
+- **In ClickUp gaat de taak naar "wacht op foto's" en níet naar "opgeleverd".** Dat is de hele afspraak: het bord hoort niet te beweren dat er bewijs ligt terwijl dat er niet is. In NMZ GO is de klus dicht, in ClickUp staat wat er nog moet komen. Foto's die er wél zijn gaan gewoon als bijlage mee.
+- **Alleen de eigenaar, en dat wordt in de database afgedwongen** (`is_eigenaar()`, niet `mag_werk_beheren()`). Een beheerder, uitvoerder of werkvoorbereider komt er niet doorheen — ook niet met een aanroep die het scherm overslaat. Anders was dit geen uitzondering maar een sluiproute om de fotoplicht heen.
+- **Een reden is verplicht** en komt met naam in de activiteit van de klus te staan, samen met hoeveel punten er openstonden en hoeveel foto's er lagen op het moment van het besluit. Achteraf tellen zou een ander getal geven zodra iemand alsnog iets toevoegt.
+- De knop staat er ook uit als een uitzondering: een kleine regel ónder de gewone Opleveren-knop, zonder vulkleur, en alleen zichtbaar als de gewone weg dicht zit. Staat de bon wél op voltooid, dan is de normale knop de goede en is er geen keuze.
+- `werkbonnen.status` blijft met rust: de ploeg heeft deze bon niet afgerond en de administratie hoort niet te beweren van wel. `klusstand()` leest `opgeleverd_op` vóór `status`, dus de app toont hem overal als opgeleverd.
+- Migratie 044. De normale weg (`werkbon_opleveren`) is niet aangeraakt.
+
 ## Eerst op start, dan afvinken
 
 - **[FEATURE]** **Afvinken en foto's uploaden vragen nu een lopende werkdag.** Op het Vandaag-scherm hoort een afgevinkt punt bij een dag waarop iemand aan het werk was. Gevraagd door kantoor als extra controle dat er ook echt op start wordt gedrukt.

@@ -110,16 +110,25 @@ const PICTOGRAM: Record<Soort, typeof IconPlayerPause> = {
 }
 
 export function Klusacties({ werkbon, onKlaar }: Props) {
-  const { magWerkBeheren } = useAuth()
+  const { magWerkBeheren, isEigenaar } = useAuth()
   const [modal, setModal] = useState<null | Soort>(null)
   const [reden, setReden] = useState('')
   const [bezig, setBezig] = useState(false)
   const [overlap, setOverlap] = useState<any[]>([])
+  // De uitzondering van de eigenaar. Eigen toestand en een eigen modal:
+  // de vier knoppen hierboven delen `modal` en `reden`, en dit hoort
+  // daar niet tussen — het is geen vijfde reden om iets stil te leggen.
+  const [zonderBewijs, setZonderBewijs] = useState(false)
+  const [redenBewijs, setRedenBewijs] = useState('')
 
   if (!magWerkBeheren) return null
 
   const stil = Boolean(werkbon.stilgelegd_op)
   const opgeleverd = Boolean(werkbon.opgeleverd_op)
+  // Alleen om het te kunnen benoemen in het venster. Ontbreken de
+  // punten in wat dit scherm heeft opgehaald, dan wordt het nul en
+  // staat er een zin die ook zonder getal klopt.
+  const puntenOpen = (werkbon.taken ?? []).filter((t) => !t.voltooid).length
   const vervolg = werkbon.vervolg_soort ?? null
 
   /**
@@ -199,6 +208,35 @@ export function Klusacties({ werkbon, onKlaar }: Props) {
       return
     }
     toast.goed('Opgeleverd — ClickUp gaat op opgeleverd')
+    onKlaar()
+  }
+
+  /**
+   * Opleveren terwijl er niets is afgevinkt en niets is gefotografeerd.
+   *
+   * Alleen de eigenaar, en alleen langs deze knop — de database
+   * weigert het voor iedere andere rol (migratie 044). Bedoeld voor de
+   * bonnen die administratief dicht moeten terwijl het bewijs buiten
+   * de app om is geregeld: oude ClickUp-taken zonder punten, werk dat
+   * per WhatsApp is afgehandeld. Zonder deze knop blijven die eeuwig
+   * meetellen als lopend werk.
+   *
+   * In ClickUp gaat de taak naar "wacht op foto's" en níet naar
+   * "opgeleverd". Dat is de hele afspraak: het bord hoort niet te
+   * beweren dat er bewijs ligt.
+   */
+  const opleverenZonderBewijs = async () => {
+    if (redenBewijs.trim().length < 3) return
+    setBezig(true)
+    const { error } = await supabase.rpc('werkbon_opleveren_zonder_bewijs', {
+      p_werkbon: werkbon.id,
+      p_reden: redenBewijs.trim(),
+    })
+    setBezig(false)
+    if (error) { toast.fout(error.message || 'Opleveren lukte niet.'); return }
+    setZonderBewijs(false)
+    setRedenBewijs('')
+    toast.goed('Opgeleverd — ClickUp gaat op "wacht op foto’s"')
     onKlaar()
   }
 
@@ -343,6 +381,24 @@ export function Klusacties({ werkbon, onKlaar }: Props) {
           </p>
         )}
 
+        {/* De uitzondering, en hij ziet er ook zo uit.
+            Geen knop naast Opleveren maar een regel eronder, klein en
+            zonder vulkleur: dit is niet de tweede manier om op te
+            leveren, het is de weg eromheen. Alleen zichtbaar voor de
+            eigenaar, en alleen als de gewone weg dicht zit — staat de
+            bon wél op voltooid, dan is de knop hierboven de goede en
+            hoort er geen keuze te zijn. */}
+        {!opgeleverd && werkbon.status !== 'voltooid' && isEigenaar && (
+          <button
+            type="button"
+            onClick={() => setZonderBewijs(true)}
+            className="mt-2 inline-flex items-center gap-1.5 min-h-[44px] text-xs font-semibold text-tekst-gedempt dark:text-white/55 underline underline-offset-2 hover:text-brand-red dark:hover:text-red-400 transition-colors"
+          >
+            <IconCircleCheck className="w-3.5 h-3.5" />
+            Toch opleveren, zonder bewijs
+          </button>
+        )}
+
         {overlap.length > 0 && (
           <div className="mt-4 p-3 rounded-sm bg-brand-yellow-light dark:bg-brand-yellow/10 border border-brand-yellow">
             <div className="text-sm font-bold text-gray-900 dark:text-white mb-1">
@@ -448,6 +504,73 @@ export function Klusacties({ werkbon, onKlaar }: Props) {
                 const Pictogram = PICTOGRAM[modal]
                 return <><Pictogram className="w-4 h-4" /> {SOORTEN[modal].knop}</>
               })()}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* De uitzondering krijgt zijn eigen venster, met de gevolgen
+          erin uitgeschreven. Wie hierop drukt sluit een dossier waar
+          geen bewijs onder ligt; dan hoort er te staan wat dat
+          betekent, en niet alleen "weet je het zeker". */}
+      <Modal
+        open={zonderBewijs}
+        onClose={() => { setZonderBewijs(false); setRedenBewijs('') }}
+        title="Opleveren zonder bewijs"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-2 p-3 rounded-sm bg-brand-red-light dark:bg-brand-red/10 border border-brand-red">
+            <IconAlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-brand-red dark:text-red-400" />
+            <div className="text-sm text-gray-700 dark:text-white/70 min-w-0">
+              <p className="font-bold text-gray-900 dark:text-white">
+                {puntenOpen > 0
+                  ? `${puntenOpen} ${puntenOpen === 1 ? 'punt staat' : 'punten staan'} nog open`
+                  : 'Deze bon is niet door de ploeg afgerond'}
+              </p>
+              <p className="mt-1">
+                Je sluit {werkbon.adres} zonder dat de zwamsaneerder hem heeft
+                afgerond. In NMZ GO staat de klus daarna op opgeleverd en telt
+                hij nergens meer mee als lopend werk.
+              </p>
+            </div>
+          </div>
+
+          <p className="text-sm text-gray-600 dark:text-white/60">
+            In ClickUp gaat de taak naar <em>wacht op foto&apos;s</em> en
+            <strong> niet</strong> naar opgeleverd — het bord hoort niet te
+            beweren dat het bewijs er ligt. Foto&apos;s die er wél zijn worden
+            gewoon als bijlage meegestuurd.
+          </p>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-white/70 mb-1.5">
+              Waarom gaat deze klus zonder bewijs dicht?
+            </label>
+            <textarea
+              value={redenBewijs}
+              onChange={(e) => setRedenBewijs(e.target.value)}
+              rows={3}
+              autoFocus
+              placeholder="Bijv. oude bon uit ClickUp, werk is buiten de app om afgehandeld"
+              className="w-full rounded-sm border border-gray-200 dark:border-white/10 bg-white dark:bg-surface-dark-2 px-3 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-tekst-fijn dark:placeholder:text-white/45 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:border-brand-yellow transition-all"
+            />
+            <p className="text-xs text-tekst-gedempt dark:text-white/55 mt-1.5">
+              Komt in de activiteit van deze klus te staan, met je naam erbij.
+              Zonder reden gaat het niet door — ook niet buiten dit scherm om.
+            </p>
+          </div>
+
+          <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+            <Button variant="secondary" onClick={() => { setZonderBewijs(false); setRedenBewijs('') }}>
+              Annuleren
+            </Button>
+            <Button
+              variant="primary"
+              loading={bezig}
+              disabled={redenBewijs.trim().length < 3}
+              onClick={opleverenZonderBewijs}
+            >
+              <IconCircleCheck className="w-4 h-4" /> Zonder bewijs opleveren
             </Button>
           </div>
         </div>

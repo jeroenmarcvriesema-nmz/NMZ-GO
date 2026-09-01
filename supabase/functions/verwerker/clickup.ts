@@ -1388,7 +1388,7 @@ export async function statusBijwerken(
 
   const { data: bon } = await db
     .from('werkbonnen')
-    .select('id, adres, clickup_taak_id, stilleg_reden, vervolg_reden, geplande_eind')
+    .select('id, adres, clickup_taak_id, stilleg_reden, vervolg_reden, geplande_eind, opgeleverd_zonder_bewijs')
     .eq('id', werkbonId)
     .maybeSingle()
   if (!bon) throw new Error(`werkbon ${werkbonId} bestaat niet`)
@@ -1450,7 +1450,19 @@ export async function statusBijwerken(
     }
 
     wachtOpFotos = stand.openstaand
-    if (wachtOpFotos > 0) {
+
+    if (bon.opgeleverd_zonder_bewijs) {
+      // De uitzondering van de eigenaar (migratie 044): de bon is in
+      // NMZ GO administratief dicht, maar er was niets afgevinkt en
+      // niets gefotografeerd. Dan hoort er op het bord niet
+      // "opgeleverd" te staan — dat zou beweren dat het bewijs er is.
+      // "Wacht op foto's" is wat er werkelijk aan de hand is, en het
+      // is ook de status waar de planner op zoekt als hij nakijkt wat
+      // er nog moet komen.
+      status = i.status_wacht_op_fotos ?? i.status_opgeleverd ?? 'opgeleverd'
+      tekst = 'In NMZ GO afgesloten door de eigenaar, vooruitlopend op het bewijs. '
+        + 'Het fotobewijs bij deze taak is nog niet compleet.'
+    } else if (wachtOpFotos > 0) {
       status = i.status_wacht_op_fotos ?? i.status_opgeleverd ?? 'opgeleverd'
       tekst = `Opgeleverd in NMZ GO, maar ${wachtOpFotos} foto('s) staan nog niet bij deze taak.`
     } else {
